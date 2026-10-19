@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_controller.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
@@ -26,7 +27,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   Widget build(BuildContext context) {
     final inbox = ref.watch(inboxListProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Inbox'), actions: const [_SyncButton()]),
+      appBar: AppBar(title: const Text('Inbox'), actions: const [_SyncButton(), _AccountMenu()]),
       body: Column(
         children: [
           const _SyncBanner(),
@@ -63,30 +64,71 @@ class _SyncButton extends ConsumerWidget {
   }
 }
 
-/// One line under the app bar when sync needs attention.
+/// Who is signed in, and Sign out. Hidden while signed out.
+class _AccountMenu extends ConsumerWidget {
+  const _AccountMenu();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(authControllerProvider.select((s) => s.session));
+    if (session == null) return const SizedBox.shrink();
+    return PopupMenuButton<void>(
+      key: const Key('accountMenu'),
+      tooltip: 'Account',
+      icon: const Icon(Icons.account_circle_outlined),
+      itemBuilder: (_) => [
+        if (session.email != null) PopupMenuItem<void>(enabled: false, child: Text(session.email!)),
+        PopupMenuItem<void>(
+          key: const Key('signOut'),
+          onTap: () => ref.read(authControllerProvider.notifier).signOut(),
+          child: const Text('Sign out'),
+        ),
+      ],
+    );
+  }
+}
+
+/// One line under the app bar when sign-in or sync needs attention.
 class _SyncBanner extends ConsumerWidget {
   const _SyncBanner();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(syncControllerProvider);
+    final auth = ref.watch(authControllerProvider);
     final scheme = Theme.of(context).colorScheme;
-    final (text, color) = switch (status.phase) {
-      SyncPhase.needsSignIn => ('Not signed in to Google: changes stay on this device.', scheme.secondaryContainer),
-      SyncPhase.error => ('Sync failed: ${status.message}', scheme.errorContainer),
-      _ => (null, null),
-    };
+
+    String? text;
+    Color? color;
+    var offerSignIn = false;
+    if (!auth.signedIn && !auth.restoring) {
+      text = auth.error ?? 'Not signed in to Google: changes stay on this device.';
+      color = auth.error == null ? scheme.secondaryContainer : scheme.errorContainer;
+      offerSignIn = true;
+    } else if (status.phase == SyncPhase.error) {
+      text = 'Sync failed: ${status.message}';
+      color = scheme.errorContainer;
+    }
     if (text == null) return const SizedBox.shrink();
     return Material(
       color: color,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(children: [Expanded(child: Text(text, key: const Key('syncBanner')))]),
+        child: Row(
+          children: [
+            Expanded(child: Text(text, key: const Key('syncBanner'))),
+            if (offerSignIn)
+              TextButton(
+                key: const Key('bannerSignIn'),
+                onPressed: auth.busy ? null : () => ref.read(authControllerProvider.notifier).signIn(),
+                child: const Text('Sign in'),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
-
 /// Shown until the Inbox list has arrived from the Sheet (first sign-in on this device).
 class _NoInbox extends ConsumerWidget {
   const _NoInbox();
@@ -94,6 +136,8 @@ class _NoInbox extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(syncControllerProvider);
+    final auth = ref.watch(authControllerProvider);
+    final signedOut = !auth.signedIn;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -107,11 +151,19 @@ class _NoInbox extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: status.isSyncing ? null : () => ref.read(syncControllerProvider.notifier).sync(),
-              icon: const Icon(Icons.sync),
-              label: const Text('Sync now'),
-            ),
+            if (signedOut)
+              FilledButton.icon(
+                key: const Key('signInButton'),
+                onPressed: auth.busy || auth.restoring ? null : () => ref.read(authControllerProvider.notifier).signIn(),
+                icon: const Icon(Icons.login),
+                label: Text(auth.busy ? 'Waiting for Google...' : 'Sign in with Google'),
+              )
+            else
+              FilledButton.icon(
+                onPressed: status.isSyncing ? null : () => ref.read(syncControllerProvider.notifier).sync(),
+                icon: const Icon(Icons.sync),
+                label: const Text('Sync now'),
+              ),
           ],
         ),
       ),

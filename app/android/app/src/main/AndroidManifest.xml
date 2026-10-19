@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sync talks to the Google Sheets and Drive APIs. Flutter only adds this to debug builds. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="sheettick"
         android:name="${applicationName}"

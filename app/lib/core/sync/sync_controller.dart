@@ -1,7 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:googleapis/drive/v3.dart' show DetailedApiRequestError;
+import 'package:googleapis_auth/googleapis_auth.dart' show AccessDeniedException;
 
+import '../auth/auth_controller.dart';
+import '../auth/auth_service.dart' show AuthException;
 import '../db/database.dart';
 import '../providers.dart';
 import '../sheets/bootstrap.dart';
@@ -32,6 +36,10 @@ class SyncController extends Notifier<SyncStatus> {
 
   @override
   SyncStatus build() {
+    // Signing in (or restoring a session at startup) is a sync trigger.
+    ref.listen(sheetsBackendProvider, (previous, next) {
+      if (next != null) sync();
+    });
     final periodic = Timer.periodic(period, (_) => sync());
     ref.onDispose(() {
       periodic.cancel();
@@ -64,9 +72,21 @@ class SyncController extends Notifier<SyncStatus> {
       await SyncEngine(backend: backend, store: store, deviceId: deviceId).sync();
       state = SyncStatus(SyncPhase.idle, lastSyncedAt: DateTime.now());
     } catch (e) {
-      state = SyncStatus(SyncPhase.error, lastSyncedAt: state.lastSyncedAt, message: _describe(e));
+      if (_isAuthFailure(e)) {
+        const message = 'Google no longer accepts this sign-in. Please sign in again.';
+        ref.read(authControllerProvider.notifier).sessionExpired(message);
+        state = SyncStatus(SyncPhase.needsSignIn, lastSyncedAt: state.lastSyncedAt);
+      } else {
+        state = SyncStatus(SyncPhase.error, lastSyncedAt: state.lastSyncedAt, message: _describe(e));
+      }
     }
   }
+
+  /// The refresh token was revoked or the access was withdrawn (as opposed to a network or server problem).
+  /// A 403 is deliberately not included: Google also uses it for rate limits and for an API that is not enabled
+  /// in the Cloud project, and signing the user out would not fix either.
+  bool _isAuthFailure(Object e) =>
+      e is AccessDeniedException || e is AuthException || (e is DetailedApiRequestError && e.status == 401);
 
   String _describe(Object e) => switch (e) {
     SpreadsheetMissingException() => 'The SheetTick spreadsheet was deleted or trashed in Google Drive.',

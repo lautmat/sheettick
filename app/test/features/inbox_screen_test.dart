@@ -3,13 +3,17 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:googleapis/drive/v3.dart' show DetailedApiRequestError;
 import 'package:sheettick/app.dart';
+import 'package:sheettick/core/auth/auth_controller.dart';
+import 'package:sheettick/core/auth/auth_service.dart';
 import 'package:sheettick/core/db/database.dart';
 import 'package:sheettick/core/providers.dart';
 import 'package:sheettick/core/sheets/sheets_backend.dart';
 import 'package:sheettick/core/sync/local_store.dart';
 import 'package:sheettick/core/sync/local_writer.dart';
 
+import '../support/fake_auth_service.dart';
 import '../support/fake_sheets_backend.dart';
 import '../support/test_device.dart';
 
@@ -21,6 +25,21 @@ class _Unreachable extends FakeSheetsBackend {
   Future<List<SpreadsheetFile>> findSpreadsheets() => throw StateError('network unreachable');
 }
 
+/// Google rejects the access token.
+class _Unauthorized extends FakeSheetsBackend {
+  @override
+  Future<List<SpreadsheetFile>> findSpreadsheets() => throw DetailedApiRequestError(401, 'Invalid Credentials');
+  @override
+  Future<SpreadsheetFile?> getFile(String id) => throw DetailedApiRequestError(401, 'Invalid Credentials');
+}
+
+/// Google refuses for a reason that signing in again would not fix.
+class _Forbidden extends FakeSheetsBackend {
+  @override
+  Future<List<SpreadsheetFile>> findSpreadsheets() => throw DetailedApiRequestError(403, 'Google Sheets API has not been used');
+  @override
+  Future<SpreadsheetFile?> getFile(String id) => throw DetailedApiRequestError(403, 'Rate limit exceeded');
+}
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
@@ -35,14 +54,21 @@ void main() {
 
   tearDown(() => db.close());
 
-  Widget app({SheetsBackend? backend}) => ProviderScope(
-    overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      deviceIdProvider.overrideWith((ref) => 'win-test'),
-      sheetsBackendProvider.overrideWithValue(backend),
-    ],
-    child: const SheetTickApp(),
-  );
+  late FakeAuthService auth;
+
+  /// With a [backend] the user is signed in and their client talks to it; without, they are signed out.
+  Widget app({SheetsBackend? backend, FakeAuthService? authService}) {
+    auth = authService ?? FakeAuthService(restored: backend == null ? null : FakeAuthService.session());
+    return ProviderScope(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        deviceIdProvider.overrideWith((ref) => 'win-test'),
+        authServiceProvider.overrideWithValue(auth),
+        if (backend != null) backendFactoryProvider.overrideWithValue((_) => backend),
+      ],
+      child: const SheetTickApp(),
+    );
+  }
 
   /// Lets queued database work and stream emissions finish.
   Future<void> settle(WidgetTester tester) async {
@@ -76,6 +102,7 @@ void main() {
     expect(find.text('Sign in to Google to set up your Inbox.'), findsOneWidget);
     expect(find.byKey(const Key('syncBanner')), findsOneWidget);
     expect(find.textContaining('Not signed in'), findsOneWidget);
+    expect(find.byKey(const Key('signInButton')), findsOneWidget);
     expect(find.byKey(const Key('addTaskField')), findsNothing);
     await unmount(tester);
   });
@@ -225,6 +252,111 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('Sign in with Google: the Inbox and tasks arrive and the banner goes away', (tester) async {
+    final backend = FakeSheetsBackend();
+    final other = await tester.runAsync(() async {
+      final d = await TestDevice.create(backend, id: 'and-0002');
+      await d.addTask('From my phone');
+      await d.sync();
+      return d;
+    });
+    await tester.pumpWidget(app(backend: backend, authService: FakeAuthService()));
+    await settle(tester);
+    expect(find.byKey(const Key('signInButton')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('signInButton')));
+    await settle(tester);
+    await settle(tester);
+
+    expect(auth.signInCalls, 1);
+    expect(find.text('From my phone'), findsOneWidget);
+    expect(find.byKey(const Key('syncBanner')), findsNothing);
+    expect(find.byKey(const Key('accountMenu')), findsOneWidget);
+    await unmount(tester);
+    await tester.runAsync(() => other!.close());
+  });
+
+  testWidgets('a restored session syncs at startup without asking to sign in', (tester) async {
+    final backend = FakeSheetsBackend();
+    final other = await tester.runAsync(() async {
+      final d = await TestDevice.create(backend, id: 'and-0002');
+      await d.addTask('Waiting for me');
+      await d.sync();
+      return d;
+    });
+    await tester.pumpWidget(app(backend: backend));
+    await settle(tester);
+    await settle(tester);
+
+    expect(auth.signInCalls, 0);
+    expect(find.byKey(const Key('signInButton')), findsNothing);
+    expect(find.text('Waiting for me'), findsOneWidget);
+    await unmount(tester);
+    await tester.runAsync(() => other!.close());
+  });
+
+  testWidgets('a cancelled sign-in shows why and offers to try again', (tester) async {
+    await seedInbox(tester);
+    await tester.pumpWidget(
+      app(authService: FakeAuthService(signInError: AuthException('Sign-in was cancelled.'))),
+    );
+    await settle(tester);
+
+    await tester.tap(find.byKey(const Key('bannerSignIn')));
+    await settle(tester);
+
+    expect(find.text('Sign-in was cancelled.'), findsOneWidget);
+    expect(find.byKey(const Key('bannerSignIn')), findsOneWidget);
+    expect(auth.signInCalls, 1);
+    // Local use is unaffected.
+    expect(find.byKey(const Key('addTaskField')), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('Sign out: back to signed-out, and the tasks stay on the device', (tester) async {
+    final inbox = await seedInbox(tester);
+    await tester.runAsync(() async => writer().insert('tasks', {'list_id': inbox, 'title': 'kept'}));
+    await tester.pumpWidget(app(backend: FakeSheetsBackend()));
+    await settle(tester);
+    expect(find.byKey(const Key('accountMenu')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('accountMenu')));
+    await tester.pumpAndSettle();
+    expect(find.text('laurent@example.com'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('signOut')));
+    await tester.pumpAndSettle();
+    await settle(tester);
+
+    expect(auth.signOutCalls, 1);
+    expect(find.byKey(const Key('accountMenu')), findsNothing);
+    expect(find.textContaining('Not signed in'), findsOneWidget);
+    expect(find.text('kept'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('Google rejecting the session (401) sends the user back to sign in', (tester) async {
+    await seedInbox(tester);
+    await tester.pumpWidget(app(backend: _Unauthorized()));
+    await settle(tester);
+    await settle(tester);
+
+    expect(find.textContaining('no longer accepts this sign-in'), findsOneWidget);
+    expect(find.byKey(const Key('bannerSignIn')), findsOneWidget);
+    expect(find.byKey(const Key('accountMenu')), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('a 403 (rate limit, API not enabled) is a sync error, not a sign-out', (tester) async {
+    await seedInbox(tester);
+    await tester.pumpWidget(app(backend: _Forbidden()));
+    await settle(tester);
+    await settle(tester);
+
+    expect(find.textContaining('Sync failed'), findsOneWidget);
+    expect(find.byKey(const Key('accountMenu')), findsOneWidget);
+    expect(find.byKey(const Key('bannerSignIn')), findsNothing);
+    await unmount(tester);
+  });
   testWidgets('follows the system theme: light and dark', (tester) async {
     await seedInbox(tester);
     for (final brightness in [Brightness.light, Brightness.dark]) {

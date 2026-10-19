@@ -2,6 +2,9 @@
 
 Helper scripts that are not part of the app.
 
+- `oauth_defines.dart`: turns the OAuth client files downloaded from Google Cloud (in `app/secrets/`) into
+  `app/secrets/dart_defines.json`, which the app is built with. See `app/secrets/README.md`.
+
 Planned:
 - `import_ticktick/`: one-time migration of existing TickTick data into the Sheet (from TickTick's CSV backup,
   Settings → Account → Backup, or through the TickTick MCP). Phase 1.
