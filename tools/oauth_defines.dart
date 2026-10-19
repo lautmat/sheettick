@@ -23,15 +23,19 @@ int run(List<String> args) {
   final desktop = File('${dir.path}/desktop_client.json');
   if (desktop.existsSync()) {
     final json = jsonDecode(desktop.readAsStringSync()) as Map<String, dynamic>;
-    final client = (json['installed'] ?? json['web']) as Map<String, dynamic>?;
-    final id = client?['client_id'] as String?;
-    final secret = client?['client_secret'] as String?;
-    if (id == null || id.isEmpty) {
-      stderr.writeln('desktop_client.json has no client_id. Download the "Desktop app" client again.');
+    // A "Desktop app" client downloads as {"installed": {...}}; a "Web application" one as {"web": {...}}.
+    final client = json['installed'] as Map<String, dynamic>?;
+    if (client == null) {
+      stderr.writeln(
+        'desktop_client.json is not a "Desktop app" client (it has no "installed" section). '
+        'The Windows build needs one; the Web client id goes in web_client.txt.',
+      );
       return 1;
     }
-    if (json.containsKey('web')) {
-      stderr.writeln('desktop_client.json is a "Web application" client; the Windows build needs a "Desktop app" one.');
+    final id = client['client_id'] as String?;
+    final secret = client['client_secret'] as String?;
+    if (id == null || id.isEmpty) {
+      stderr.writeln('desktop_client.json has no client_id. Download the "Desktop app" client again.');
       return 1;
     }
     defines['DESKTOP_CLIENT_ID'] = id;

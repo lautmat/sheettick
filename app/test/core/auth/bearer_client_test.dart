@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -54,6 +56,30 @@ void main() {
     nextStatus = 200;
     await c.get(Uri.parse('https://example.test/b'));
     expect(seenAuth, ['Bearer token-1', 'Bearer token-2']);
+  });
+
+  test('concurrent requests at expiry share one token fetch', () async {
+    final gate = Completer<String>();
+    var fetches = 0;
+    final c = client(token: () {
+      fetches++;
+      return gate.future;
+    });
+    final calls = [for (var i = 0; i < 5; i++) c.get(Uri.parse('https://example.test/$i'))];
+    await Future<void>.delayed(Duration.zero);
+    expect(fetches, 1);
+    gate.complete('shared-token');
+    await Future.wait(calls);
+    expect(seenAuth, List.filled(5, 'Bearer shared-token'));
+    expect(fetches, 1);
+  });
+
+  test('a failed token fetch does not poison the next request', () async {
+    var attempt = 0;
+    final c = client(token: () async => ++attempt == 1 ? throw StateError('offline') : 'second-try');
+    await expectLater(c.get(Uri.parse('https://example.test/a')), throwsStateError);
+    await c.get(Uri.parse('https://example.test/b'));
+    expect(seenAuth, ['Bearer second-try']);
   });
 
   test('other error statuses keep the token', () async {

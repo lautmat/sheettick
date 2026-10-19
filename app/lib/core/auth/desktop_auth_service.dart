@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:googleapis_auth/auth_io.dart' as gauth;
@@ -32,12 +33,16 @@ class DesktopAuthService implements AuthService {
     ConsentFlow? consentFlow,
     Future<bool> Function(Uri url)? openBrowser,
     http.Client Function()? newBaseClient,
+    this.signInTimeout = const Duration(minutes: 5),
   }) : _consent = consentFlow ?? _loopbackConsent,
        _openBrowser = openBrowser ?? ((url) => launchUrl(url, mode: LaunchMode.externalApplication)),
        _newBaseClient = newBaseClient ?? http.Client.new;
 
   final OAuthConfig config;
   final CredentialStore store;
+
+  /// How long to wait for the user to finish in the browser before giving up.
+  final Duration signInTimeout;
   final ConsentFlow _consent;
   final Future<bool> Function(Uri url) _openBrowser;
   final http.Client Function() _newBaseClient;
@@ -72,10 +77,26 @@ class DesktopAuthService implements AuthService {
   Future<AuthSession> signIn() async {
     final clientId = _clientId;
     final gauth.AuthClient client;
+    // The consent flow waits for Google to call the local loopback server, which never happens if the browser
+    // could not be opened. So a launch failure completes this future with an error and wins the race.
+    final launchFailed = Completer<gauth.AuthClient>();
     try {
-      client = await _consent(clientId, [kDriveFileScope], (url) {
-        _openBrowser(Uri.parse(url));
-      });
+      client = await Future.any([
+        _consent(clientId, [kDriveFileScope], (url) {
+          _openBrowser(Uri.parse(url)).then(
+            (opened) {
+              if (!opened) launchFailed.completeError(AuthException('Could not open the browser to sign in.'));
+            },
+            onError: (Object e) {
+              launchFailed.completeError(AuthException('Could not open the browser to sign in: $e'));
+            },
+          );
+        }),
+        launchFailed.future,
+      ]).timeout(
+        signInTimeout,
+        onTimeout: () => throw AuthException('Sign-in timed out. Please try again.'),
+      );
     } on gauth.UserConsentException catch (e) {
       throw AuthException('Sign-in was cancelled or refused: ${e.message}');
     } on gauth.AccessDeniedException catch (e) {

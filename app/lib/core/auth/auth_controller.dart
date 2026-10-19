@@ -62,7 +62,8 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> signIn() async {
-    if (state.busy) return;
+    // Not while the startup restore is still running: its answer would overwrite the result of this sign-in.
+    if (state.busy || state.restoring) return;
     state = AuthState(busy: true, session: state.session);
     try {
       state = AuthState(session: await _service.signIn());

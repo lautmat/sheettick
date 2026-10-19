@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -71,6 +72,54 @@ void main() {
         throwsA(isA<AuthException>().having((e) => e.message, 'message', contains('refresh token'))),
       );
       expect(store.value, isNull);
+    });
+
+    test('a browser that cannot be opened fails the sign-in at once instead of hanging', () async {
+      final neverAnswers = Completer<gauth.AuthClient>();
+      final s = DesktopAuthService(
+        config: _configured,
+        store: store,
+        consentFlow: (clientId, scopes, prompt) {
+          prompt('https://accounts.google.com/o/oauth2/v2/auth');
+          return neverAnswers.future; // the loopback redirect never comes
+        },
+        openBrowser: (_) async => false,
+      );
+      await expectLater(
+        s.signIn().timeout(const Duration(seconds: 5)),
+        throwsA(isA<AuthException>().having((e) => e.message, 'message', contains('open the browser'))),
+      );
+      expect(store.value, isNull);
+    });
+
+    test('a browser launch that throws is reported the same way', () async {
+      final s = DesktopAuthService(
+        config: _configured,
+        store: store,
+        consentFlow: (clientId, scopes, prompt) {
+          prompt('https://accounts.google.com/o/oauth2/v2/auth');
+          return Completer<gauth.AuthClient>().future;
+        },
+        openBrowser: (_) async => throw StateError('no default browser'),
+      );
+      await expectLater(
+        s.signIn().timeout(const Duration(seconds: 5)),
+        throwsA(isA<AuthException>().having((e) => e.message, 'message', contains('no default browser'))),
+      );
+    });
+
+    test('a user who never finishes in the browser times out', () async {
+      final s = DesktopAuthService(
+        config: _configured,
+        store: store,
+        consentFlow: (clientId, scopes, prompt) => Completer<gauth.AuthClient>().future,
+        openBrowser: (_) async => true,
+        signInTimeout: const Duration(milliseconds: 50),
+      );
+      await expectLater(
+        s.signIn(),
+        throwsA(isA<AuthException>().having((e) => e.message, 'message', contains('timed out'))),
+      );
     });
 
     test('a cancelled consent becomes a readable AuthException', () async {

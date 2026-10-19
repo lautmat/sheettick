@@ -18,6 +18,8 @@ void main() {
       ],
     );
     addTearDown(c.dispose);
+    // The app reads the controller at startup, which is what starts the restore.
+    c.read(authControllerProvider);
     return c;
   }
 
@@ -55,6 +57,18 @@ void main() {
     final s = c.read(authControllerProvider);
     expect((s.signedIn, s.busy, s.error), (true, false, null));
     expect(s.session!.email, 'laurent@example.com');
+  });
+
+  test('signIn waits for the startup restore instead of racing it', () async {
+    final auth = FakeAuthService();
+    final c = container(auth);
+    final n = c.read(authControllerProvider.notifier);
+    expect(c.read(authControllerProvider).restoring, isTrue);
+    await n.signIn(); // ignored: the restore has not answered yet
+    expect(auth.signInCalls, 0);
+    await settle();
+    await n.signIn();
+    expect(auth.signInCalls, 1);
   });
 
   test('signIn failure keeps the message for the UI and stays signed out', () async {

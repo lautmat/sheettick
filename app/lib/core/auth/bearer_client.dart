@@ -21,14 +21,23 @@ class BearerClient extends http.BaseClient {
 
   String? _token;
   DateTime? _fetchedAt;
+  Future<String>? _fetching;
 
   Future<String> _currentToken() async {
     final at = _fetchedAt;
-    if (_token == null || at == null || _clock().difference(at) >= maxAge) {
-      _token = await tokenProvider();
+    final fresh = _token != null && at != null && _clock().difference(at) < maxAge;
+    if (fresh) return _token!;
+    // Requests that arrive while a token is being fetched wait for that fetch instead of starting their own.
+    final fetch = _fetching ??= tokenProvider().then((t) {
+      _token = t;
       _fetchedAt = _clock();
+      return t;
+    });
+    try {
+      return await fetch;
+    } finally {
+      _fetching = null;
     }
-    return _token!;
   }
 
   @override
