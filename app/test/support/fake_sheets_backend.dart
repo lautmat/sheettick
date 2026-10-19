@@ -200,6 +200,7 @@ class FakeSheetsBackend implements SheetsBackend {
   /// A human typing into a cell. [row] is 1-based, [column] is a header name.
   void setCell(String spreadsheetId, String tab, int row, String column, Object? value) {
     final t = _tab(spreadsheetId, tab);
+    if (t.rows.isEmpty) throw StateError('tab "$tab" has no rows, so there is no header to find column "$column"');
     final col = (t.rows.first.map((c) => '$c').toList()).indexOf(column);
     if (col < 0) throw StateError('no column $column in $tab');
     _put(t, row - 1, col, value);

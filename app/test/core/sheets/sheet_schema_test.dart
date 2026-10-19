@@ -4,7 +4,8 @@ import 'package:sheettick/core/sheets/sheet_schema.dart';
 import '../../support/schema_doc.dart';
 
 void main() {
-  final doc = SchemaDoc();
+  late SchemaDoc doc;
+  setUpAll(() => doc = SchemaDoc());
 
   test('the tabs are exactly the documented ones, in order (View is formula-only)', () {
     expect([...kTabs.map((t) => t.name), kViewTabName], doc.tabNames.where((n) => n != 'Sync columns'));
