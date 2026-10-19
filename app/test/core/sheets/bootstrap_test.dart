@@ -201,6 +201,16 @@ void main() {
     expect(backend.rawRows(result.spreadsheetId, 'lists'), hasLength(2));
   });
 
+  test('the fake refuses setCell on a tab without a header, with a message that says so', () async {
+    final backend = FakeSheetsBackend();
+    final file = await backend.createSpreadsheet('SheetTick');
+    await backend.changeTabs(file.id, add: const [TabSpec('empty', [], hasSyncColumns: false)]);
+    expect(
+      () => backend.setCell(file.id, 'empty', 1, 'title', 'x'),
+      throwsA(isA<StateError>().having((e) => e.message, 'message', contains('has no rows'))),
+    );
+  });
+
   test('a user-added tab is kept once the spreadsheet is structured', () async {
     final backend = FakeSheetsBackend();
     final first = await bootstrap(backend, newDevice()).run();

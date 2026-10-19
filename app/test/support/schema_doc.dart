@@ -8,11 +8,15 @@ class SchemaDoc {
   final String _text;
 
   /// The body of the section whose heading line starts with `### [heading]`.
-  String _section(String heading) => RegExp(
-    '^### ${RegExp.escape(heading)}[^\\n]*\\n(.*?)(?=^##|(?![\\s\\S]))',
-    multiLine: true,
-    dotAll: true,
-  ).firstMatch(_text)!.group(1)!;
+  String _section(String heading) {
+    final match = RegExp(
+      '^### ${RegExp.escape(heading)}[^\\n]*\\n(.*?)(?=^##|(?![\\s\\S]))',
+      multiLine: true,
+      dotAll: true,
+    ).firstMatch(_text);
+    if (match == null) throw StateError('Section "### $heading" not found in docs/sheet-schema.md');
+    return match.group(1)!;
+  }
 
   /// Column names the doc declares for [heading]: the first cell of each table row, or the backticked names
   /// of the one-line listing (ignoring parenthesised value lists and the "+ sync columns" tail).

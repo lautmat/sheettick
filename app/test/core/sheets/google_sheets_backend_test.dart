@@ -67,6 +67,29 @@ void main() {
     expect(q, contains('application/vnd.google-apps.spreadsheet'));
   });
 
+  test('findSpreadsheets follows every page, so the oldest file is never missed', () async {
+    wire.reply = (req) {
+      final second = req.url.queryParameters['pageToken'] == 'page-2';
+      return second
+          ? {
+              'files': [
+                {'id': 'oldest', 'name': 'SheetTick', 'createdTime': '2025-01-01T00:00:00Z', 'modifiedTime': '2025-01-01T00:00:00Z'},
+              ],
+            }
+          : {
+              'nextPageToken': 'page-2',
+              'files': [
+                {'id': 'newer', 'name': 'SheetTick', 'createdTime': '2026-02-01T00:00:00Z', 'modifiedTime': '2026-02-01T00:00:00Z'},
+              ],
+            };
+    };
+    final files = await backend.findSpreadsheets();
+    expect(files.map((f) => f.id), ['oldest', 'newer']);
+    expect(wire.requests, hasLength(2));
+    expect(wire.requests.first.url.queryParameters.containsKey('pageToken'), isFalse);
+    expect(wire.last.url.queryParameters['pageToken'], 'page-2');
+  });
+
   test('getFile returns null for a missing file and for a trashed one', () async {
     wire.reply = (_) => {'id': 'x', 'name': 'SheetTick', 'trashed': true};
     expect(await backend.getFile('x'), isNull);
@@ -168,7 +191,9 @@ void main() {
 
     final add = (requests.first as Map)['addSheet']['properties'] as Map;
     expect(add['title'], 'lists');
-    expect(add['sheetId'], 1); // after the existing id 0
+    final newId = add['sheetId'] as int;
+    expect(newId, isPositive);
+    expect(newId, isNot(0)); // not the existing tab's id
     expect(add['gridProperties']['frozenRowCount'], 1);
     expect(add['gridProperties']['columnCount'], tabSpec('lists').columns.length);
 

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis/sheets/v4.dart' as sheets;
 import 'package:http/http.dart' as http;
@@ -29,21 +31,29 @@ class GoogleSheetsBackend implements SheetsBackend {
 
   @override
   Future<List<SpreadsheetFile>> findSpreadsheets() async {
-    final res = await _call(
-      () => _drive.files.list(
-        q:
-            "mimeType='$_sheetMime' and trashed=false and "
-            "appProperties has { key='$kAppPropertyKey' and value='$kAppPropertyValue' }",
-        spaces: 'drive',
-        pageSize: 100,
-        $fields: 'files($_fileFields)',
-      ),
-    );
-    final files = [for (final f in res.files ?? const <drive.File>[]) _toFile(f)]
-      ..sort((a, b) {
-        final c = a.createdTime.compareTo(b.createdTime);
-        return c != 0 ? c : a.id.compareTo(b.id);
-      });
+    // Every page: the oldest file decides which spreadsheet is the canonical one, so none may be missed.
+    final files = <SpreadsheetFile>[];
+    String? pageToken;
+    do {
+      final token = pageToken;
+      final res = await _call(
+        () => _drive.files.list(
+          q:
+              "mimeType='$_sheetMime' and trashed=false and "
+              "appProperties has { key='$kAppPropertyKey' and value='$kAppPropertyValue' }",
+          spaces: 'drive',
+          pageSize: 100,
+          pageToken: token,
+          $fields: 'nextPageToken,files($_fileFields)',
+        ),
+      );
+      files.addAll([for (final f in res.files ?? const <drive.File>[]) _toFile(f)]);
+      pageToken = res.nextPageToken;
+    } while (pageToken != null);
+    files.sort((a, b) {
+      final c = a.createdTime.compareTo(b.createdTime);
+      return c != 0 ? c : a.id.compareTo(b.id);
+    });
     return files;
   }
 
@@ -92,12 +102,21 @@ class GoogleSheetsBackend implements SheetsBackend {
     List<TabSpec> add = const [],
     List<int> removeSheetIds = const [],
   }) async {
-    final existing = await listTabs(spreadsheetId);
-    var nextId = existing.fold<int>(0, (m, t) => t.sheetId > m ? t.sheetId : m) + 1;
+    // The new tabs are referenced by the formatting requests of the same batch, so their ids are chosen here.
+    // Random ids (not "highest + 1") so two devices bootstrapping at once cannot pick the same one.
+    final used = {for (final t in await listTabs(spreadsheetId)) t.sheetId};
+    final random = Random.secure();
+    int newSheetId() {
+      int id;
+      do {
+        id = 1 + random.nextInt(0x3fffffff);
+      } while (!used.add(id));
+      return id;
+    }
 
     final requests = <sheets.Request>[];
     for (final spec in add) {
-      final sheetId = nextId++;
+      final sheetId = newSheetId();
       final columns = spec.columns;
       requests.add(
         sheets.Request(
