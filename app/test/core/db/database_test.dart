@@ -119,7 +119,10 @@ void main() {
   });
 
   group('docs/sheet-schema.md is canonical', () {
-    final doc = SchemaDoc();
+    // Read in setUpAll, not while the group is registered: a missing file then fails these tests with a clear
+    // error instead of aborting the whole test run.
+    late SchemaDoc doc;
+    setUpAll(() => doc = SchemaDoc());
 
     List<String> dbColumns(String table) => db.allTables
         .firstWhere((t) => t.actualTableName == table)
