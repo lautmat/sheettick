@@ -21,6 +21,13 @@ class _Unreachable extends FakeSheetsBackend {
   Future<List<SpreadsheetFile>> findSpreadsheets() => throw StateError('network unreachable');
 }
 
+/// A writer whose database write fails.
+class _FailingWriter extends LocalWriter {
+  _FailingWriter(super.store) : super(deviceId: 'win-test');
+  @override
+  Future<String> insert(String tab, Map<String, Object?> values) => throw StateError('disk full');
+}
+
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
@@ -97,6 +104,32 @@ void main() {
     expect(tasks.single.dirty, isTrue);
     expect(tasks.single.version, 1);
     expect(tasks.single.device, 'win-test');
+    await unmount(tester);
+  });
+
+  testWidgets('if saving fails the typed text comes back and the user is told', (tester) async {
+    await seedInbox(tester);
+    final failing = _FailingWriter(store);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          deviceIdProvider.overrideWith((ref) => 'win-test'),
+          sheetsBackendProvider.overrideWithValue(null),
+          localWriterProvider.overrideWith((ref) async => failing),
+        ],
+        child: const SheetTickApp(),
+      ),
+    );
+    await settle(tester);
+
+    await tester.enterText(find.byKey(const Key('addTaskField')), 'Important thing');
+    await tester.tap(find.byKey(const Key('addTaskButton')));
+    await settle(tester);
+
+    expect(find.textContaining('Could not save the task'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Important thing'), findsOneWidget);
+    expect(await tasksInDb(tester), isEmpty);
     await unmount(tester);
   });
 

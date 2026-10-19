@@ -254,9 +254,18 @@ class _AddBarState extends ConsumerState<_AddBar> {
   Future<void> _add() async {
     final title = _controller.text.trim();
     if (title.isEmpty) return;
+    // Cleared first so a second tap or Enter cannot add the same task twice while the write is in flight; the
+    // text is put back if the write fails, so nothing the user typed is lost.
     _controller.clear();
-    final writer = await ref.read(localWriterProvider.future);
-    await writer.insert('tasks', {'list_id': widget.listId, 'title': title});
+    try {
+      final writer = await ref.read(localWriterProvider.future);
+      await writer.insert('tasks', {'list_id': widget.listId, 'title': title});
+    } catch (e) {
+      if (!mounted) return;
+      if (_controller.text.isEmpty) _controller.text = title;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save the task: $e')));
+      return;
+    }
     ref.read(syncControllerProvider.notifier).requestSoon();
   }
 
