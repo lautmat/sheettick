@@ -1,6 +1,6 @@
 # app/
 
-The Flutter app lives here. It is generated in phase 0:
+The Flutter app lives here. Toolchain setup: [docs/dev-setup.md](../docs/dev-setup.md). It was generated in phase 0:
 
 ```
 flutter create --org com.lmathieu --project-name sheettick --platforms=windows,android .
