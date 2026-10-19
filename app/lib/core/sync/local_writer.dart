@@ -30,7 +30,11 @@ class LocalWriter {
       'device': deviceId,
       'deleted': false,
     });
-    await store.putRow(tab, LocalRow(fields: fields, dirty: true));
+    // putRow is an upsert; a caller-supplied id that already exists must not silently replace that row.
+    await store.transaction(() async {
+      if (await store.getRow(tab, id) != null) throw StateError('A $tab row with id $id already exists');
+      await store.putRow(tab, LocalRow(fields: fields, dirty: true));
+    });
     return id;
   }
 

@@ -61,12 +61,23 @@ class DriftLocalStore implements LocalStore {
 
   static const _bookkeeping = ['dirty', 'sheet_row', 'synced_hash', 'base_snapshot'];
 
-  TableInfo<Table, dynamic> _table(String tab) => _db.allTables.firstWhere((t) => t.actualTableName == tab);
+  /// The drift table for [tab]. Every method resolves its table name here first, so a name that is not one of
+  /// our tables never reaches the SQL built from it.
+  TableInfo<Table, dynamic> _table(String tab) => _db.allTables.firstWhere(
+    (t) => t.actualTableName == tab,
+    orElse: () => throw ArgumentError.value(tab, 'tab', 'not a table of the local database'),
+  );
 
+  /// [tab] as a quoted SQL identifier, after checking it is one of our tables. Every statement that names a
+  /// table goes through this, so nothing but a known table name is ever put into SQL.
+  String _ident(String tab) {
+    _table(tab);
+    return '"$tab"';
+  }
   Future<Map<String, _ColumnInfo>> _columns(String tab) async {
     final cached = _info[tab];
     if (cached != null) return cached;
-    final rows = await _db.customSelect('PRAGMA table_info($tab)').get();
+    final rows = await _db.customSelect('PRAGMA table_info(${_ident(tab)})').get();
     return _info[tab] = {
       for (final r in rows)
         r.read<String>('name'): _ColumnInfo(r.read<int>('notnull') == 1, _parseDefault(r.data['dflt_value'])),
@@ -92,10 +103,13 @@ class DriftLocalStore implements LocalStore {
     final out = <String, Object?>{};
     for (final c in tabSpec(tab).columns) {
       final v = fields[c.name];
-      out[c.name] = _fromDb(c.type, _toDb(c, v, info[c.name]!));
+      out[c.name] = _fromDb(c.type, _toDb(c, v, _infoFor(tab, info, c.name)));
     }
     return out;
   }
+
+  _ColumnInfo _infoFor(String tab, Map<String, _ColumnInfo> info, String column) =>
+      info[column] ?? (throw StateError('Column "$column" is missing from table "$tab": was the database migrated?'));
 
   Object? _toDb(ColumnSpec c, Object? v, _ColumnInfo info) {
     if (v == null) {
@@ -141,14 +155,14 @@ class DriftLocalStore implements LocalStore {
   @override
   Future<LocalRow?> getRow(String tab, String id) async {
     final rows = await _db
-        .customSelect('SELECT * FROM $tab WHERE id = ?1', variables: [Variable.withString(id)], readsFrom: {_table(tab)})
+        .customSelect('SELECT * FROM ${_ident(tab)} WHERE id = ?1', variables: [Variable.withString(id)], readsFrom: {_table(tab)})
         .get();
     return rows.isEmpty ? null : _decode(tab, rows.first.data);
   }
 
   @override
   Future<Map<String, LocalRow>> rowsById(String tab) async {
-    final rows = await _db.customSelect('SELECT * FROM $tab', readsFrom: {_table(tab)}).get();
+    final rows = await _db.customSelect('SELECT * FROM ${_ident(tab)}', readsFrom: {_table(tab)}).get();
     final out = <String, LocalRow>{};
     for (final r in rows) {
       final row = _decode(tab, r.data);
@@ -161,7 +175,7 @@ class DriftLocalStore implements LocalStore {
   Future<int> dirtyCount(Iterable<String> tabs) async {
     var n = 0;
     for (final tab in tabs) {
-      final r = await _db.customSelect('SELECT COUNT(*) AS n FROM $tab WHERE dirty = 1').getSingle();
+      final r = await _db.customSelect('SELECT COUNT(*) AS n FROM ${_ident(tab)} WHERE dirty = 1').getSingle();
       n += r.read<int>('n');
     }
     return n;
@@ -181,7 +195,7 @@ class DriftLocalStore implements LocalStore {
     final spec = tabSpec(tab);
     final names = [...spec.columnNames, ..._bookkeeping];
     final values = <Object?>[
-      for (final c in spec.columns) _toDb(c, row.fields[c.name], info[c.name]!),
+      for (final c in spec.columns) _toDb(c, row.fields[c.name], _infoFor(tab, info, c.name)),
       row.dirty ? 1 : 0,
       row.sheetRow,
       row.syncedHash,
@@ -190,26 +204,30 @@ class DriftLocalStore implements LocalStore {
     final placeholders = List.generate(names.length, (i) => '?${i + 1}').join(', ');
     final updates = names.where((n) => n != 'id').map((n) => '$n = excluded.$n').join(', ');
     await _db.customInsert(
-      'INSERT INTO $tab (${names.join(', ')}) VALUES ($placeholders) ON CONFLICT(id) DO UPDATE SET $updates',
+      'INSERT INTO ${_ident(tab)} (${names.join(', ')}) VALUES ($placeholders) ON CONFLICT(id) DO UPDATE SET $updates',
       variables: [for (final v in values) _variable(v)],
       updates: {_table(tab)},
     );
   }
 
   @override
-  Future<void> setSheetRow(String tab, String id, int? sheetRow) => _db.customUpdate(
-    'UPDATE $tab SET sheet_row = ?1 WHERE id = ?2',
-    variables: [_variable(sheetRow), Variable.withString(id)],
-    updates: {_table(tab)},
-    updateKind: UpdateKind.update,
-  );
+  Future<void> setSheetRow(String tab, String id, int? sheetRow) async {
+    await _db.customUpdate(
+      'UPDATE ${_ident(tab)} SET sheet_row = ?1 WHERE id = ?2',
+      variables: [_variable(sheetRow), Variable.withString(id)],
+      updates: {_table(tab)},
+      updateKind: UpdateKind.update,
+    );
+  }
 
   @override
-  Future<void> clearSheetRows(String tab) => _db.customUpdate(
-    'UPDATE $tab SET sheet_row = NULL',
-    updates: {_table(tab)},
-    updateKind: UpdateKind.update,
-  );
+  Future<void> clearSheetRows(String tab) async {
+    await _db.customUpdate(
+      'UPDATE ${_ident(tab)} SET sheet_row = NULL',
+      updates: {_table(tab)},
+      updateKind: UpdateKind.update,
+    );
+  }
 
   @override
   Future<void> markPushed(
@@ -221,7 +239,7 @@ class DriftLocalStore implements LocalStore {
     required Fields fields,
   }) => _db.transaction(() async {
     await _db.customUpdate(
-      'UPDATE $tab SET dirty = CASE WHEN version = ?1 THEN 0 ELSE dirty END, '
+      'UPDATE ${_ident(tab)} SET dirty = CASE WHEN version = ?1 THEN 0 ELSE dirty END, '
       'sheet_row = ?2, synced_hash = ?3, base_snapshot = ?4 WHERE id = ?5',
       variables: [
         Variable.withInt(pushedVersion),
