@@ -23,11 +23,15 @@ TasksCompanion _task(
 );
 
 /// The body of the `docs/sheet-schema.md` section whose heading line starts with [heading].
-String _section(String doc, String heading) => RegExp(
-  '^### ${RegExp.escape(heading)}[^\\n]*\\n(.*?)(?=^##|(?![\\s\\S]))',
-  multiLine: true,
-  dotAll: true,
-).firstMatch(doc)!.group(1)!;
+String _section(String doc, String heading) {
+  final match = RegExp(
+    '^### ${RegExp.escape(heading)}[^\\n]*\\n(.*?)(?=^##|(?![\\s\\S]))',
+    multiLine: true,
+    dotAll: true,
+  ).firstMatch(doc);
+  if (match == null) throw StateError('Section "### $heading" not found in docs/sheet-schema.md');
+  return match.group(1)!;
+}
 
 /// Column names declared for [heading] in the doc: either the first cell of each table row, or the
 /// backticked names of the one-line listing (ignoring parenthesised value lists and the "+ sync columns" tail).
@@ -143,8 +147,14 @@ void main() {
   });
 
   group('docs/sheet-schema.md is canonical', () {
-    final doc = File('../docs/sheet-schema.md').readAsStringSync();
-    final syncColumns = _docColumns(doc, 'Sync columns');
+    // Read inside setUpAll, not while the group is registered: a missing file then fails these tests with a
+    // clear error instead of aborting the whole test run.
+    late String doc;
+    late List<String> syncColumns;
+    setUpAll(() {
+      doc = File('../docs/sheet-schema.md').readAsStringSync();
+      syncColumns = _docColumns(doc, 'Sync columns');
+    });
 
     List<String> dbColumns(String table) => db.allTables
         .firstWhere((t) => t.actualTableName == table)

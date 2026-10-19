@@ -28,6 +28,12 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(sql);
       }
     },
+    // The FTS table and its triggers are created by hand in onCreate, so drift's generated migrations do not
+    // know about them. Fail loudly rather than let an upgraded install silently lack them: whoever raises
+    // schemaVersion must write the step, and re-run the relevant [ftsStatements] if they did not exist yet.
+    onUpgrade: (m, from, to) async => throw UnsupportedError(
+      'No migration from schema $from to $to. Write one in AppDatabase.migration.',
+    ),
   );
 
   /// Live tasks (not tombstoned) whose title or content matches [text], best match first.
