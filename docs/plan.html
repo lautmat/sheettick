@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Published copy: https://claude.ai/artifact/VzNiSZC713dkgwhyBeUvRV (private to the owner). Mermaid diagram renders only there; see docs/architecture.md. -->
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>SheetTick Build Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: single reading column (~72ch) with full-width tables in scroll wrappers; sheet-green accent, ink-indigo secondary. */
+:root{
+  --bg:#f7f8f6; --surface:#ffffff; --ink:#18201c; --muted:#5b6660; --line:#dfe4e0;
+  --accent:#137a4b; --accent-soft:#e3f2ea; --indigo:#3946a8; --indigo-soft:#e8eafa;
+  --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#a3322a; --bad-soft:#f8e3e1;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111614; --surface:#18201c; --ink:#e7ece9; --muted:#9aa7a0; --line:#2b3530;
+  --accent:#4cc28a; --accent-soft:#163428; --indigo:#9aa6f5; --indigo-soft:#232a52;
+  --warn:#e3a94a; --warn-soft:#3a2c12; --bad:#ef8a80; --bad-soft:#3d1c19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111614; --surface:#18201c; --ink:#e7ece9; --muted:#9aa7a0; --line:#2b3530;
+  --accent:#4cc28a; --accent-soft:#163428; --indigo:#9aa6f5; --indigo-soft:#232a52;
+  --warn:#e3a94a; --warn-soft:#3a2c12; --bad:#ef8a80; --bad-soft:#3d1c19; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px;display:grid;gap:56px}
+.prose{max-width:72ch}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,3rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.65rem;font-weight:700}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0}
+section{display:grid;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.lede{font-size:1.2rem;color:var(--muted);max-width:66ch}
+a{color:var(--indigo)}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+code{background:var(--indigo-soft);padding:1px 5px;border-radius:4px}
+.verdicts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.verdict{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:6px;align-content:start}
+.verdict .k{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.verdict .v{font-family:var(--f-display);font-size:1.25rem;font-weight:700}
+.verdict p{color:var(--muted);font-size:.95rem}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--bg);position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+td.group{font-family:var(--f-display);font-weight:700;background:var(--accent-soft);color:var(--ink);font-size:.95rem}
+.c{text-align:center;white-space:nowrap}
+.y{color:var(--accent);font-weight:700}.n{color:var(--muted)}.p{color:var(--warn);font-weight:700}
+.chip{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p0{background:var(--indigo-soft);color:var(--indigo)}
+.p1{background:var(--accent);color:var(--surface)}
+.p2{background:var(--accent-soft);color:var(--accent)}
+.p3{background:var(--warn-soft);color:var(--warn)}
+.pl{background:var(--line);color:var(--muted)}
+.src{font-size:.8rem;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:8px;align-content:start;min-width:0}
+.card ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.card li{font-size:.95rem}
+.stat{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent)}
+.mermaid{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto;margin:0}
+ol.steps{margin:0;padding-left:22px;display:grid;gap:8px}
+.phase{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+.phase:first-of-type{border-top:0}
+.phase .when{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);display:grid;gap:6px;align-content:start}
+.phase ul{margin:6px 0 0;padding-left:18px;display:grid;gap:3px}
+.phase .exit{margin-top:8px;font-size:.92rem;color:var(--muted)}
+@media (max-width:560px){.phase{grid-template-columns:1fr;gap:6px}}
+.schema{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
+.tab{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.tab h3{font-family:var(--f-mono);font-size:.85rem;padding:8px 12px;background:var(--accent-soft);color:var(--accent);border-bottom:1px solid var(--line)}
+.tab p{padding:10px 12px;font-family:var(--f-mono);font-size:.78rem;line-height:1.7;color:var(--ink);word-break:break-word}
+.note{border-left:3px solid var(--indigo);background:var(--indigo-soft);padding:12px 16px;border-radius:0 8px 8px 0;font-size:.95rem}
+.legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem;color:var(--muted)}
+footer{font-size:.85rem;color:var(--muted);display:grid;gap:6px}
+footer ul{margin:0;padding-left:18px;display:grid;gap:3px}
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:16px">
+  <span class="eyebrow">Project plan · 19 Oct 2026</span>
+  <h1>SheetTick: your own TickTick, stored in your Google Sheet</h1>
+  <p class="lede">A Windows and Android task app with TickTick's feature set, where every task, list, habit and focus session lives as a readable row in a spreadsheet you own. This page covers what TickTick actually contains (from a REA reverse-engineering pass on the Windows app plus the official docs), whether something like this already exists, and how to build it.</p>
+  <div class="verdicts">
+    <div class="verdict"><span class="k">Already exists?</span><span class="v">No</span><p>Nothing combines TickTick-level features, native Windows + Android apps and Google Sheets storage. The closest open-source apps miss at least two of the three.</p></div>
+    <div class="verdict"><span class="k">Recommended stack</span><span class="v">Flutter + SQLite + Sheets API</span><p>One codebase for both apps. Local-first database on each device, synced to the Sheet. No server to run.</p></div>
+    <div class="verdict"><span class="k">Effort</span><span class="v">~12 weeks, 4 phases</span><p>Usable daily driver after phase 1 (~5 weeks). Estimate assumes one developer working part-time with Claude Code.</p></div>
+  </div>
+</header>
+
+<section>
+  <span class="eyebrow">Market check</span>
+  <h2>Does this already exist?</h2>
+  <p class="prose">I checked self-hosted and open-source TickTick alternatives and Sheets-backed to-do projects. Two kinds of project come close: full-featured apps that sync elsewhere, and small Sheets-backed web apps with almost no features.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Project</th><th class="c">Windows</th><th class="c">Android</th><th class="c">Google Sheets</th><th class="c">Kanban</th><th class="c">Habits</th><th class="c">Pomodoro</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td><b>Super Productivity</b><br><span class="src">MIT · Electron + Capacitor</span></td><td class="c y">✓</td><td class="c y">✓</td><td class="c n">✗</td><td class="c y">✓</td><td class="c n">✗</td><td class="c y">✓</td><td>Closest overall. Syncs one data file via WebDAV or Dropbox, so a fork could only store an unreadable blob in Sheets.</td></tr>
+      <tr><td><b>Vikunja</b><br><span class="src">AGPL · server + web</span></td><td class="c p">web</td><td class="c p">via CalDAV</td><td class="c n">✗</td><td class="c y">✓</td><td class="c n">✗</td><td class="c n">✗</td><td>Needs a server you run. No official Android app; people use Tasks.org over CalDAV.</td></tr>
+      <tr><td><b>Tasks.org</b></td><td class="c n">✗</td><td class="c y">✓</td><td class="c n">✗</td><td class="c n">✗</td><td class="c n">✗</td><td class="c n">✗</td><td>Excellent Android client, but Android only.</td></tr>
+      <tr><td><b>OpenTodoList</b><br><span class="src">Qt</span></td><td class="c y">✓</td><td class="c y">✓</td><td class="c n">✗</td><td class="c n">✗</td><td class="c n">✗</td><td class="c n">✗</td><td>Stores items as files you sync with Dropbox and similar tools. Basic features.</td></tr>
+      <tr><td><b>Sheets to-do web apps</b><br><span class="src">0xD61C-0xC6D0/todo-app, sammulla47/todo-app</span></td><td class="c p">web</td><td class="c p">PWA</td><td class="c y">✓</td><td class="c n">✗</td><td class="c n">✗</td><td class="c n">✗</td><td>Prove the Apps Script + Sheet pattern works. Useful reference, but a single flat task list with no offline mode or reminders.</td></tr>
+      <tr><td><b>TickTick</b> (for reference)</td><td class="c y">✓</td><td class="c y">✓</td><td class="c n">✗</td><td class="c y">✓</td><td class="c y">✓</td><td class="c y">✓</td><td>The target. Closed source, with your data on their servers.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="prose"><b>Conclusion:</b> build it rather than fork. Forking Super Productivity gets you apps fastest, but its sync model can't produce a spreadsheet you can read and edit, which is the whole point of the project.</p>
+</section>
+
+<section>
+  <span class="eyebrow">REA investigation · TickTick for Windows</span>
+  <h2>What's inside the Windows app</h2>
+  <p class="prose">I ran REA (<code>rea-agents</code> 6.7.0) on your installed <code>TickTick.exe</code>, using <code>inspect-managed-artifact</code> for identity and metadata, then <code>inspect-managed-members --type …</code> on chosen types, because the whole assembly is over REA's 64 MB decode budget. The installed build is <b>4.0.8.0 from December 2021</b>: a .NET Framework 4.5.2 WPF app for x64. The current release line is 8.x, so features added after 2021 (Countdown, Timeline, AI) were mapped from TickTick's official docs instead.</p>
+  <div class="cols">
+    <div class="card"><h3>Size of the app</h3><ul>
+      <li><span class="stat">6,295</span> types, <span class="stat">32,922</span> methods</li>
+      <li><span class="stat">187</span> compiled XAML screens and dialogs</li>
+      <li><span class="stat">52</span> DAO classes (local SQLite tables)</li>
+      <li><span class="stat">122</span> API endpoints in <span class="stat">25</span> groups</li>
+      <li><span class="stat">17</span> themes (Tokyo, London, Spring…), 5 UI languages</li>
+    </ul></div>
+    <div class="card"><h3>Feature modules (types per area)</h3><ul>
+      <li>Calendar <span class="stat">41</span> · Habit <span class="stat">30</span> · Config <span class="stat">28</span></li>
+      <li>Time / date pickers <span class="stat">22</span> · Pomodoro <span class="stat">17</span> · Search <span class="stat">17</span></li>
+      <li>Task list <span class="stat">22</span> · Tag <span class="stat">15</span> · Widget <span class="stat">14</span> · Print <span class="stat">14</span></li>
+      <li>Markdown editor <span class="stat">14</span> · Filter <span class="stat">13</span> · Detail <span class="stat">13</span></li>
+      <li>Quick add <span class="stat">11</span> · Kanban <span class="stat">10</span> · Lock <span class="stat">4</span> · Eisenhower <span class="stat">3</span></li>
+    </ul></div>
+    <div class="card"><h3>How TickTick syncs</h3><ul>
+      <li>Every device works on a <b>local SQLite</b> copy</li>
+      <li>Each row carries <code>etag</code> and <code>syncStatus</code> (dirty flag)</li>
+      <li><code>SyncService</code>: commit dirty rows in batches (<code>/api/v2/batch/task</code>, <code>…/project</code>, <code>…/tag</code>…), then pull changes since a saved checkpoint</li>
+      <li>A WebSocket (<code>wss://wss.ticktick.com/pc</code>) only signals "need sync"</li>
+    </ul></div>
+    <div class="card"><h3>Libraries, and what SheetTick uses instead</h3><ul>
+      <li>Ical.Net (RRULE recurrence) → <code>rrule</code> (Dart)</li>
+      <li>SmartDateDLL (natural-language dates) → custom parser</li>
+      <li>CommonMark + AvalonEdit (Markdown notes) → <code>flutter_markdown</code> / editor</li>
+      <li>NHotkey (global quick-add hotkey) → <code>hotkey_manager</code></li>
+      <li>KotlinMultiplatformAll.dll: TickTick shares business logic with Android through Kotlin Multiplatform</li>
+    </ul></div>
+  </div>
+  <p class="note">The data model below comes straight from REA's field listing of TickTick's model classes, including <code>TaskModel</code> (54 fields), <code>HabitModel</code> (27), <code>ProjectModel</code> (25), <code>PomodoroModel</code>, <code>HabitCheckInModel</code>, <code>TaskDetailItemModel</code> (checklist items) and <code>FilterModel</code>. SheetTick keeps the same concepts and drops the team and sharing fields.</p>
+</section>
+
+<section>
+  <span class="eyebrow">REA investigation · TickTick for Android</span>
+  <h2>What's inside the Android app</h2>
+  <p class="prose">I ran REA's JADX provider (jadx-headless-mcp 0.7.1, on JDK 21) on <code>base.apk</code>, pulled from the APKMirror bundle you downloaded: <b>com.ticktick.task 8.2.2.0</b> (build 8220, 26 Sep 2026), min Android 8.0, target SDK 37. I used <code>inspect-android-package</code> for the manifest, <code>search-android-classes</code> for the class inventory, and <code>inspect-android-class</code> on eight entity classes. Unlike the Windows build, this is the current release, so it also covers the post-2021 features. TickTick's own download link turned out to serve GNotes (<code>org.dayup.gnotes</code> 1.8.4.5), an old notes app from the same company, so I didn't use it.</p>
+  <div class="cols">
+    <div class="card"><h3>Size of the app</h3><ul>
+      <li><span class="stat">23,285</span> classes, <span class="stat">6,450</span> of them TickTick's own</li>
+      <li><span class="stat">253</span> activities, <span class="stat">55</span> services, <span class="stat">53</span> receivers</li>
+      <li><span class="stat">27</span> home-screen widget types</li>
+      <li><span class="stat">2</span> Quick Settings tiles (quick add, voice add)</li>
+      <li>Kotlin with classic Android Views, greenDAO over SQLite, heavily obfuscated</li>
+    </ul></div>
+    <div class="card"><h3>Widgets (27 providers)</h3><ul>
+      <li>Tasks: list 4×4, scrollable, undone count, quick add, completion</li>
+      <li>Calendar: today, 3-day, week, grid, grid-week</li>
+      <li>Habits: single, week, month, progress 2×2 and 4×2</li>
+      <li>Focus: Pomodoro, single timer, daily focus, focus distribution (3 sizes)</li>
+      <li>Other: Eisenhower matrix, countdown list, single countdown, class timetable</li>
+    </ul></div>
+    <div class="card"><h3>Android-only capture</h3><ul>
+      <li><b>Quick Ball</b>: floating add button over other apps (<code>QuickBallService</code>, overlay permission)</li>
+      <li>Share target for text, images and multiple files (<code>ShareReceiveActivity</code>)</li>
+      <li>"Add to TickTick" in any app's text-selection menu (<code>PROCESS_TEXT</code>)</li>
+      <li>Voice notes with recorder service and AI transcription (<code>ai.audio_parse</code>)</li>
+      <li>Document scanner for attachments (ML Kit)</li>
+    </ul></div>
+    <div class="card"><h3>Reminders, focus, devices</h3><ul>
+      <li>Exact alarms plus full-screen, alarm-style reminders; "annoying alert" = constant reminder</li>
+      <li>Location reminders via geofences: latitude, longitude, radius, enter or exit</li>
+      <li>Floating focus timer window, full-screen timer, flip-phone-to-focus</li>
+      <li>Watches: Wear OS plus Huawei, Honor, Xiaomi and Vivo helpers</li>
+      <li>AI assistant runs in a WebView with a JavaScript bridge (115 classes)</li>
+    </ul></div>
+  </div>
+  <p class="note">The Android entities match the Windows ones field for field (<code>Task2</code> ↔ <code>TaskModel</code>, same <code>etag</code>/<code>syncStatus</code> sync columns), which confirms one shared server data model. Newer entities fill in the gaps in the Sheet layout: <code>Countdown</code> (4 types: countdown, anniversary, birthday, holiday; count-up mode; lunar calendar; 8 card styles), <code>Timer</code> (named Pomodoro or stopwatch timers linked to a task or habit), <code>Location</code> (geofence reminders), and <code>Habit</code> with <code>currentStreak</code>, <code>maxStreak</code> and skipped dates.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Feature map</span>
+  <h2>TickTick features and when SheetTick gets them</h2>
+  <div class="legend"><span class="chip p1">P1</span>core, weeks 2–5 <span class="chip p2">P2</span>views &amp; focus, weeks 6–9 <span class="chip p3">P3</span>polish, weeks 10–12 <span class="chip pl">Later</span>optional or skipped</div>
+  <div class="tbl"><table>
+    <thead><tr><th>Feature</th><th class="c">TickTick Win</th><th class="c">TickTick Android</th><th>Phase</th><th>Notes for SheetTick</th></tr></thead>
+    <tbody>
+      <tr><td class="group" colspan="5">Tasks</td></tr>
+      <tr><td>Lists, folders, Inbox, sections in lists</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>Tabs <code>lists</code>, <code>folders</code>, <code>sections</code></td></tr>
+      <tr><td>Title, Markdown notes, priority (none/low/med/high), nested tags</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>Same priority values as TickTick (0/1/3/5) so imports map directly</td></tr>
+      <tr><td>Subtasks and checklist items</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td><code>parent_id</code> for subtasks, separate <code>checklist</code> tab</td></tr>
+      <tr><td>Start/due date, time, all-day, duration, time zone</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>Stored as ISO 8601 text, so it stays readable in the Sheet</td></tr>
+      <tr><td>Multiple reminders, snooze from the notification</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>Scheduled on each device, so they work offline</td></tr>
+      <tr><td>Constant reminder (keeps ringing until handled)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td>Added June 2026</td></tr>
+      <tr><td>Recurrence: custom rules, repeat from completion, skip</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>RRULE text column, like TickTick's own <code>repeatFlag</code></td></tr>
+      <tr><td>Smart date recognition in quick add ("fri 3pm #work !high")</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>Parser for English and French</td></tr>
+      <tr><td>Smart lists: Today, Tomorrow, Next 7 Days, All, Completed, Won't Do, Trash</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>Local SQLite queries, no Sheet calls</td></tr>
+      <tr><td>Full-text search with filters</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td>SQLite FTS5</td></tr>
+      <tr><td>Sort and group (date, priority, list, tag, created/modified)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td></td></tr>
+      <tr><td>Undo, drag-and-drop reorder and move</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td></td></tr>
+      <tr><td>Batch edit (multi-select)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td></td></tr>
+      <tr><td>Custom filters (AND/OR rule builder)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td>Rule stored as JSON in <code>filters</code></td></tr>
+      <tr><td>Notes (note-type items) and Summary report</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td><code>kind</code> = TEXT / CHECKLIST / NOTE</td></tr>
+      <tr><td>Templates</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td></td></tr>
+      <tr><td class="group" colspan="5">Views</td></tr>
+      <tr><td>Kanban board per list</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td>Columns map to sections</td></tr>
+      <tr><td>Calendar: day, multi-day, week, month</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td></td></tr>
+      <tr><td>Year view with heatmap</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td>Added in v8.0 (Jan 2026)</td></tr>
+      <tr><td>Timeline (light Gantt)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td></td></tr>
+      <tr><td>Eisenhower matrix (configurable quadrants)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td></td></tr>
+      <tr><td>Drag unscheduled tasks onto the calendar</td><td class="c y">✓</td><td class="c p">partial</td><td><span class="chip p3">P3</span></td><td>Desktop-first</td></tr>
+      <tr><td class="group" colspan="5">Focus, habits, countdowns</td></tr>
+      <tr><td>Pomodoro and stopwatch linked to a task, with focus stats</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td><code>focus</code> tab, one row per session</td></tr>
+      <tr><td>White noise and ambient sounds</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td></td></tr>
+      <tr><td>Habits: frequency, goal amount and unit, check-in log, streaks, sections</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td><code>habits</code> and <code>habit_checkins</code> tabs</td></tr>
+      <tr><td>Countdowns and anniversaries</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td>Added May 2025</td></tr>
+      <tr><td>Statistics and achievements</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td>You can also chart these directly in the Sheet</td></tr>
+      <tr><td class="group" colspan="5">Integrations</td></tr>
+      <tr><td>Import from TickTick</td><td class="c n">n/a</td><td class="c n">n/a</td><td><span class="chip p1">P1</span></td><td>One-time migration via TickTick's CSV backup or its MCP (already connected in this Claude session)</td></tr>
+      <tr><td>Google Calendar overlay</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td>Read-only, Calendar API</td></tr>
+      <tr><td>Attachments (images, files, audio)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td>Files go to a Drive folder, the Sheet stores the file ID</td></tr>
+      <tr><td>Sharing, assignees, comments, activity log</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip pl">Later</span></td><td>Single-user app. Sharing the Sheet covers simple cases</td></tr>
+      <tr><td>AI assistant, AI voice add, MCP</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip pl">Later</span></td><td>Claude can already read and write your Sheet through the Sheets connector</td></tr>
+      <tr><td>Telegram bot, email-to-task</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip pl">Later</span></td><td>A small Apps Script add-on</td></tr>
+      <tr><td class="group" colspan="5">Windows-specific</td></tr>
+      <tr><td>Global hotkey quick-add window</td><td class="c y">✓</td><td class="c n">–</td><td><span class="chip p2">P2</span></td><td></td></tr>
+      <tr><td>System tray, start with Windows, mini mode</td><td class="c y">✓</td><td class="c n">–</td><td><span class="chip p2">P2</span></td><td>Tray keeps reminders working while the window is closed</td></tr>
+      <tr><td>Keyboard shortcuts</td><td class="c y">✓</td><td class="c n">–</td><td><span class="chip p2">P2</span></td><td></td></tr>
+      <tr><td>Desktop widgets and sticky notes (list, calendar, habits)</td><td class="c y">✓</td><td class="c n">–</td><td><span class="chip p3">P3</span></td><td>Always-on-top frameless windows</td></tr>
+      <tr><td>Print (list, day, week, month)</td><td class="c y">✓</td><td class="c n">–</td><td><span class="chip pl">Later</span></td><td></td></tr>
+      <tr><td class="group" colspan="5">Android-specific</td></tr>
+      <tr><td>Home-screen widgets (27 types in TickTick)</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td>Task list and quick-add widgets in P2; calendar, habit, focus and countdown widgets in P3</td></tr>
+      <tr><td>Quick Settings tiles (quick add, voice add) and notification-bar quick add</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td></td></tr>
+      <tr><td>Share to app, and "add as task" from selected text in any app</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td><code>SEND</code> and <code>PROCESS_TEXT</code> intent filters</td></tr>
+      <tr><td>Voice input</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td>Android speech-to-text, then the date parser</td></tr>
+      <tr><td>Full-screen, alarm-style reminders</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip p2">P2</span></td><td>Pairs with constant reminder</td></tr>
+      <tr><td>Floating focus timer and flip-to-focus</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td></td></tr>
+      <tr><td>Quick Ball (floating add button over other apps)</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip pl">Later</span></td><td>Needs the overlay permission</td></tr>
+      <tr><td>Voice notes with transcription, document scanner</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip pl">Later</span></td><td></td></tr>
+      <tr><td>Location reminders (geofence, enter or exit)</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip pl">Later</span></td><td>Needs background location; <code>locations</code> tab is ready for it</td></tr>
+      <tr><td>Wear OS and other watches, class timetable</td><td class="c n">–</td><td class="c y">✓</td><td><span class="chip pl">Later</span></td><td></td></tr>
+      <tr><td class="group" colspan="5">Both: settings and look</td></tr>
+      <tr><td>Light and dark mode</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p1">P1</span></td><td></td></tr>
+      <tr><td>Themes, card style, list backgrounds</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td></td></tr>
+      <tr><td>App lock (password on Windows, biometrics on Android)</td><td class="c y">✓</td><td class="c y">✓</td><td><span class="chip p3">P3</span></td><td></td></tr>
+    </tbody>
+  </table></div>
+  <p class="src">The Android column is confirmed by REA on build 8.2.2.0 (manifest components and class inventory). Windows ✓ for 2021-era features is confirmed in the REA module inventory of build 4.0.8. Post-2021 Windows features come from the TickTick help center.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Architecture</span>
+  <h2>How it fits together</h2>
+  <pre class="mermaid">
+flowchart LR
+  subgraph W["Windows app (Flutter)"]
+    WU["UI: lists, calendar, kanban, focus, habits"] --> WD[("SQLite + FTS5")]
+    WD --> WS["Sync engine"]
+    WN["Toast reminders + tray + hotkey"] --- WD
+  end
+  subgraph A["Android app (Flutter)"]
+    AU["UI + widgets + share target"] --> AD[("SQLite + FTS5")]
+    AD --> AS["Sync engine (WorkManager)"]
+    AN["Exact-alarm reminders"] --- AD
+  end
+  WS <-->|"Sheets API v4, batched"| G[("Your Google Sheet: tasks, lists, habits, focus…")]
+  AS <-->|"Sheets API v4, batched"| G
+  WS -.->|"change check"| DR["Drive API: modifiedTime"]
+  AS -.-> DR
+  G --- AT["Drive folder: attachments"]
+  G -.- GS["Optional Apps Script: nightly archive, email/Telegram reminders"]
+  </pre>
+  <div class="cols">
+    <div class="card"><h3>Why Flutter</h3><ul>
+      <li>One Dart codebase builds a native Windows app and an Android app</li>
+      <li>Mature packages for local notifications on both platforms, Android home-screen widgets, Windows tray and global hotkeys, and SQLite (drift)</li>
+      <li>Considered: Compose Multiplatform (what TickTick uses for shared logic, but its desktop target runs on the JVM), Tauri 2 (Android support is younger), .NET MAUI (smaller ecosystem)</li>
+    </ul></div>
+    <div class="card"><h3>Why local-first</h3><ul>
+      <li>The app reads and writes SQLite, so it's instant and works offline</li>
+      <li>The Sheet is the shared source of truth, not a live database</li>
+      <li>Same pattern REA found in TickTick: dirty flags, batch commit, pull from a checkpoint</li>
+      <li>Reminders are scheduled on each device, so no server is needed</li>
+    </ul></div>
+    <div class="card"><h3>Google access</h3><ul>
+      <li>Your own Google Cloud project with the Sheets and Drive APIs enabled</li>
+      <li>OAuth scope <code>drive.file</code>: the app sees only the Sheet and folder it created, and the scope is non-sensitive, so no Google review</li>
+      <li>Android uses Google Sign-In. Windows uses the desktop loopback OAuth flow</li>
+      <li>Apps Script is optional, for background jobs only. You already deploy with clasp</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Database</span>
+  <h2>The Google Sheet layout</h2>
+  <p class="prose">One spreadsheet with one tab per entity. Row 1 holds column names, and every row has <code>id</code> (UUID), <code>updated_at</code>, <code>version</code>, <code>device</code> and <code>deleted</code>. Rows are never physically deleted during normal use. A separate read-only <code>View</code> tab uses <code>QUERY()</code> formulas to give you a clean, sorted overview without touching the raw tabs.</p>
+  <div class="schema">
+    <div class="tab"><h3>tasks</h3><p>id · list_id · parent_id · section_id · kind · title · content · priority · status · start_at · due_at · all_day · duration_min · tz · rrule · repeat_from · ex_dates · reminders · tags · sort_order · pinned_at · completed_at · created_at · updated_at · version · device · deleted</p></div>
+    <div class="tab"><h3>checklist</h3><p>id · task_id · title · status · sort_order · start_at · all_day · completed_at · updated_at · version · deleted</p></div>
+    <div class="tab"><h3>lists · folders · sections</h3><p>id · name · folder_id · color · kind · view (list/kanban/timeline) · sort_order · is_inbox · muted · archived · updated_at · version · deleted</p></div>
+    <div class="tab"><h3>tags · filters</h3><p>id · name · color · parent · sort_order · rule_json (filters) · updated_at · version · deleted</p></div>
+    <div class="tab"><h3>habits</h3><p>id · name · icon · color · section · type · goal · step · unit · rrule · reminders · constant_alert · target_days · target_start · encouragement · current_streak · max_streak · skipped_dates · status · archived_at · sort_order · updated_at · version · deleted</p></div>
+    <div class="tab"><h3>habit_checkins</h3><p>id · habit_id · date · value · goal · status · updated_at · version · deleted</p></div>
+    <div class="tab"><h3>focus · timers</h3><p>focus: id · task_id · timer_id · type (pomo/stopwatch) · start_at · end_at · pause_sec · status · note · updated_at · version · deleted<br>timers: id · name · type · linked_type (task/habit) · linked_id · pomo_minutes · color · icon · status · sort_order</p></div>
+    <div class="tab"><h3>countdowns</h3><p>id · name · type (countdown/anniversary/birthday/holiday) · mode (down/up) · date · calendar (solar/lunar) · ignore_year · show_age · day_one_option · rrule · reminders · style · color · note · pinned_at · archived_at · sort_order · updated_at · version · deleted</p></div>
+    <div class="tab"><h3>locations · attachments · meta</h3><p>locations: task_id · alias · address · lat · lng · radius_m · trigger (enter/exit)<br>attachments: task_id · drive_file_id · name · mime · size<br>meta: schema_version · compaction_epoch · settings_json</p></div>
+  </div>
+  <p class="src">Capacity: a spreadsheet holds up to 10 million cells. 20,000 tasks × 27 columns is about 0.5 M cells. Completed tasks older than a year move to an archive spreadsheet.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Sync engine</span>
+  <h2>One sync cycle</h2>
+  <p class="prose">A sync runs when the app opens or regains focus, 3 seconds after an edit, every 2 minutes while open, and every 15 minutes in the background on Android. A normal cycle makes 2 to 4 API requests, well under the Sheets limit of 60 requests per user per minute.</p>
+  <ol class="steps">
+    <li><b>Check for changes.</b> Ask the Drive API for the Sheet's <code>modifiedTime</code>. If it hasn't changed since the last pull and nothing local is dirty, stop.</li>
+    <li><b>Pull.</b> Fetch all tabs with one <code>values.batchGet</code> request. For each row, compare it with the local copy. A higher <code>version</code> wins. If the version is the same but the row's content hash changed, you edited it by hand in Sheets, and SheetTick accepts that edit.</li>
+    <li><b>Resolve conflicts.</b> If a row changed on both sides, fields that differ on only one side are merged. Fields changed on both sides go to the most recent <code>updated_at</code>.</li>
+    <li><b>Push.</b> Write updated rows with one <code>values.batchUpdate</code> (by cached row number, checked against <code>id</code>). Add new rows with one <code>append</code> per tab. Clear the dirty flags and save the new row numbers.</li>
+    <li><b>Reschedule reminders</b> for anything that changed, so both devices stay in step.</li>
+  </ol>
+  <p class="note">Rule for manual edits in the Sheet: edit cell values freely, but don't sort, insert or delete rows in the raw tabs. Use the <code>View</code> tab for sorting. Compaction (actually deleting old tombstones) runs as a nightly Apps Script job under a lock. It bumps <code>meta.compaction_epoch</code>, which tells clients to rebuild their row-number cache.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Roadmap</span>
+  <h2>Build phases</h2>
+  <div>
+    <div class="phase"><div class="when"><span class="chip p0">P0</span>Week 1</div><div><h3>Foundations</h3><ul>
+      <li>Google Cloud project, OAuth consent screen, Sheets and Drive APIs</li>
+      <li>Flutter project with Windows and Android targets, drift schema, sheet bootstrap (create the spreadsheet and tabs on first sign-in)</li>
+      <li>Sync engine skeleton with a test spreadsheet and an automated two-device conflict test</li>
+    </ul><p class="exit">Done when a task created on Windows appears on Android through the Sheet, and an offline edit syncs correctly.</p></div></div>
+    <div class="phase"><div class="when"><span class="chip p1">P1</span>Weeks 2–5</div><div><h3>Daily driver</h3><ul>
+      <li>Lists, folders, sections, tasks, subtasks, checklists, tags, priority</li>
+      <li>Dates, reminders, snooze, RRULE recurrence, smart date parsing in quick add</li>
+      <li>Smart lists, search, sorting and grouping, undo, drag and drop, trash</li>
+      <li>One-time import of your TickTick data</li>
+    </ul><p class="exit">Done when you can stop using TickTick for everyday tasks.</p></div></div>
+    <div class="phase"><div class="when"><span class="chip p2">P2</span>Weeks 6–9</div><div><h3>Views, focus and habits</h3><ul>
+      <li>Calendar (day, week, month), Kanban, Eisenhower matrix, custom filters, batch edit</li>
+      <li>Pomodoro and stopwatch with stats, habit tracker with check-ins and streaks, notes</li>
+      <li>Windows: tray, global quick-add hotkey, shortcuts. Android: list widget, notification-bar quick add, share target, voice input</li>
+    </ul><p class="exit">Done when every feature you use weekly in TickTick has an equivalent.</p></div></div>
+    <div class="phase"><div class="when"><span class="chip p3">P3</span>Weeks 10–12</div><div><h3>Polish</h3><ul>
+      <li>Countdowns, timeline, year heatmap, templates, statistics, ambient sounds</li>
+      <li>Google Calendar overlay, Drive attachments, desktop sticky widgets, more Android widgets</li>
+      <li>Themes, app lock, nightly archive and compaction job, MSIX installer and signed APK</li>
+    </ul><p class="exit">Done when both apps are installable builds you'd keep for good.</p></div></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Risks</span>
+  <h2>What could go wrong</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Google OAuth apps in "Testing" status issue refresh tokens that expire after 7 days, which forces a weekly sign-in</td><td>If lmathieu.com is a Google Workspace domain, set the consent screen to <b>Internal</b>. Otherwise publish it to <b>Production</b>. With only the non-sensitive <code>drive.file</code> scope, Google doesn't require verification.</td></tr>
+      <tr><td>Manual sorting or row deletion in the Sheet breaks row-number lookups</td><td>Every write checks <code>id</code> before writing and falls back to a full re-index when it doesn't match. A warning row and the <code>View</code> tab steer you away from editing the raw tabs' structure.</td></tr>
+      <tr><td>Both devices edit the same task while offline</td><td>Field-level merge, then most recent edit wins per field. An automated conflict test from P0 onward.</td></tr>
+      <tr><td>Android delays background work and alarms</td><td>Exact-alarm permission for reminders (a user grant on Android 14+), WorkManager for sync, and a prompt to exempt the app from battery optimization.</td></tr>
+      <tr><td>Windows reminders stop when the app is closed</td><td>The app minimizes to the tray and starts with Windows. Optionally, Apps Script emails or pushes critical reminders.</td></tr>
+      <tr><td>Sheets API quota (60 requests per minute per user)</td><td>Batched requests, the cheap Drive change check, and exponential backoff on HTTP 429.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Next</span>
+  <h2>Decisions and follow-ups</h2>
+  <div class="cols">
+    <div class="card"><h3>Your decisions</h3><ul>
+      <li>App name (SheetTick is a placeholder)</li>
+      <li>Is lmathieu.com on Google Workspace? This decides the OAuth setup.</li>
+      <li>Which project folder and repository to build in</li>
+      <li>Confirm the P1 scope, or move features between phases</li>
+    </ul></div>
+    <div class="card"><h3>Suggested follow-ups</h3><ul>
+      <li>Optional: update TickTick for Windows to the current 8.x build and rerun REA, to confirm the desktop-only parts of the post-2021 features (sticky notes, card style)</li>
+      <li>Optional: use REA's <code>inspect-android-method</code> on TickTick's date parser and recurrence code when building quick add, to match its behavior on edge cases</li>
+      <li>Start P0: Cloud project, Flutter skeleton, Sheet bootstrap</li>
+    </ul></div>
+  </div>
+</section>
+
+<footer>
+  <b>Sources</b>
+  <ul>
+    <li>REA: <a href="https://rea.tools/">rea.tools</a>, <a href="https://github.com/morluto/rea/blob/main/docs/managed-code-analysis.md">managed-code analysis guide</a>; local runs on TickTick.exe 4.0.8.0 (SHA-256 140a6937…c19d) and on base.apk from <a href="https://www.apkmirror.com/apk/ticktick-limited/ticktick-to-do-list-with-reminder-day-planner/ticktickto-do-list-calendar-8-2-2-0-release/">APKMirror's TickTick 8.2.2.0 bundle</a> (bundle SHA-256 0ec607a4…a19d), analyzed with <a href="https://github.com/morluto/rea/blob/main/docs/android-analysis.md">REA's Android provider</a></li>
+    <li><a href="https://help.ticktick.com/articles/7082552170989486080">TickTick help center: What's New</a> · <a href="https://play.google.com/store/apps/details?id=com.ticktick.task&amp;hl=en">TickTick on Google Play</a> · <a href="https://alternativeto.net/news/2024/10/ticktick-unveils-major-update-with-new-weekly-view">AlternativeTo: TickTick weekly view</a> · <a href="https://work-management.org/tasks/ticktick-review/">work-management.org review</a> · <a href="https://crm.org/news/ticktick-review">crm.org review</a></li>
+    <li><a href="https://alternativeto.net/software/ticktick/?platform=self-hosted">Self-hosted TickTick alternatives</a> · <a href="https://github.com/super-productivity/super-productivity">Super Productivity</a> · <a href="https://super-productivity.com/blog/private-alternatives-todoist-ticktick-notion-microsoft-todo/">Super Productivity: private alternatives</a> · <a href="https://community.vikunja.io/t/android-app-resurrection/593">Vikunja Android thread</a> · <a href="https://docs.elfhosted.com/app/vikunja/">Vikunja CalDAV with Tasks.org</a> · <a href="https://opentodolist.rpdev.net/">OpenTodoList</a></li>
+    <li><a href="https://github.com/0xD61C-0xC6D0/todo-app">0xD61C-0xC6D0/todo-app</a> · <a href="https://github.com/sammulla47/todo-app">sammulla47/todo-app</a> · <a href="https://developers.google.com/sheets/api/limits">Google Sheets API usage limits</a></li>
+  </ul>
+</footer>
+
+</div>
+
+</body>
+</html>

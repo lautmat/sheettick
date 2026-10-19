@@ -1,0 +1,47 @@
+# Secrets (never commit)
+app/secrets/*
+!app/secrets/README.md
+*.env
+.env*
+client_secret*.json
+credentials*.json
+token*.json
+*.keystore
+*.jks
+key.properties
+.clasprc.json
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/generated_plugin_registrant.*
+coverage/
+*.g.dart.tmp
+
+# Android
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+*.apk
+*.aab
+*.apkm
+
+# Windows
+**/windows/flutter/ephemeral/
+*.msix
+
+# IDEs and OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

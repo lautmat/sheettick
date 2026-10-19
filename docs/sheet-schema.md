@@ -1,0 +1,123 @@
+# Google Sheet schema (canonical)
+
+Schema version: **1**. This file is the single source of truth for the spreadsheet layout.
+Any change here must be mirrored in the drift schema, the sheet bootstrap code, and `meta.schema_version`.
+
+One spreadsheet, created by the app on first sign-in (so it is reachable with the `drive.file` scope),
+named `SheetTick`. One tab per entity. **Row 1 is the header row** with the exact column names below.
+Column order in the Sheet follows this document; the app locates columns by header name, not position.
+
+## Conventions
+
+| Topic | Rule |
+| --- | --- |
+| IDs | UUID v4 strings, generated on the device that creates the row. |
+| Timestamps | UTC ISO 8601 with `Z`, e.g. `2026-10-19T13:05:00Z`. |
+| Dates with a time | ISO 8601 with offset, plus `tz` (IANA name) when the item has one. |
+| All-day dates | `YYYY-MM-DD` and `all_day = TRUE`. |
+| Booleans | `TRUE` / `FALSE` (Sheets native). |
+| Lists of values | `tags`: comma-separated tag names. `reminders`, `ex_dates`, `skipped_dates`: JSON arrays. |
+| Reminders | JSON array of iCal triggers relative to start/due, TickTick style: `["TRIGGER:-PT15M","TRIGGER:PT0S"]`. |
+| Recurrence | RFC 5545 rule string, e.g. `RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH`. |
+| Markdown | `content` and `note` fields hold Markdown. Long text is fine (Sheets cell limit: 50,000 chars). |
+
+### Sync columns (on every entity tab, always last)
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| `created_at` | timestamp | Creation time. |
+| `updated_at` | timestamp | Last change, set by the writing device. |
+| `version` | integer | Incremented on every change. Higher wins on pull. |
+| `device` | text | Short ID of the device that wrote the row (`win-xxxx`, `and-xxxx`). |
+| `deleted` | boolean | Tombstone. Rows are never removed by the app. |
+
+## Tabs
+
+### `tasks`
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | uuid | |
+| `list_id` | uuid | → `lists.id`. Inbox is a list with `is_inbox = TRUE`. |
+| `parent_id` | uuid | Parent task for subtasks; empty for top level. |
+| `section_id` | uuid | → `sections.id` (also Kanban column). Optional. |
+| `kind` | enum | `TEXT`, `CHECKLIST`, `NOTE`. |
+| `title` | text | |
+| `content` | markdown | Description / notes. |
+| `priority` | int | `0` none, `1` low, `3` medium, `5` high (TickTick values). |
+| `status` | int | `0` open, `2` completed, `-1` won't do. |
+| `start_at` | datetime/date | |
+| `due_at` | datetime/date | |
+| `all_day` | boolean | |
+| `duration_min` | int | Optional; for timed blocks. |
+| `tz` | text | IANA time zone, empty = floating (follows device). |
+| `rrule` | text | Recurrence rule. |
+| `repeat_from` | enum | `DUE` or `COMPLETION`. |
+| `ex_dates` | json | Skipped occurrences. |
+| `reminders` | json | Trigger list. |
+| `constant_alert` | boolean | Keep reminding until handled. |
+| `tags` | text | Comma-separated tag names. |
+| `sort_order` | number | Order within list/section. |
+| `pinned_at` | timestamp | Empty = not pinned. |
+| `completed_at` | timestamp | |
+| + sync columns | | |
+
+### `checklist`
+`id`, `task_id`, `title`, `status` (0/2), `sort_order`, `start_at`, `all_day`, `completed_at`, + sync columns.
+
+### `lists`
+`id`, `name`, `folder_id` (→ `folders.id`), `color` (hex), `kind` (`TASK`/`NOTE`), `view` (`list`/`kanban`/`timeline`),
+`group_by`, `order_by`, `sort_order`, `is_inbox`, `muted`, `archived`, + sync columns.
+
+### `folders`
+`id`, `name`, `sort_order`, `collapsed`, + sync columns.
+
+### `sections`
+`id`, `list_id`, `name`, `sort_order`, `collapsed`, + sync columns.
+
+### `tags`
+`id`, `name` (unique), `color`, `parent` (parent tag name, for nesting), `sort_order`, + sync columns.
+
+### `filters`
+`id`, `name`, `rule_json` (AND/OR conditions over list, tag, date, priority, kind), `sort_order`, + sync columns.
+
+### `habits`
+`id`, `name`, `icon`, `color`, `section`, `type` (`BOOLEAN`/`AMOUNT`), `goal`, `step`, `unit`, `rrule`, `reminders`,
+`constant_alert`, `target_days`, `target_start`, `encouragement`, `current_streak`, `max_streak`, `skipped_dates`,
+`status` (0 active, 1 archived), `archived_at`, `sort_order`, + sync columns.
+
+### `habit_checkins`
+`id`, `habit_id`, `date` (`YYYY-MM-DD`), `value`, `goal`, `status` (0 none, 1 failed, 2 done), `note`, + sync columns.
+
+### `focus`
+One row per focus session.
+`id`, `task_id`, `timer_id`, `type` (`POMO`/`STOPWATCH`), `start_at`, `end_at`, `pause_sec`, `status` (0 abandoned, 1 completed), `note`, + sync columns.
+
+### `timers`
+Named focus timers.
+`id`, `name`, `type` (`POMO`/`STOPWATCH`), `linked_type` (`TASK`/`HABIT`/empty), `linked_id`, `pomo_minutes`, `color`, `icon`,
+`status` (0 normal, 1 archived), `sort_order`, + sync columns.
+
+### `countdowns`
+`id`, `name`, `type` (`COUNTDOWN`/`ANNIVERSARY`/`BIRTHDAY`/`HOLIDAY`), `mode` (`DOWN`/`UP`), `date`, `calendar` (`SOLAR`/`LUNAR`),
+`ignore_year`, `show_age`, `day_one_option` (`STANDARD`/`STANDARD_PLUS_1`), `rrule`, `reminders`, `style`, `color`, `note`,
+`pinned_at`, `archived_at`, `sort_order`, + sync columns.
+
+### `locations`
+Geofence reminders (later phase; tab created from schema v1 so no migration is needed).
+`id`, `task_id`, `alias`, `address`, `lat`, `lng`, `radius_m`, `trigger` (`ENTER`/`EXIT`), + sync columns.
+
+### `attachments`
+`id`, `task_id`, `drive_file_id`, `name`, `mime`, `size`, + sync columns. Files live in a Drive folder `SheetTick Attachments`.
+
+### `meta`
+Key/value tab, two columns: `key`, `value`. Keys: `schema_version`, `compaction_epoch`, `created_by_app_version`, `settings_json`.
+
+### `View` (read-only, for humans)
+Built with formulas such as
+`=QUERY(tasks!A:Z, "select ... where deleted = FALSE and status = 0 order by due_at", 1)`.
+The app never writes to it.
+
+## Rules for editing the Sheet by hand
+- Editing cell values in entity tabs is allowed; the app detects it on the next pull (row hash changed, same `version`).
+- Do **not** sort, insert or delete rows in entity tabs. Use `View` for sorting.
+- New rows typed by hand need at least `id` (any unique text) and `title`/`name`.
