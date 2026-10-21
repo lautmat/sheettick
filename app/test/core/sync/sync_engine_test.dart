@@ -140,6 +140,20 @@ void main() {
       await a.sync();
       expect((await a.store.getRow('checklist', itemId))!.fields['status'], 2);
     });
+
+    test("a subtask's parent_id reaches the other device, and making it top-level again comes back", () async {
+      final parent = await a.addTask('Plan the trip');
+      final child = await a.addTask('Book the train', extra: {'parent_id': parent});
+      await a.sync();
+      await b.sync();
+      expect((await b.task(child)).fields['parent_id'], parent);
+
+      b.tick();
+      await b.edit(child, {'parent_id': null});
+      await b.sync();
+      await a.sync();
+      expect((await a.task(child)).fields['parent_id'], isNull);
+    });
   });
 
   group('required: conflicts', () {

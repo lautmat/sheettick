@@ -6,6 +6,8 @@ import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/task_status.dart';
+import '../../core/tasks/task_tree.dart';
+import '../common/local_edit.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
 import '../sections/sections_providers.dart';
@@ -249,24 +251,60 @@ class _InboxBody extends ConsumerWidget {
 }
 
 /// The rows of a list: the tasks outside any section first, then each section's heading and, unless it is
-/// folded, its tasks.
+/// folded, its tasks. A subtask is shown under its top-level task, in that task's section.
 List<Widget> _rows(List<Task> items, List<Section> sections) {
   final known = {for (final s in sections) s.id};
-  return [
-    for (final t in items)
-      if (t.sectionId == null || !known.contains(t.sectionId)) _TaskTile(key: ValueKey(t.id), task: t),
-    for (final s in sections) ...[
-      SectionHeader(section: s, count: items.where((t) => t.sectionId == s.id).length),
-      if (!s.collapsed)
-        for (final t in items.where((t) => t.sectionId == s.id)) _TaskTile(key: ValueKey(t.id), task: t),
-    ],
+  // Each block is a top-level task followed by the subtasks under it.
+  final blocks = <List<({Task item, int depth})>>[];
+  for (final row in arrangeTree(items, idOf: (t) => t.id, parentOf: (t) => t.parentId)) {
+    if (row.depth == 0) {
+      blocks.add([row]);
+    } else {
+      blocks.last.add(row);
+    }
+  }
+  bool inSection(List<({Task item, int depth})> block, String id) => block.first.item.sectionId == id;
+
+  final shown = <Object>[
+    for (final b in blocks)
+      if (!known.contains(b.first.item.sectionId)) ...b,
   ];
+  for (final s in sections) {
+    shown.add(s);
+    if (!s.collapsed) {
+      for (final b in blocks.where((b) => inSection(b, s.id))) {
+        shown.addAll(b);
+      }
+    }
+  }
+
+  final widgets = <Widget>[];
+  // The task shown just above the next row: indenting a task puts it under that one. A heading breaks the chain.
+  String? above;
+  for (final entry in shown) {
+    if (entry is Section) {
+      above = null;
+      final count = blocks.where((b) => inSection(b, entry.id)).fold(0, (n, b) => n + b.length);
+      widgets.add(SectionHeader(section: entry, count: count));
+    } else {
+      final row = entry as ({Task item, int depth});
+      widgets.add(_TaskTile(key: ValueKey(row.item.id), task: row.item, depth: row.depth, above: above));
+      above = row.item.id;
+    }
+  }
+  return widgets;
 }
 
 class _TaskTile extends ConsumerWidget {
-  const _TaskTile({super.key, required this.task});
+  const _TaskTile({super.key, required this.task, this.depth = 0, this.above});
 
   final Task task;
+
+  /// How many levels the task is nested under a top-level task.
+  final int depth;
+
+  /// The id of the task shown directly above this one, or null when a heading or the list's start is above it.
+  final String? above;
 
   bool get _done => task.status == TaskStatus.completed.value;
 
@@ -276,10 +314,27 @@ class _TaskTile extends ConsumerWidget {
     ref.read(syncControllerProvider.notifier).requestSoon();
   }
 
+  /// Makes this task a subtask of [parentId], or back to a top-level task when it is null.
+  Future<void> _setParent(WidgetRef ref, String? parentId) async {
+    await updateRow(ref, 'tasks', task.id, {'parent_id': parentId});
+  }
+
+  Future<void> _onMenu(BuildContext context, WidgetRef ref, String value) async {
+    switch (value) {
+      case 'section':
+        await moveTaskToSection(context, ref, task);
+      case 'indent':
+        await _setParent(ref, above);
+      case 'outdent':
+        await _setParent(ref, null);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     return ListTile(
+      contentPadding: EdgeInsetsDirectional.only(start: 16 + 32.0 * depth, end: 16),
       leading: Checkbox(value: _done, onChanged: (v) => _toggle(ref, v ?? false)),
       title: Text(
         task.title.isEmpty ? '(untitled)' : task.title,
@@ -289,8 +344,13 @@ class _TaskTile extends ConsumerWidget {
       trailing: PopupMenuButton<String>(
         key: Key('taskMenu-${task.id}'),
         tooltip: 'Task options',
-        onSelected: (_) => moveTaskToSection(context, ref, task),
-        itemBuilder: (_) => const [PopupMenuItem(value: 'section', child: Text('Move to section'))],
+        onSelected: (value) => _onMenu(context, ref, value),
+        itemBuilder: (_) => [
+          // A subtask is filed under its parent's section, so only a top-level task moves on its own.
+          if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
+          if (above != null && task.parentId != above) const PopupMenuItem(value: 'indent', child: Text('Indent')),
+          if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
+        ],
       ),
     );
   }
