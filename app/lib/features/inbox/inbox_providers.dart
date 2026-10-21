@@ -4,15 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 
-/// The Inbox list, or null until the first sign-in has created it in the Sheet and synced it down.
-final inboxListProvider = StreamProvider<TaskList?>((ref) {
-  final db = ref.watch(appDatabaseProvider);
-  final query = db.select(db.lists)
-    ..where((l) => l.isInbox.equals(true) & l.deleted.equals(false))
-    ..limit(1);
-  return query.watchSingleOrNull();
-});
-
 /// Open and completed top-level tasks of a list: open first, then completed. Won't-do tasks and tombstones
 /// are not shown.
 final listTasksProvider = StreamProvider.family<List<Task>, String>((ref, listId) {
