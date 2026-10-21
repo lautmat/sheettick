@@ -107,6 +107,68 @@ class Lists extends Table with SyncColumns {
   Set<Column> get primaryKey => {id};
 }
 
+/// Sidebar groups for lists. Table `folders`.
+@DataClassName('Folder')
+class Folders extends Table with SyncColumns {
+  TextColumn get id => text()();
+  TextColumn get name => text().withDefault(const Constant(''))();
+  RealColumn get sortOrder => real().withDefault(const Constant(0))();
+  BoolColumn get collapsed => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Groups inside a list (also the Kanban columns). Table `sections`.
+@DataClassName('Section')
+class Sections extends Table with SyncColumns {
+  TextColumn get id => text()();
+
+  /// `lists.id`. Nullable so a row typed by hand without one does not fail the pull.
+  TextColumn get listId => text().nullable()();
+  TextColumn get name => text().withDefault(const Constant(''))();
+  RealColumn get sortOrder => real().withDefault(const Constant(0))();
+  BoolColumn get collapsed => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Checklist items of a `CHECKLIST` task. Table `checklist`.
+@DataClassName('ChecklistItem')
+class Checklist extends Table with SyncColumns {
+  TextColumn get id => text()();
+
+  /// `tasks.id`. Nullable for the same reason as [Sections.listId].
+  TextColumn get taskId => text().nullable()();
+  TextColumn get title => text().withDefault(const Constant(''))();
+
+  /// `0` open, `2` completed.
+  IntColumn get status => integer().withDefault(const Constant(0))();
+  RealColumn get sortOrder => real().withDefault(const Constant(0))();
+  TextColumn get startAt => text().nullable()();
+  BoolColumn get allDay => boolean().withDefault(const Constant(false))();
+  TextColumn get completedAt => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Tag definitions (colour, nesting). Tasks keep the names in `tasks.tags`. Table `tags`.
+@DataClassName('Tag')
+class Tags extends Table with SyncColumns {
+  TextColumn get id => text()();
+  TextColumn get name => text().withDefault(const Constant(''))();
+  TextColumn get color => text().nullable()();
+
+  /// Name of the parent tag, for nesting.
+  TextColumn get parent => text().nullable()();
+  RealColumn get sortOrder => real().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Local mirror of the Sheet's `meta` tab (`schema_version`, `compaction_epoch`, ...).
 @DataClassName('MetaEntry')
 class Meta extends Table {

@@ -114,6 +114,34 @@ void main() {
     });
   });
 
+  group('the tabs added in phase 1 (folders, sections, checklist, tags)', () {
+    test('rows written on one device reach the other, and an edit comes back', () async {
+      final taskId = await a.addTask('Plan the trip');
+      final folderId = await a.writer.insert('folders', {'name': 'Work', 'sort_order': 1.0});
+      final sectionId = await a.writer.insert('sections', {'list_id': a.inboxId, 'name': 'Later'});
+      final itemId = await a.writer.insert('checklist', {
+        'task_id': taskId,
+        'title': 'Book the train',
+        'sort_order': 2.0,
+      });
+      final tagId = await a.writer.insert('tags', {'name': 'travel', 'color': '#ff8800'});
+      await a.sync();
+      await b.sync();
+
+      expect((await b.store.getRow('folders', folderId))!.fields['name'], 'Work');
+      expect((await b.store.getRow('sections', sectionId))!.fields['list_id'], a.inboxId);
+      expect((await b.store.getRow('checklist', itemId))!.fields['task_id'], taskId);
+      expect((await b.store.getRow('tags', tagId))!.fields['color'], '#ff8800');
+      expect(sheetRowOf(backend, a.spreadsheetId, 'checklist', itemId), isNotNull);
+
+      b.tick();
+      await b.writer.update('checklist', itemId, {'status': 2, 'completed_at': '2026-10-19T10:00:00Z'});
+      await b.sync();
+      await a.sync();
+      expect((await a.store.getRow('checklist', itemId))!.fields['status'], 2);
+    });
+  });
+
   group('required: conflicts', () {
     test('1. different fields edited offline on two devices: both changes survive', () async {
       final id = await a.addTask('Buy milk');

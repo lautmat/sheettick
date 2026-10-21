@@ -20,7 +20,7 @@ abstract final class DeviceStateKeys {
 ///
 /// Note: [schemaVersion] is the local SQLite migration version and is unrelated to the Sheet's
 /// `meta.schema_version` (see `docs/sheet-schema.md`).
-@DriftDatabase(tables: [Tasks, Lists, Meta, DeviceState])
+@DriftDatabase(tables: [Tasks, Lists, Folders, Sections, Checklist, Tags, Meta, DeviceState])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
@@ -28,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'sheettick'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -41,9 +41,19 @@ class AppDatabase extends _$AppDatabase {
     // The FTS table and its triggers are created by hand in onCreate, so drift's generated migrations do not
     // know about them. Fail loudly rather than let an upgraded install silently lack them: whoever raises
     // schemaVersion must write the step, and re-run the relevant [ftsStatements] if they did not exist yet.
-    onUpgrade: (m, from, to) async => throw UnsupportedError(
-      'No migration from schema $from to $to. Write one in AppDatabase.migration.',
-    ),
+    onUpgrade: (m, from, to) async {
+      if (from == 1 && to == 2) {
+        await m.createTable(folders);
+        await m.createTable(sections);
+        await m.createTable(checklist);
+        await m.createTable(tags);
+        // The next sync skips the Sheet while its modified time is unchanged. Forget it, so the first sync after
+        // the upgrade pulls the four new tabs even if nobody has edited the Sheet since.
+        await customStatement('DELETE FROM device_state WHERE key = ?', [DeviceStateKeys.lastDriveModifiedTime]);
+        return;
+      }
+      throw UnsupportedError('No migration from schema $from to $to. Write one in AppDatabase.migration.');
+    },
   );
 
   Future<String?> getDeviceState(String key) async {
