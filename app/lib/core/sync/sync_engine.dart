@@ -46,7 +46,7 @@ class _TabView {
   final List<_Remote> rows;
 }
 
-/// The sync cycle of `docs/sync-protocol.md` for the entity tabs [tabs] (tasks and lists in phase 0).
+/// The sync cycle of `docs/sync-protocol.md` for the entity tabs [tabs] (every entity tab by default).
 ///
 /// Local-first: the UI only touches the local store; this reconciles it with the Sheet. Everything is
 /// batched: one Drive check, one `batchGet`, then at most one `batchUpdate` and one append per tab.
@@ -57,7 +57,7 @@ class SyncEngine {
     required this.store,
     required this.deviceId,
     DateTime Function()? clock,
-    this.tabs = const ['tasks', 'lists'],
+    this.tabs = const ['tasks', 'lists', 'folders', 'sections', 'checklist', 'tags'],
     this.onRowsChanged,
   }) : _clock = clock ?? DateTime.now;
 

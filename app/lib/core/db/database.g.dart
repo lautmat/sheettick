@@ -2830,6 +2830,3331 @@ class ListsCompanion extends UpdateCompanion<TaskList> {
   }
 }
 
+class $FoldersTable extends Folders with TableInfo<$FoldersTable, Folder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FoldersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _deviceMeta = const VerificationMeta('device');
+  @override
+  late final GeneratedColumn<String> device = GeneratedColumn<String>(
+    'device',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sheetRowMeta = const VerificationMeta(
+    'sheetRow',
+  );
+  @override
+  late final GeneratedColumn<int> sheetRow = GeneratedColumn<int>(
+    'sheet_row',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncedHashMeta = const VerificationMeta(
+    'syncedHash',
+  );
+  @override
+  late final GeneratedColumn<String> syncedHash = GeneratedColumn<String>(
+    'synced_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _baseSnapshotMeta = const VerificationMeta(
+    'baseSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> baseSnapshot = GeneratedColumn<String>(
+    'base_snapshot',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<double> sortOrder = GeneratedColumn<double>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _collapsedMeta = const VerificationMeta(
+    'collapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> collapsed = GeneratedColumn<bool>(
+    'collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    name,
+    sortOrder,
+    collapsed,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'folders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Folder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('device')) {
+      context.handle(
+        _deviceMeta,
+        device.isAcceptableOrUnknown(data['device']!, _deviceMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('sheet_row')) {
+      context.handle(
+        _sheetRowMeta,
+        sheetRow.isAcceptableOrUnknown(data['sheet_row']!, _sheetRowMeta),
+      );
+    }
+    if (data.containsKey('synced_hash')) {
+      context.handle(
+        _syncedHashMeta,
+        syncedHash.isAcceptableOrUnknown(data['synced_hash']!, _syncedHashMeta),
+      );
+    }
+    if (data.containsKey('base_snapshot')) {
+      context.handle(
+        _baseSnapshotMeta,
+        baseSnapshot.isAcceptableOrUnknown(
+          data['base_snapshot']!,
+          _baseSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('collapsed')) {
+      context.handle(
+        _collapsedMeta,
+        collapsed.isAcceptableOrUnknown(data['collapsed']!, _collapsedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Folder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Folder(
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      device: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      sheetRow: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sheet_row'],
+      ),
+      syncedHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}synced_hash'],
+      ),
+      baseSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_snapshot'],
+      ),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      collapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}collapsed'],
+      )!,
+    );
+  }
+
+  @override
+  $FoldersTable createAlias(String alias) {
+    return $FoldersTable(attachedDatabase, alias);
+  }
+}
+
+class Folder extends DataClass implements Insertable<Folder> {
+  final String createdAt;
+  final String updatedAt;
+  final int version;
+  final String device;
+  final bool deleted;
+
+  /// Changed locally since the last push.
+  final bool dirty;
+
+  /// Cached 1-based row number in the row's tab.
+  final int? sheetRow;
+
+  /// Hash of the row's cell values as last seen in the Sheet.
+  final String? syncedHash;
+
+  /// JSON of the field values at the last successful sync (for the three-way merge).
+  final String? baseSnapshot;
+  final String id;
+  final String name;
+  final double sortOrder;
+  final bool collapsed;
+  const Folder({
+    required this.createdAt,
+    required this.updatedAt,
+    required this.version,
+    required this.device,
+    required this.deleted,
+    required this.dirty,
+    this.sheetRow,
+    this.syncedHash,
+    this.baseSnapshot,
+    required this.id,
+    required this.name,
+    required this.sortOrder,
+    required this.collapsed,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['version'] = Variable<int>(version);
+    map['device'] = Variable<String>(device);
+    map['deleted'] = Variable<bool>(deleted);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || sheetRow != null) {
+      map['sheet_row'] = Variable<int>(sheetRow);
+    }
+    if (!nullToAbsent || syncedHash != null) {
+      map['synced_hash'] = Variable<String>(syncedHash);
+    }
+    if (!nullToAbsent || baseSnapshot != null) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot);
+    }
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['sort_order'] = Variable<double>(sortOrder);
+    map['collapsed'] = Variable<bool>(collapsed);
+    return map;
+  }
+
+  FoldersCompanion toCompanion(bool nullToAbsent) {
+    return FoldersCompanion(
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      version: Value(version),
+      device: Value(device),
+      deleted: Value(deleted),
+      dirty: Value(dirty),
+      sheetRow: sheetRow == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sheetRow),
+      syncedHash: syncedHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedHash),
+      baseSnapshot: baseSnapshot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseSnapshot),
+      id: Value(id),
+      name: Value(name),
+      sortOrder: Value(sortOrder),
+      collapsed: Value(collapsed),
+    );
+  }
+
+  factory Folder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Folder(
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      version: serializer.fromJson<int>(json['version']),
+      device: serializer.fromJson<String>(json['device']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      sheetRow: serializer.fromJson<int?>(json['sheetRow']),
+      syncedHash: serializer.fromJson<String?>(json['syncedHash']),
+      baseSnapshot: serializer.fromJson<String?>(json['baseSnapshot']),
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      sortOrder: serializer.fromJson<double>(json['sortOrder']),
+      collapsed: serializer.fromJson<bool>(json['collapsed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'version': serializer.toJson<int>(version),
+      'device': serializer.toJson<String>(device),
+      'deleted': serializer.toJson<bool>(deleted),
+      'dirty': serializer.toJson<bool>(dirty),
+      'sheetRow': serializer.toJson<int?>(sheetRow),
+      'syncedHash': serializer.toJson<String?>(syncedHash),
+      'baseSnapshot': serializer.toJson<String?>(baseSnapshot),
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'sortOrder': serializer.toJson<double>(sortOrder),
+      'collapsed': serializer.toJson<bool>(collapsed),
+    };
+  }
+
+  Folder copyWith({
+    String? createdAt,
+    String? updatedAt,
+    int? version,
+    String? device,
+    bool? deleted,
+    bool? dirty,
+    Value<int?> sheetRow = const Value.absent(),
+    Value<String?> syncedHash = const Value.absent(),
+    Value<String?> baseSnapshot = const Value.absent(),
+    String? id,
+    String? name,
+    double? sortOrder,
+    bool? collapsed,
+  }) => Folder(
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    version: version ?? this.version,
+    device: device ?? this.device,
+    deleted: deleted ?? this.deleted,
+    dirty: dirty ?? this.dirty,
+    sheetRow: sheetRow.present ? sheetRow.value : this.sheetRow,
+    syncedHash: syncedHash.present ? syncedHash.value : this.syncedHash,
+    baseSnapshot: baseSnapshot.present ? baseSnapshot.value : this.baseSnapshot,
+    id: id ?? this.id,
+    name: name ?? this.name,
+    sortOrder: sortOrder ?? this.sortOrder,
+    collapsed: collapsed ?? this.collapsed,
+  );
+  Folder copyWithCompanion(FoldersCompanion data) {
+    return Folder(
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      version: data.version.present ? data.version.value : this.version,
+      device: data.device.present ? data.device.value : this.device,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      sheetRow: data.sheetRow.present ? data.sheetRow.value : this.sheetRow,
+      syncedHash: data.syncedHash.present
+          ? data.syncedHash.value
+          : this.syncedHash,
+      baseSnapshot: data.baseSnapshot.present
+          ? data.baseSnapshot.value
+          : this.baseSnapshot,
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      collapsed: data.collapsed.present ? data.collapsed.value : this.collapsed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Folder(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('collapsed: $collapsed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    name,
+    sortOrder,
+    collapsed,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Folder &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.version == this.version &&
+          other.device == this.device &&
+          other.deleted == this.deleted &&
+          other.dirty == this.dirty &&
+          other.sheetRow == this.sheetRow &&
+          other.syncedHash == this.syncedHash &&
+          other.baseSnapshot == this.baseSnapshot &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.sortOrder == this.sortOrder &&
+          other.collapsed == this.collapsed);
+}
+
+class FoldersCompanion extends UpdateCompanion<Folder> {
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  final Value<int> version;
+  final Value<String> device;
+  final Value<bool> deleted;
+  final Value<bool> dirty;
+  final Value<int?> sheetRow;
+  final Value<String?> syncedHash;
+  final Value<String?> baseSnapshot;
+  final Value<String> id;
+  final Value<String> name;
+  final Value<double> sortOrder;
+  final Value<bool> collapsed;
+  final Value<int> rowid;
+  const FoldersCompanion({
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.collapsed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FoldersCompanion.insert({
+    required String createdAt,
+    required String updatedAt,
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    required String id,
+    this.name = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.collapsed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       id = Value(id);
+  static Insertable<Folder> custom({
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+    Expression<int>? version,
+    Expression<String>? device,
+    Expression<bool>? deleted,
+    Expression<bool>? dirty,
+    Expression<int>? sheetRow,
+    Expression<String>? syncedHash,
+    Expression<String>? baseSnapshot,
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<double>? sortOrder,
+    Expression<bool>? collapsed,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (version != null) 'version': version,
+      if (device != null) 'device': device,
+      if (deleted != null) 'deleted': deleted,
+      if (dirty != null) 'dirty': dirty,
+      if (sheetRow != null) 'sheet_row': sheetRow,
+      if (syncedHash != null) 'synced_hash': syncedHash,
+      if (baseSnapshot != null) 'base_snapshot': baseSnapshot,
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (collapsed != null) 'collapsed': collapsed,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FoldersCompanion copyWith({
+    Value<String>? createdAt,
+    Value<String>? updatedAt,
+    Value<int>? version,
+    Value<String>? device,
+    Value<bool>? deleted,
+    Value<bool>? dirty,
+    Value<int?>? sheetRow,
+    Value<String?>? syncedHash,
+    Value<String?>? baseSnapshot,
+    Value<String>? id,
+    Value<String>? name,
+    Value<double>? sortOrder,
+    Value<bool>? collapsed,
+    Value<int>? rowid,
+  }) {
+    return FoldersCompanion(
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      version: version ?? this.version,
+      device: device ?? this.device,
+      deleted: deleted ?? this.deleted,
+      dirty: dirty ?? this.dirty,
+      sheetRow: sheetRow ?? this.sheetRow,
+      syncedHash: syncedHash ?? this.syncedHash,
+      baseSnapshot: baseSnapshot ?? this.baseSnapshot,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      sortOrder: sortOrder ?? this.sortOrder,
+      collapsed: collapsed ?? this.collapsed,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (device.present) {
+      map['device'] = Variable<String>(device.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (sheetRow.present) {
+      map['sheet_row'] = Variable<int>(sheetRow.value);
+    }
+    if (syncedHash.present) {
+      map['synced_hash'] = Variable<String>(syncedHash.value);
+    }
+    if (baseSnapshot.present) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<double>(sortOrder.value);
+    }
+    if (collapsed.present) {
+      map['collapsed'] = Variable<bool>(collapsed.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FoldersCompanion(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('collapsed: $collapsed, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SectionsTable extends Sections with TableInfo<$SectionsTable, Section> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _deviceMeta = const VerificationMeta('device');
+  @override
+  late final GeneratedColumn<String> device = GeneratedColumn<String>(
+    'device',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sheetRowMeta = const VerificationMeta(
+    'sheetRow',
+  );
+  @override
+  late final GeneratedColumn<int> sheetRow = GeneratedColumn<int>(
+    'sheet_row',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncedHashMeta = const VerificationMeta(
+    'syncedHash',
+  );
+  @override
+  late final GeneratedColumn<String> syncedHash = GeneratedColumn<String>(
+    'synced_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _baseSnapshotMeta = const VerificationMeta(
+    'baseSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> baseSnapshot = GeneratedColumn<String>(
+    'base_snapshot',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _listIdMeta = const VerificationMeta('listId');
+  @override
+  late final GeneratedColumn<String> listId = GeneratedColumn<String>(
+    'list_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<double> sortOrder = GeneratedColumn<double>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _collapsedMeta = const VerificationMeta(
+    'collapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> collapsed = GeneratedColumn<bool>(
+    'collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    listId,
+    name,
+    sortOrder,
+    collapsed,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sections';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Section> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('device')) {
+      context.handle(
+        _deviceMeta,
+        device.isAcceptableOrUnknown(data['device']!, _deviceMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('sheet_row')) {
+      context.handle(
+        _sheetRowMeta,
+        sheetRow.isAcceptableOrUnknown(data['sheet_row']!, _sheetRowMeta),
+      );
+    }
+    if (data.containsKey('synced_hash')) {
+      context.handle(
+        _syncedHashMeta,
+        syncedHash.isAcceptableOrUnknown(data['synced_hash']!, _syncedHashMeta),
+      );
+    }
+    if (data.containsKey('base_snapshot')) {
+      context.handle(
+        _baseSnapshotMeta,
+        baseSnapshot.isAcceptableOrUnknown(
+          data['base_snapshot']!,
+          _baseSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('list_id')) {
+      context.handle(
+        _listIdMeta,
+        listId.isAcceptableOrUnknown(data['list_id']!, _listIdMeta),
+      );
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('collapsed')) {
+      context.handle(
+        _collapsedMeta,
+        collapsed.isAcceptableOrUnknown(data['collapsed']!, _collapsedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Section map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Section(
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      device: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      sheetRow: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sheet_row'],
+      ),
+      syncedHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}synced_hash'],
+      ),
+      baseSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_snapshot'],
+      ),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      listId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}list_id'],
+      ),
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      collapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}collapsed'],
+      )!,
+    );
+  }
+
+  @override
+  $SectionsTable createAlias(String alias) {
+    return $SectionsTable(attachedDatabase, alias);
+  }
+}
+
+class Section extends DataClass implements Insertable<Section> {
+  final String createdAt;
+  final String updatedAt;
+  final int version;
+  final String device;
+  final bool deleted;
+
+  /// Changed locally since the last push.
+  final bool dirty;
+
+  /// Cached 1-based row number in the row's tab.
+  final int? sheetRow;
+
+  /// Hash of the row's cell values as last seen in the Sheet.
+  final String? syncedHash;
+
+  /// JSON of the field values at the last successful sync (for the three-way merge).
+  final String? baseSnapshot;
+  final String id;
+
+  /// `lists.id`. Nullable so a row typed by hand without one does not fail the pull.
+  final String? listId;
+  final String name;
+  final double sortOrder;
+  final bool collapsed;
+  const Section({
+    required this.createdAt,
+    required this.updatedAt,
+    required this.version,
+    required this.device,
+    required this.deleted,
+    required this.dirty,
+    this.sheetRow,
+    this.syncedHash,
+    this.baseSnapshot,
+    required this.id,
+    this.listId,
+    required this.name,
+    required this.sortOrder,
+    required this.collapsed,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['version'] = Variable<int>(version);
+    map['device'] = Variable<String>(device);
+    map['deleted'] = Variable<bool>(deleted);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || sheetRow != null) {
+      map['sheet_row'] = Variable<int>(sheetRow);
+    }
+    if (!nullToAbsent || syncedHash != null) {
+      map['synced_hash'] = Variable<String>(syncedHash);
+    }
+    if (!nullToAbsent || baseSnapshot != null) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot);
+    }
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || listId != null) {
+      map['list_id'] = Variable<String>(listId);
+    }
+    map['name'] = Variable<String>(name);
+    map['sort_order'] = Variable<double>(sortOrder);
+    map['collapsed'] = Variable<bool>(collapsed);
+    return map;
+  }
+
+  SectionsCompanion toCompanion(bool nullToAbsent) {
+    return SectionsCompanion(
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      version: Value(version),
+      device: Value(device),
+      deleted: Value(deleted),
+      dirty: Value(dirty),
+      sheetRow: sheetRow == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sheetRow),
+      syncedHash: syncedHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedHash),
+      baseSnapshot: baseSnapshot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseSnapshot),
+      id: Value(id),
+      listId: listId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(listId),
+      name: Value(name),
+      sortOrder: Value(sortOrder),
+      collapsed: Value(collapsed),
+    );
+  }
+
+  factory Section.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Section(
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      version: serializer.fromJson<int>(json['version']),
+      device: serializer.fromJson<String>(json['device']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      sheetRow: serializer.fromJson<int?>(json['sheetRow']),
+      syncedHash: serializer.fromJson<String?>(json['syncedHash']),
+      baseSnapshot: serializer.fromJson<String?>(json['baseSnapshot']),
+      id: serializer.fromJson<String>(json['id']),
+      listId: serializer.fromJson<String?>(json['listId']),
+      name: serializer.fromJson<String>(json['name']),
+      sortOrder: serializer.fromJson<double>(json['sortOrder']),
+      collapsed: serializer.fromJson<bool>(json['collapsed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'version': serializer.toJson<int>(version),
+      'device': serializer.toJson<String>(device),
+      'deleted': serializer.toJson<bool>(deleted),
+      'dirty': serializer.toJson<bool>(dirty),
+      'sheetRow': serializer.toJson<int?>(sheetRow),
+      'syncedHash': serializer.toJson<String?>(syncedHash),
+      'baseSnapshot': serializer.toJson<String?>(baseSnapshot),
+      'id': serializer.toJson<String>(id),
+      'listId': serializer.toJson<String?>(listId),
+      'name': serializer.toJson<String>(name),
+      'sortOrder': serializer.toJson<double>(sortOrder),
+      'collapsed': serializer.toJson<bool>(collapsed),
+    };
+  }
+
+  Section copyWith({
+    String? createdAt,
+    String? updatedAt,
+    int? version,
+    String? device,
+    bool? deleted,
+    bool? dirty,
+    Value<int?> sheetRow = const Value.absent(),
+    Value<String?> syncedHash = const Value.absent(),
+    Value<String?> baseSnapshot = const Value.absent(),
+    String? id,
+    Value<String?> listId = const Value.absent(),
+    String? name,
+    double? sortOrder,
+    bool? collapsed,
+  }) => Section(
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    version: version ?? this.version,
+    device: device ?? this.device,
+    deleted: deleted ?? this.deleted,
+    dirty: dirty ?? this.dirty,
+    sheetRow: sheetRow.present ? sheetRow.value : this.sheetRow,
+    syncedHash: syncedHash.present ? syncedHash.value : this.syncedHash,
+    baseSnapshot: baseSnapshot.present ? baseSnapshot.value : this.baseSnapshot,
+    id: id ?? this.id,
+    listId: listId.present ? listId.value : this.listId,
+    name: name ?? this.name,
+    sortOrder: sortOrder ?? this.sortOrder,
+    collapsed: collapsed ?? this.collapsed,
+  );
+  Section copyWithCompanion(SectionsCompanion data) {
+    return Section(
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      version: data.version.present ? data.version.value : this.version,
+      device: data.device.present ? data.device.value : this.device,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      sheetRow: data.sheetRow.present ? data.sheetRow.value : this.sheetRow,
+      syncedHash: data.syncedHash.present
+          ? data.syncedHash.value
+          : this.syncedHash,
+      baseSnapshot: data.baseSnapshot.present
+          ? data.baseSnapshot.value
+          : this.baseSnapshot,
+      id: data.id.present ? data.id.value : this.id,
+      listId: data.listId.present ? data.listId.value : this.listId,
+      name: data.name.present ? data.name.value : this.name,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      collapsed: data.collapsed.present ? data.collapsed.value : this.collapsed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Section(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('listId: $listId, ')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('collapsed: $collapsed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    listId,
+    name,
+    sortOrder,
+    collapsed,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Section &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.version == this.version &&
+          other.device == this.device &&
+          other.deleted == this.deleted &&
+          other.dirty == this.dirty &&
+          other.sheetRow == this.sheetRow &&
+          other.syncedHash == this.syncedHash &&
+          other.baseSnapshot == this.baseSnapshot &&
+          other.id == this.id &&
+          other.listId == this.listId &&
+          other.name == this.name &&
+          other.sortOrder == this.sortOrder &&
+          other.collapsed == this.collapsed);
+}
+
+class SectionsCompanion extends UpdateCompanion<Section> {
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  final Value<int> version;
+  final Value<String> device;
+  final Value<bool> deleted;
+  final Value<bool> dirty;
+  final Value<int?> sheetRow;
+  final Value<String?> syncedHash;
+  final Value<String?> baseSnapshot;
+  final Value<String> id;
+  final Value<String?> listId;
+  final Value<String> name;
+  final Value<double> sortOrder;
+  final Value<bool> collapsed;
+  final Value<int> rowid;
+  const SectionsCompanion({
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    this.id = const Value.absent(),
+    this.listId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.collapsed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SectionsCompanion.insert({
+    required String createdAt,
+    required String updatedAt,
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    required String id,
+    this.listId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.collapsed = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       id = Value(id);
+  static Insertable<Section> custom({
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+    Expression<int>? version,
+    Expression<String>? device,
+    Expression<bool>? deleted,
+    Expression<bool>? dirty,
+    Expression<int>? sheetRow,
+    Expression<String>? syncedHash,
+    Expression<String>? baseSnapshot,
+    Expression<String>? id,
+    Expression<String>? listId,
+    Expression<String>? name,
+    Expression<double>? sortOrder,
+    Expression<bool>? collapsed,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (version != null) 'version': version,
+      if (device != null) 'device': device,
+      if (deleted != null) 'deleted': deleted,
+      if (dirty != null) 'dirty': dirty,
+      if (sheetRow != null) 'sheet_row': sheetRow,
+      if (syncedHash != null) 'synced_hash': syncedHash,
+      if (baseSnapshot != null) 'base_snapshot': baseSnapshot,
+      if (id != null) 'id': id,
+      if (listId != null) 'list_id': listId,
+      if (name != null) 'name': name,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (collapsed != null) 'collapsed': collapsed,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SectionsCompanion copyWith({
+    Value<String>? createdAt,
+    Value<String>? updatedAt,
+    Value<int>? version,
+    Value<String>? device,
+    Value<bool>? deleted,
+    Value<bool>? dirty,
+    Value<int?>? sheetRow,
+    Value<String?>? syncedHash,
+    Value<String?>? baseSnapshot,
+    Value<String>? id,
+    Value<String?>? listId,
+    Value<String>? name,
+    Value<double>? sortOrder,
+    Value<bool>? collapsed,
+    Value<int>? rowid,
+  }) {
+    return SectionsCompanion(
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      version: version ?? this.version,
+      device: device ?? this.device,
+      deleted: deleted ?? this.deleted,
+      dirty: dirty ?? this.dirty,
+      sheetRow: sheetRow ?? this.sheetRow,
+      syncedHash: syncedHash ?? this.syncedHash,
+      baseSnapshot: baseSnapshot ?? this.baseSnapshot,
+      id: id ?? this.id,
+      listId: listId ?? this.listId,
+      name: name ?? this.name,
+      sortOrder: sortOrder ?? this.sortOrder,
+      collapsed: collapsed ?? this.collapsed,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (device.present) {
+      map['device'] = Variable<String>(device.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (sheetRow.present) {
+      map['sheet_row'] = Variable<int>(sheetRow.value);
+    }
+    if (syncedHash.present) {
+      map['synced_hash'] = Variable<String>(syncedHash.value);
+    }
+    if (baseSnapshot.present) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (listId.present) {
+      map['list_id'] = Variable<String>(listId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<double>(sortOrder.value);
+    }
+    if (collapsed.present) {
+      map['collapsed'] = Variable<bool>(collapsed.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SectionsCompanion(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('listId: $listId, ')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('collapsed: $collapsed, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChecklistTable extends Checklist
+    with TableInfo<$ChecklistTable, ChecklistItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChecklistTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _deviceMeta = const VerificationMeta('device');
+  @override
+  late final GeneratedColumn<String> device = GeneratedColumn<String>(
+    'device',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sheetRowMeta = const VerificationMeta(
+    'sheetRow',
+  );
+  @override
+  late final GeneratedColumn<int> sheetRow = GeneratedColumn<int>(
+    'sheet_row',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncedHashMeta = const VerificationMeta(
+    'syncedHash',
+  );
+  @override
+  late final GeneratedColumn<String> syncedHash = GeneratedColumn<String>(
+    'synced_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _baseSnapshotMeta = const VerificationMeta(
+    'baseSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> baseSnapshot = GeneratedColumn<String>(
+    'base_snapshot',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+    'task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<int> status = GeneratedColumn<int>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<double> sortOrder = GeneratedColumn<double>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _startAtMeta = const VerificationMeta(
+    'startAt',
+  );
+  @override
+  late final GeneratedColumn<String> startAt = GeneratedColumn<String>(
+    'start_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _allDayMeta = const VerificationMeta('allDay');
+  @override
+  late final GeneratedColumn<bool> allDay = GeneratedColumn<bool>(
+    'all_day',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("all_day" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<String> completedAt = GeneratedColumn<String>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    taskId,
+    title,
+    status,
+    sortOrder,
+    startAt,
+    allDay,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'checklist';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChecklistItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('device')) {
+      context.handle(
+        _deviceMeta,
+        device.isAcceptableOrUnknown(data['device']!, _deviceMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('sheet_row')) {
+      context.handle(
+        _sheetRowMeta,
+        sheetRow.isAcceptableOrUnknown(data['sheet_row']!, _sheetRowMeta),
+      );
+    }
+    if (data.containsKey('synced_hash')) {
+      context.handle(
+        _syncedHashMeta,
+        syncedHash.isAcceptableOrUnknown(data['synced_hash']!, _syncedHashMeta),
+      );
+    }
+    if (data.containsKey('base_snapshot')) {
+      context.handle(
+        _baseSnapshotMeta,
+        baseSnapshot.isAcceptableOrUnknown(
+          data['base_snapshot']!,
+          _baseSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('start_at')) {
+      context.handle(
+        _startAtMeta,
+        startAt.isAcceptableOrUnknown(data['start_at']!, _startAtMeta),
+      );
+    }
+    if (data.containsKey('all_day')) {
+      context.handle(
+        _allDayMeta,
+        allDay.isAcceptableOrUnknown(data['all_day']!, _allDayMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChecklistItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChecklistItem(
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      device: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      sheetRow: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sheet_row'],
+      ),
+      syncedHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}synced_hash'],
+      ),
+      baseSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_snapshot'],
+      ),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_id'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      startAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_at'],
+      ),
+      allDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}all_day'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completed_at'],
+      ),
+    );
+  }
+
+  @override
+  $ChecklistTable createAlias(String alias) {
+    return $ChecklistTable(attachedDatabase, alias);
+  }
+}
+
+class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
+  final String createdAt;
+  final String updatedAt;
+  final int version;
+  final String device;
+  final bool deleted;
+
+  /// Changed locally since the last push.
+  final bool dirty;
+
+  /// Cached 1-based row number in the row's tab.
+  final int? sheetRow;
+
+  /// Hash of the row's cell values as last seen in the Sheet.
+  final String? syncedHash;
+
+  /// JSON of the field values at the last successful sync (for the three-way merge).
+  final String? baseSnapshot;
+  final String id;
+
+  /// `tasks.id`. Nullable for the same reason as [Sections.listId].
+  final String? taskId;
+  final String title;
+
+  /// `0` open, `2` completed.
+  final int status;
+  final double sortOrder;
+  final String? startAt;
+  final bool allDay;
+  final String? completedAt;
+  const ChecklistItem({
+    required this.createdAt,
+    required this.updatedAt,
+    required this.version,
+    required this.device,
+    required this.deleted,
+    required this.dirty,
+    this.sheetRow,
+    this.syncedHash,
+    this.baseSnapshot,
+    required this.id,
+    this.taskId,
+    required this.title,
+    required this.status,
+    required this.sortOrder,
+    this.startAt,
+    required this.allDay,
+    this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['version'] = Variable<int>(version);
+    map['device'] = Variable<String>(device);
+    map['deleted'] = Variable<bool>(deleted);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || sheetRow != null) {
+      map['sheet_row'] = Variable<int>(sheetRow);
+    }
+    if (!nullToAbsent || syncedHash != null) {
+      map['synced_hash'] = Variable<String>(syncedHash);
+    }
+    if (!nullToAbsent || baseSnapshot != null) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot);
+    }
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<String>(taskId);
+    }
+    map['title'] = Variable<String>(title);
+    map['status'] = Variable<int>(status);
+    map['sort_order'] = Variable<double>(sortOrder);
+    if (!nullToAbsent || startAt != null) {
+      map['start_at'] = Variable<String>(startAt);
+    }
+    map['all_day'] = Variable<bool>(allDay);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<String>(completedAt);
+    }
+    return map;
+  }
+
+  ChecklistCompanion toCompanion(bool nullToAbsent) {
+    return ChecklistCompanion(
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      version: Value(version),
+      device: Value(device),
+      deleted: Value(deleted),
+      dirty: Value(dirty),
+      sheetRow: sheetRow == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sheetRow),
+      syncedHash: syncedHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedHash),
+      baseSnapshot: baseSnapshot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseSnapshot),
+      id: Value(id),
+      taskId: taskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskId),
+      title: Value(title),
+      status: Value(status),
+      sortOrder: Value(sortOrder),
+      startAt: startAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startAt),
+      allDay: Value(allDay),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+    );
+  }
+
+  factory ChecklistItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChecklistItem(
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      version: serializer.fromJson<int>(json['version']),
+      device: serializer.fromJson<String>(json['device']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      sheetRow: serializer.fromJson<int?>(json['sheetRow']),
+      syncedHash: serializer.fromJson<String?>(json['syncedHash']),
+      baseSnapshot: serializer.fromJson<String?>(json['baseSnapshot']),
+      id: serializer.fromJson<String>(json['id']),
+      taskId: serializer.fromJson<String?>(json['taskId']),
+      title: serializer.fromJson<String>(json['title']),
+      status: serializer.fromJson<int>(json['status']),
+      sortOrder: serializer.fromJson<double>(json['sortOrder']),
+      startAt: serializer.fromJson<String?>(json['startAt']),
+      allDay: serializer.fromJson<bool>(json['allDay']),
+      completedAt: serializer.fromJson<String?>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'version': serializer.toJson<int>(version),
+      'device': serializer.toJson<String>(device),
+      'deleted': serializer.toJson<bool>(deleted),
+      'dirty': serializer.toJson<bool>(dirty),
+      'sheetRow': serializer.toJson<int?>(sheetRow),
+      'syncedHash': serializer.toJson<String?>(syncedHash),
+      'baseSnapshot': serializer.toJson<String?>(baseSnapshot),
+      'id': serializer.toJson<String>(id),
+      'taskId': serializer.toJson<String?>(taskId),
+      'title': serializer.toJson<String>(title),
+      'status': serializer.toJson<int>(status),
+      'sortOrder': serializer.toJson<double>(sortOrder),
+      'startAt': serializer.toJson<String?>(startAt),
+      'allDay': serializer.toJson<bool>(allDay),
+      'completedAt': serializer.toJson<String?>(completedAt),
+    };
+  }
+
+  ChecklistItem copyWith({
+    String? createdAt,
+    String? updatedAt,
+    int? version,
+    String? device,
+    bool? deleted,
+    bool? dirty,
+    Value<int?> sheetRow = const Value.absent(),
+    Value<String?> syncedHash = const Value.absent(),
+    Value<String?> baseSnapshot = const Value.absent(),
+    String? id,
+    Value<String?> taskId = const Value.absent(),
+    String? title,
+    int? status,
+    double? sortOrder,
+    Value<String?> startAt = const Value.absent(),
+    bool? allDay,
+    Value<String?> completedAt = const Value.absent(),
+  }) => ChecklistItem(
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    version: version ?? this.version,
+    device: device ?? this.device,
+    deleted: deleted ?? this.deleted,
+    dirty: dirty ?? this.dirty,
+    sheetRow: sheetRow.present ? sheetRow.value : this.sheetRow,
+    syncedHash: syncedHash.present ? syncedHash.value : this.syncedHash,
+    baseSnapshot: baseSnapshot.present ? baseSnapshot.value : this.baseSnapshot,
+    id: id ?? this.id,
+    taskId: taskId.present ? taskId.value : this.taskId,
+    title: title ?? this.title,
+    status: status ?? this.status,
+    sortOrder: sortOrder ?? this.sortOrder,
+    startAt: startAt.present ? startAt.value : this.startAt,
+    allDay: allDay ?? this.allDay,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+  );
+  ChecklistItem copyWithCompanion(ChecklistCompanion data) {
+    return ChecklistItem(
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      version: data.version.present ? data.version.value : this.version,
+      device: data.device.present ? data.device.value : this.device,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      sheetRow: data.sheetRow.present ? data.sheetRow.value : this.sheetRow,
+      syncedHash: data.syncedHash.present
+          ? data.syncedHash.value
+          : this.syncedHash,
+      baseSnapshot: data.baseSnapshot.present
+          ? data.baseSnapshot.value
+          : this.baseSnapshot,
+      id: data.id.present ? data.id.value : this.id,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      title: data.title.present ? data.title.value : this.title,
+      status: data.status.present ? data.status.value : this.status,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      startAt: data.startAt.present ? data.startAt.value : this.startAt,
+      allDay: data.allDay.present ? data.allDay.value : this.allDay,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChecklistItem(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('title: $title, ')
+          ..write('status: $status, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('startAt: $startAt, ')
+          ..write('allDay: $allDay, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    taskId,
+    title,
+    status,
+    sortOrder,
+    startAt,
+    allDay,
+    completedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChecklistItem &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.version == this.version &&
+          other.device == this.device &&
+          other.deleted == this.deleted &&
+          other.dirty == this.dirty &&
+          other.sheetRow == this.sheetRow &&
+          other.syncedHash == this.syncedHash &&
+          other.baseSnapshot == this.baseSnapshot &&
+          other.id == this.id &&
+          other.taskId == this.taskId &&
+          other.title == this.title &&
+          other.status == this.status &&
+          other.sortOrder == this.sortOrder &&
+          other.startAt == this.startAt &&
+          other.allDay == this.allDay &&
+          other.completedAt == this.completedAt);
+}
+
+class ChecklistCompanion extends UpdateCompanion<ChecklistItem> {
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  final Value<int> version;
+  final Value<String> device;
+  final Value<bool> deleted;
+  final Value<bool> dirty;
+  final Value<int?> sheetRow;
+  final Value<String?> syncedHash;
+  final Value<String?> baseSnapshot;
+  final Value<String> id;
+  final Value<String?> taskId;
+  final Value<String> title;
+  final Value<int> status;
+  final Value<double> sortOrder;
+  final Value<String?> startAt;
+  final Value<bool> allDay;
+  final Value<String?> completedAt;
+  final Value<int> rowid;
+  const ChecklistCompanion({
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    this.id = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.status = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.startAt = const Value.absent(),
+    this.allDay = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ChecklistCompanion.insert({
+    required String createdAt,
+    required String updatedAt,
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    required String id,
+    this.taskId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.status = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.startAt = const Value.absent(),
+    this.allDay = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       id = Value(id);
+  static Insertable<ChecklistItem> custom({
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+    Expression<int>? version,
+    Expression<String>? device,
+    Expression<bool>? deleted,
+    Expression<bool>? dirty,
+    Expression<int>? sheetRow,
+    Expression<String>? syncedHash,
+    Expression<String>? baseSnapshot,
+    Expression<String>? id,
+    Expression<String>? taskId,
+    Expression<String>? title,
+    Expression<int>? status,
+    Expression<double>? sortOrder,
+    Expression<String>? startAt,
+    Expression<bool>? allDay,
+    Expression<String>? completedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (version != null) 'version': version,
+      if (device != null) 'device': device,
+      if (deleted != null) 'deleted': deleted,
+      if (dirty != null) 'dirty': dirty,
+      if (sheetRow != null) 'sheet_row': sheetRow,
+      if (syncedHash != null) 'synced_hash': syncedHash,
+      if (baseSnapshot != null) 'base_snapshot': baseSnapshot,
+      if (id != null) 'id': id,
+      if (taskId != null) 'task_id': taskId,
+      if (title != null) 'title': title,
+      if (status != null) 'status': status,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (startAt != null) 'start_at': startAt,
+      if (allDay != null) 'all_day': allDay,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ChecklistCompanion copyWith({
+    Value<String>? createdAt,
+    Value<String>? updatedAt,
+    Value<int>? version,
+    Value<String>? device,
+    Value<bool>? deleted,
+    Value<bool>? dirty,
+    Value<int?>? sheetRow,
+    Value<String?>? syncedHash,
+    Value<String?>? baseSnapshot,
+    Value<String>? id,
+    Value<String?>? taskId,
+    Value<String>? title,
+    Value<int>? status,
+    Value<double>? sortOrder,
+    Value<String?>? startAt,
+    Value<bool>? allDay,
+    Value<String?>? completedAt,
+    Value<int>? rowid,
+  }) {
+    return ChecklistCompanion(
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      version: version ?? this.version,
+      device: device ?? this.device,
+      deleted: deleted ?? this.deleted,
+      dirty: dirty ?? this.dirty,
+      sheetRow: sheetRow ?? this.sheetRow,
+      syncedHash: syncedHash ?? this.syncedHash,
+      baseSnapshot: baseSnapshot ?? this.baseSnapshot,
+      id: id ?? this.id,
+      taskId: taskId ?? this.taskId,
+      title: title ?? this.title,
+      status: status ?? this.status,
+      sortOrder: sortOrder ?? this.sortOrder,
+      startAt: startAt ?? this.startAt,
+      allDay: allDay ?? this.allDay,
+      completedAt: completedAt ?? this.completedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (device.present) {
+      map['device'] = Variable<String>(device.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (sheetRow.present) {
+      map['sheet_row'] = Variable<int>(sheetRow.value);
+    }
+    if (syncedHash.present) {
+      map['synced_hash'] = Variable<String>(syncedHash.value);
+    }
+    if (baseSnapshot.present) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<int>(status.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<double>(sortOrder.value);
+    }
+    if (startAt.present) {
+      map['start_at'] = Variable<String>(startAt.value);
+    }
+    if (allDay.present) {
+      map['all_day'] = Variable<bool>(allDay.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<String>(completedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChecklistCompanion(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('title: $title, ')
+          ..write('status: $status, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('startAt: $startAt, ')
+          ..write('allDay: $allDay, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _deviceMeta = const VerificationMeta('device');
+  @override
+  late final GeneratedColumn<String> device = GeneratedColumn<String>(
+    'device',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sheetRowMeta = const VerificationMeta(
+    'sheetRow',
+  );
+  @override
+  late final GeneratedColumn<int> sheetRow = GeneratedColumn<int>(
+    'sheet_row',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncedHashMeta = const VerificationMeta(
+    'syncedHash',
+  );
+  @override
+  late final GeneratedColumn<String> syncedHash = GeneratedColumn<String>(
+    'synced_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _baseSnapshotMeta = const VerificationMeta(
+    'baseSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> baseSnapshot = GeneratedColumn<String>(
+    'base_snapshot',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+    'color',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _parentMeta = const VerificationMeta('parent');
+  @override
+  late final GeneratedColumn<String> parent = GeneratedColumn<String>(
+    'parent',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<double> sortOrder = GeneratedColumn<double>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    name,
+    color,
+    parent,
+    sortOrder,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Tag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('device')) {
+      context.handle(
+        _deviceMeta,
+        device.isAcceptableOrUnknown(data['device']!, _deviceMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('sheet_row')) {
+      context.handle(
+        _sheetRowMeta,
+        sheetRow.isAcceptableOrUnknown(data['sheet_row']!, _sheetRowMeta),
+      );
+    }
+    if (data.containsKey('synced_hash')) {
+      context.handle(
+        _syncedHashMeta,
+        syncedHash.isAcceptableOrUnknown(data['synced_hash']!, _syncedHashMeta),
+      );
+    }
+    if (data.containsKey('base_snapshot')) {
+      context.handle(
+        _baseSnapshotMeta,
+        baseSnapshot.isAcceptableOrUnknown(
+          data['base_snapshot']!,
+          _baseSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
+    }
+    if (data.containsKey('parent')) {
+      context.handle(
+        _parentMeta,
+        parent.isAcceptableOrUnknown(data['parent']!, _parentMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Tag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Tag(
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      device: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      sheetRow: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sheet_row'],
+      ),
+      syncedHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}synced_hash'],
+      ),
+      baseSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_snapshot'],
+      ),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color'],
+      ),
+      parent: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent'],
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $TagsTable createAlias(String alias) {
+    return $TagsTable(attachedDatabase, alias);
+  }
+}
+
+class Tag extends DataClass implements Insertable<Tag> {
+  final String createdAt;
+  final String updatedAt;
+  final int version;
+  final String device;
+  final bool deleted;
+
+  /// Changed locally since the last push.
+  final bool dirty;
+
+  /// Cached 1-based row number in the row's tab.
+  final int? sheetRow;
+
+  /// Hash of the row's cell values as last seen in the Sheet.
+  final String? syncedHash;
+
+  /// JSON of the field values at the last successful sync (for the three-way merge).
+  final String? baseSnapshot;
+  final String id;
+  final String name;
+  final String? color;
+
+  /// Name of the parent tag, for nesting.
+  final String? parent;
+  final double sortOrder;
+  const Tag({
+    required this.createdAt,
+    required this.updatedAt,
+    required this.version,
+    required this.device,
+    required this.deleted,
+    required this.dirty,
+    this.sheetRow,
+    this.syncedHash,
+    this.baseSnapshot,
+    required this.id,
+    required this.name,
+    this.color,
+    this.parent,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['version'] = Variable<int>(version);
+    map['device'] = Variable<String>(device);
+    map['deleted'] = Variable<bool>(deleted);
+    map['dirty'] = Variable<bool>(dirty);
+    if (!nullToAbsent || sheetRow != null) {
+      map['sheet_row'] = Variable<int>(sheetRow);
+    }
+    if (!nullToAbsent || syncedHash != null) {
+      map['synced_hash'] = Variable<String>(syncedHash);
+    }
+    if (!nullToAbsent || baseSnapshot != null) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot);
+    }
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<String>(color);
+    }
+    if (!nullToAbsent || parent != null) {
+      map['parent'] = Variable<String>(parent);
+    }
+    map['sort_order'] = Variable<double>(sortOrder);
+    return map;
+  }
+
+  TagsCompanion toCompanion(bool nullToAbsent) {
+    return TagsCompanion(
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      version: Value(version),
+      device: Value(device),
+      deleted: Value(deleted),
+      dirty: Value(dirty),
+      sheetRow: sheetRow == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sheetRow),
+      syncedHash: syncedHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedHash),
+      baseSnapshot: baseSnapshot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseSnapshot),
+      id: Value(id),
+      name: Value(name),
+      color: color == null && nullToAbsent
+          ? const Value.absent()
+          : Value(color),
+      parent: parent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parent),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory Tag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Tag(
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      version: serializer.fromJson<int>(json['version']),
+      device: serializer.fromJson<String>(json['device']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      sheetRow: serializer.fromJson<int?>(json['sheetRow']),
+      syncedHash: serializer.fromJson<String?>(json['syncedHash']),
+      baseSnapshot: serializer.fromJson<String?>(json['baseSnapshot']),
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      color: serializer.fromJson<String?>(json['color']),
+      parent: serializer.fromJson<String?>(json['parent']),
+      sortOrder: serializer.fromJson<double>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'version': serializer.toJson<int>(version),
+      'device': serializer.toJson<String>(device),
+      'deleted': serializer.toJson<bool>(deleted),
+      'dirty': serializer.toJson<bool>(dirty),
+      'sheetRow': serializer.toJson<int?>(sheetRow),
+      'syncedHash': serializer.toJson<String?>(syncedHash),
+      'baseSnapshot': serializer.toJson<String?>(baseSnapshot),
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'color': serializer.toJson<String?>(color),
+      'parent': serializer.toJson<String?>(parent),
+      'sortOrder': serializer.toJson<double>(sortOrder),
+    };
+  }
+
+  Tag copyWith({
+    String? createdAt,
+    String? updatedAt,
+    int? version,
+    String? device,
+    bool? deleted,
+    bool? dirty,
+    Value<int?> sheetRow = const Value.absent(),
+    Value<String?> syncedHash = const Value.absent(),
+    Value<String?> baseSnapshot = const Value.absent(),
+    String? id,
+    String? name,
+    Value<String?> color = const Value.absent(),
+    Value<String?> parent = const Value.absent(),
+    double? sortOrder,
+  }) => Tag(
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    version: version ?? this.version,
+    device: device ?? this.device,
+    deleted: deleted ?? this.deleted,
+    dirty: dirty ?? this.dirty,
+    sheetRow: sheetRow.present ? sheetRow.value : this.sheetRow,
+    syncedHash: syncedHash.present ? syncedHash.value : this.syncedHash,
+    baseSnapshot: baseSnapshot.present ? baseSnapshot.value : this.baseSnapshot,
+    id: id ?? this.id,
+    name: name ?? this.name,
+    color: color.present ? color.value : this.color,
+    parent: parent.present ? parent.value : this.parent,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  Tag copyWithCompanion(TagsCompanion data) {
+    return Tag(
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      version: data.version.present ? data.version.value : this.version,
+      device: data.device.present ? data.device.value : this.device,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      sheetRow: data.sheetRow.present ? data.sheetRow.value : this.sheetRow,
+      syncedHash: data.syncedHash.present
+          ? data.syncedHash.value
+          : this.syncedHash,
+      baseSnapshot: data.baseSnapshot.present
+          ? data.baseSnapshot.value
+          : this.baseSnapshot,
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      color: data.color.present ? data.color.value : this.color,
+      parent: data.parent.present ? data.parent.value : this.parent,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Tag(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('color: $color, ')
+          ..write('parent: $parent, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    createdAt,
+    updatedAt,
+    version,
+    device,
+    deleted,
+    dirty,
+    sheetRow,
+    syncedHash,
+    baseSnapshot,
+    id,
+    name,
+    color,
+    parent,
+    sortOrder,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Tag &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.version == this.version &&
+          other.device == this.device &&
+          other.deleted == this.deleted &&
+          other.dirty == this.dirty &&
+          other.sheetRow == this.sheetRow &&
+          other.syncedHash == this.syncedHash &&
+          other.baseSnapshot == this.baseSnapshot &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.color == this.color &&
+          other.parent == this.parent &&
+          other.sortOrder == this.sortOrder);
+}
+
+class TagsCompanion extends UpdateCompanion<Tag> {
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  final Value<int> version;
+  final Value<String> device;
+  final Value<bool> deleted;
+  final Value<bool> dirty;
+  final Value<int?> sheetRow;
+  final Value<String?> syncedHash;
+  final Value<String?> baseSnapshot;
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> color;
+  final Value<String?> parent;
+  final Value<double> sortOrder;
+  final Value<int> rowid;
+  const TagsCompanion({
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.color = const Value.absent(),
+    this.parent = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TagsCompanion.insert({
+    required String createdAt,
+    required String updatedAt,
+    this.version = const Value.absent(),
+    this.device = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.sheetRow = const Value.absent(),
+    this.syncedHash = const Value.absent(),
+    this.baseSnapshot = const Value.absent(),
+    required String id,
+    this.name = const Value.absent(),
+    this.color = const Value.absent(),
+    this.parent = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       id = Value(id);
+  static Insertable<Tag> custom({
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+    Expression<int>? version,
+    Expression<String>? device,
+    Expression<bool>? deleted,
+    Expression<bool>? dirty,
+    Expression<int>? sheetRow,
+    Expression<String>? syncedHash,
+    Expression<String>? baseSnapshot,
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? color,
+    Expression<String>? parent,
+    Expression<double>? sortOrder,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (version != null) 'version': version,
+      if (device != null) 'device': device,
+      if (deleted != null) 'deleted': deleted,
+      if (dirty != null) 'dirty': dirty,
+      if (sheetRow != null) 'sheet_row': sheetRow,
+      if (syncedHash != null) 'synced_hash': syncedHash,
+      if (baseSnapshot != null) 'base_snapshot': baseSnapshot,
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (color != null) 'color': color,
+      if (parent != null) 'parent': parent,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TagsCompanion copyWith({
+    Value<String>? createdAt,
+    Value<String>? updatedAt,
+    Value<int>? version,
+    Value<String>? device,
+    Value<bool>? deleted,
+    Value<bool>? dirty,
+    Value<int?>? sheetRow,
+    Value<String?>? syncedHash,
+    Value<String?>? baseSnapshot,
+    Value<String>? id,
+    Value<String>? name,
+    Value<String?>? color,
+    Value<String?>? parent,
+    Value<double>? sortOrder,
+    Value<int>? rowid,
+  }) {
+    return TagsCompanion(
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      version: version ?? this.version,
+      device: device ?? this.device,
+      deleted: deleted ?? this.deleted,
+      dirty: dirty ?? this.dirty,
+      sheetRow: sheetRow ?? this.sheetRow,
+      syncedHash: syncedHash ?? this.syncedHash,
+      baseSnapshot: baseSnapshot ?? this.baseSnapshot,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      color: color ?? this.color,
+      parent: parent ?? this.parent,
+      sortOrder: sortOrder ?? this.sortOrder,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (device.present) {
+      map['device'] = Variable<String>(device.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (sheetRow.present) {
+      map['sheet_row'] = Variable<int>(sheetRow.value);
+    }
+    if (syncedHash.present) {
+      map['synced_hash'] = Variable<String>(syncedHash.value);
+    }
+    if (baseSnapshot.present) {
+      map['base_snapshot'] = Variable<String>(baseSnapshot.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (parent.present) {
+      map['parent'] = Variable<String>(parent.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<double>(sortOrder.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TagsCompanion(')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('version: $version, ')
+          ..write('device: $device, ')
+          ..write('deleted: $deleted, ')
+          ..write('dirty: $dirty, ')
+          ..write('sheetRow: $sheetRow, ')
+          ..write('syncedHash: $syncedHash, ')
+          ..write('baseSnapshot: $baseSnapshot, ')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('color: $color, ')
+          ..write('parent: $parent, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $MetaTable extends Meta with TableInfo<$MetaTable, MetaEntry> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -3249,6 +6574,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $TasksTable tasks = $TasksTable(this);
   late final $ListsTable lists = $ListsTable(this);
+  late final $FoldersTable folders = $FoldersTable(this);
+  late final $SectionsTable sections = $SectionsTable(this);
+  late final $ChecklistTable checklist = $ChecklistTable(this);
+  late final $TagsTable tags = $TagsTable(this);
   late final $MetaTable meta = $MetaTable(this);
   late final $DeviceStateTable deviceState = $DeviceStateTable(this);
   late final Index tasksListIdx = Index(
@@ -3270,6 +6599,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     tasks,
     lists,
+    folders,
+    sections,
+    checklist,
+    tags,
     meta,
     deviceState,
     tasksListIdx,
@@ -4511,6 +7844,1550 @@ typedef $$ListsTableProcessedTableManager =
       TaskList,
       PrefetchHooks Function()
     >;
+typedef $$FoldersTableCreateCompanionBuilder = FoldersCompanion Function({
+  required String createdAt,
+  required String updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  required String id,
+  Value<String> name,
+  Value<double> sortOrder,
+  Value<bool> collapsed,
+  Value<int> rowid,
+});
+typedef $$FoldersTableUpdateCompanionBuilder = FoldersCompanion Function({
+  Value<String> createdAt,
+  Value<String> updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  Value<String> id,
+  Value<String> name,
+  Value<double> sortOrder,
+  Value<bool> collapsed,
+  Value<int> rowid,
+});
+
+class $$FoldersTableFilterComposer
+    extends Composer<_$AppDatabase, $FoldersTable> {
+  $$FoldersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FoldersTableOrderingComposer
+    extends Composer<_$AppDatabase, $FoldersTable> {
+  $$FoldersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FoldersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FoldersTable> {
+  $$FoldersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get device =>
+      $composableBuilder(column: $table.device, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<int> get sheetRow =>
+      $composableBuilder(column: $table.sheetRow, builder: (column) => column);
+
+  GeneratedColumn<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<double> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get collapsed =>
+      $composableBuilder(column: $table.collapsed, builder: (column) => column);
+}
+
+class $$FoldersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FoldersTable,
+          Folder,
+          $$FoldersTableFilterComposer,
+          $$FoldersTableOrderingComposer,
+          $$FoldersTableAnnotationComposer,
+          $$FoldersTableCreateCompanionBuilder,
+          $$FoldersTableUpdateCompanionBuilder,
+          (Folder, BaseReferences<_$AppDatabase, $FoldersTable, Folder>),
+          Folder,
+          PrefetchHooks Function()
+        > {
+  $$FoldersTableTableManager(_$AppDatabase db, $FoldersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FoldersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FoldersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FoldersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> createdAt = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FoldersCompanion(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                name: name,
+                sortOrder: sortOrder,
+                collapsed: collapsed,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String createdAt,
+                required String updatedAt,
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                required String id,
+                Value<String> name = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FoldersCompanion.insert(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                name: name,
+                sortOrder: sortOrder,
+                collapsed: collapsed,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$FoldersTable, Folder>(table),
+                  BaseReferences<_$AppDatabase, $FoldersTable, Folder>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FoldersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FoldersTable,
+      Folder,
+      $$FoldersTableFilterComposer,
+      $$FoldersTableOrderingComposer,
+      $$FoldersTableAnnotationComposer,
+      $$FoldersTableCreateCompanionBuilder,
+      $$FoldersTableUpdateCompanionBuilder,
+      (Folder, BaseReferences<_$AppDatabase, $FoldersTable, Folder>),
+      Folder,
+      PrefetchHooks Function()
+    >;
+typedef $$SectionsTableCreateCompanionBuilder = SectionsCompanion Function({
+  required String createdAt,
+  required String updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  required String id,
+  Value<String?> listId,
+  Value<String> name,
+  Value<double> sortOrder,
+  Value<bool> collapsed,
+  Value<int> rowid,
+});
+typedef $$SectionsTableUpdateCompanionBuilder = SectionsCompanion Function({
+  Value<String> createdAt,
+  Value<String> updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  Value<String> id,
+  Value<String?> listId,
+  Value<String> name,
+  Value<double> sortOrder,
+  Value<bool> collapsed,
+  Value<int> rowid,
+});
+
+class $$SectionsTableFilterComposer
+    extends Composer<_$AppDatabase, $SectionsTable> {
+  $$SectionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get listId => $composableBuilder(
+    column: $table.listId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SectionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SectionsTable> {
+  $$SectionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get listId => $composableBuilder(
+    column: $table.listId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SectionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SectionsTable> {
+  $$SectionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get device =>
+      $composableBuilder(column: $table.device, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<int> get sheetRow =>
+      $composableBuilder(column: $table.sheetRow, builder: (column) => column);
+
+  GeneratedColumn<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get listId =>
+      $composableBuilder(column: $table.listId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<double> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get collapsed =>
+      $composableBuilder(column: $table.collapsed, builder: (column) => column);
+}
+
+class $$SectionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SectionsTable,
+          Section,
+          $$SectionsTableFilterComposer,
+          $$SectionsTableOrderingComposer,
+          $$SectionsTableAnnotationComposer,
+          $$SectionsTableCreateCompanionBuilder,
+          $$SectionsTableUpdateCompanionBuilder,
+          (Section, BaseReferences<_$AppDatabase, $SectionsTable, Section>),
+          Section,
+          PrefetchHooks Function()
+        > {
+  $$SectionsTableTableManager(_$AppDatabase db, $SectionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SectionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SectionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SectionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> createdAt = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String?> listId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SectionsCompanion(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                listId: listId,
+                name: name,
+                sortOrder: sortOrder,
+                collapsed: collapsed,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String createdAt,
+                required String updatedAt,
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                required String id,
+                Value<String?> listId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SectionsCompanion.insert(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                listId: listId,
+                name: name,
+                sortOrder: sortOrder,
+                collapsed: collapsed,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SectionsTable, Section>(table),
+                  BaseReferences<_$AppDatabase, $SectionsTable, Section>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SectionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SectionsTable,
+      Section,
+      $$SectionsTableFilterComposer,
+      $$SectionsTableOrderingComposer,
+      $$SectionsTableAnnotationComposer,
+      $$SectionsTableCreateCompanionBuilder,
+      $$SectionsTableUpdateCompanionBuilder,
+      (Section, BaseReferences<_$AppDatabase, $SectionsTable, Section>),
+      Section,
+      PrefetchHooks Function()
+    >;
+typedef $$ChecklistTableCreateCompanionBuilder = ChecklistCompanion Function({
+  required String createdAt,
+  required String updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  required String id,
+  Value<String?> taskId,
+  Value<String> title,
+  Value<int> status,
+  Value<double> sortOrder,
+  Value<String?> startAt,
+  Value<bool> allDay,
+  Value<String?> completedAt,
+  Value<int> rowid,
+});
+typedef $$ChecklistTableUpdateCompanionBuilder = ChecklistCompanion Function({
+  Value<String> createdAt,
+  Value<String> updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  Value<String> id,
+  Value<String?> taskId,
+  Value<String> title,
+  Value<int> status,
+  Value<double> sortOrder,
+  Value<String?> startAt,
+  Value<bool> allDay,
+  Value<String?> completedAt,
+  Value<int> rowid,
+});
+
+class $$ChecklistTableFilterComposer
+    extends Composer<_$AppDatabase, $ChecklistTable> {
+  $$ChecklistTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startAt => $composableBuilder(
+    column: $table.startAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get allDay => $composableBuilder(
+    column: $table.allDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ChecklistTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChecklistTable> {
+  $$ChecklistTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startAt => $composableBuilder(
+    column: $table.startAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get allDay => $composableBuilder(
+    column: $table.allDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ChecklistTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChecklistTable> {
+  $$ChecklistTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get device =>
+      $composableBuilder(column: $table.device, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<int> get sheetRow =>
+      $composableBuilder(column: $table.sheetRow, builder: (column) => column);
+
+  GeneratedColumn<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<double> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get startAt =>
+      $composableBuilder(column: $table.startAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get allDay =>
+      $composableBuilder(column: $table.allDay, builder: (column) => column);
+
+  GeneratedColumn<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$ChecklistTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChecklistTable,
+          ChecklistItem,
+          $$ChecklistTableFilterComposer,
+          $$ChecklistTableOrderingComposer,
+          $$ChecklistTableAnnotationComposer,
+          $$ChecklistTableCreateCompanionBuilder,
+          $$ChecklistTableUpdateCompanionBuilder,
+          (
+            ChecklistItem,
+            BaseReferences<_$AppDatabase, $ChecklistTable, ChecklistItem>,
+          ),
+          ChecklistItem,
+          PrefetchHooks Function()
+        > {
+  $$ChecklistTableTableManager(_$AppDatabase db, $ChecklistTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChecklistTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChecklistTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChecklistTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> createdAt = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String?> taskId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<String?> startAt = const Value.absent(),
+                Value<bool> allDay = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChecklistCompanion(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                taskId: taskId,
+                title: title,
+                status: status,
+                sortOrder: sortOrder,
+                startAt: startAt,
+                allDay: allDay,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String createdAt,
+                required String updatedAt,
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                required String id,
+                Value<String?> taskId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<String?> startAt = const Value.absent(),
+                Value<bool> allDay = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChecklistCompanion.insert(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                taskId: taskId,
+                title: title,
+                status: status,
+                sortOrder: sortOrder,
+                startAt: startAt,
+                allDay: allDay,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ChecklistTable, ChecklistItem>(table),
+                  BaseReferences<_$AppDatabase, $ChecklistTable, ChecklistItem>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ChecklistTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChecklistTable,
+      ChecklistItem,
+      $$ChecklistTableFilterComposer,
+      $$ChecklistTableOrderingComposer,
+      $$ChecklistTableAnnotationComposer,
+      $$ChecklistTableCreateCompanionBuilder,
+      $$ChecklistTableUpdateCompanionBuilder,
+      (
+        ChecklistItem,
+        BaseReferences<_$AppDatabase, $ChecklistTable, ChecklistItem>,
+      ),
+      ChecklistItem,
+      PrefetchHooks Function()
+    >;
+typedef $$TagsTableCreateCompanionBuilder = TagsCompanion Function({
+  required String createdAt,
+  required String updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  required String id,
+  Value<String> name,
+  Value<String?> color,
+  Value<String?> parent,
+  Value<double> sortOrder,
+  Value<int> rowid,
+});
+typedef $$TagsTableUpdateCompanionBuilder = TagsCompanion Function({
+  Value<String> createdAt,
+  Value<String> updatedAt,
+  Value<int> version,
+  Value<String> device,
+  Value<bool> deleted,
+  Value<bool> dirty,
+  Value<int?> sheetRow,
+  Value<String?> syncedHash,
+  Value<String?> baseSnapshot,
+  Value<String> id,
+  Value<String> name,
+  Value<String?> color,
+  Value<String?> parent,
+  Value<double> sortOrder,
+  Value<int> rowid,
+});
+
+class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
+  $$TagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parent => $composableBuilder(
+    column: $table.parent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
+  $$TagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get device => $composableBuilder(
+    column: $table.device,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sheetRow => $composableBuilder(
+    column: $table.sheetRow,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parent => $composableBuilder(
+    column: $table.parent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TagsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TagsTable> {
+  $$TagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get device =>
+      $composableBuilder(column: $table.device, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<int> get sheetRow =>
+      $composableBuilder(column: $table.sheetRow, builder: (column) => column);
+
+  GeneratedColumn<String> get syncedHash => $composableBuilder(
+    column: $table.syncedHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get baseSnapshot => $composableBuilder(
+    column: $table.baseSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<String> get parent =>
+      $composableBuilder(column: $table.parent, builder: (column) => column);
+
+  GeneratedColumn<double> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+}
+
+class $$TagsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TagsTable,
+          Tag,
+          $$TagsTableFilterComposer,
+          $$TagsTableOrderingComposer,
+          $$TagsTableAnnotationComposer,
+          $$TagsTableCreateCompanionBuilder,
+          $$TagsTableUpdateCompanionBuilder,
+          (Tag, BaseReferences<_$AppDatabase, $TagsTable, Tag>),
+          Tag,
+          PrefetchHooks Function()
+        > {
+  $$TagsTableTableManager(_$AppDatabase db, $TagsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> createdAt = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> color = const Value.absent(),
+                Value<String?> parent = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TagsCompanion(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                name: name,
+                color: color,
+                parent: parent,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String createdAt,
+                required String updatedAt,
+                Value<int> version = const Value.absent(),
+                Value<String> device = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<int?> sheetRow = const Value.absent(),
+                Value<String?> syncedHash = const Value.absent(),
+                Value<String?> baseSnapshot = const Value.absent(),
+                required String id,
+                Value<String> name = const Value.absent(),
+                Value<String?> color = const Value.absent(),
+                Value<String?> parent = const Value.absent(),
+                Value<double> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TagsCompanion.insert(
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                version: version,
+                device: device,
+                deleted: deleted,
+                dirty: dirty,
+                sheetRow: sheetRow,
+                syncedHash: syncedHash,
+                baseSnapshot: baseSnapshot,
+                id: id,
+                name: name,
+                color: color,
+                parent: parent,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TagsTable, Tag>(table),
+                  BaseReferences<_$AppDatabase, $TagsTable, Tag>(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TagsTable,
+      Tag,
+      $$TagsTableFilterComposer,
+      $$TagsTableOrderingComposer,
+      $$TagsTableAnnotationComposer,
+      $$TagsTableCreateCompanionBuilder,
+      $$TagsTableUpdateCompanionBuilder,
+      (Tag, BaseReferences<_$AppDatabase, $TagsTable, Tag>),
+      Tag,
+      PrefetchHooks Function()
+    >;
 typedef $$MetaTableCreateCompanionBuilder = MetaCompanion Function({
   required String key,
   Value<String> value,
@@ -4798,6 +9675,13 @@ class $AppDatabaseManager {
       $$TasksTableTableManager(_db, _db.tasks);
   $$ListsTableTableManager get lists =>
       $$ListsTableTableManager(_db, _db.lists);
+  $$FoldersTableTableManager get folders =>
+      $$FoldersTableTableManager(_db, _db.folders);
+  $$SectionsTableTableManager get sections =>
+      $$SectionsTableTableManager(_db, _db.sections);
+  $$ChecklistTableTableManager get checklist =>
+      $$ChecklistTableTableManager(_db, _db.checklist);
+  $$TagsTableTableManager get tags => $$TagsTableTableManager(_db, _db.tags);
   $$MetaTableTableManager get meta => $$MetaTableTableManager(_db, _db.meta);
   $$DeviceStateTableTableManager get deviceState =>
       $$DeviceStateTableTableManager(_db, _db.deviceState);

@@ -132,7 +132,7 @@ void main() {
 
     const localOnly = {'dirty', 'sheet_row', 'synced_hash', 'base_snapshot'};
 
-    for (final table in ['tasks', 'lists']) {
+    for (final table in ['tasks', 'lists', 'folders', 'sections', 'checklist', 'tags']) {
       test('$table columns match the doc, plus sync columns and local bookkeeping', () {
         final fromDoc = {...doc.tabColumns(table), ...doc.syncColumns};
         final fromDb = dbColumns(table).toSet();
