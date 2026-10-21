@@ -6,6 +6,9 @@ import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
 import '../../core/time.dart';
+import '../common/name_dialog.dart';
+import '../lists/lists_providers.dart';
+import '../lists/lists_sidebar.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -25,14 +28,16 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final inbox = ref.watch(inboxListProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Inbox'), actions: const [_SyncButton(), _AccountMenu()]),
+    final active = ref.watch(activeListProvider);
+    final wide = MediaQuery.sizeOf(context).width >= kSidebarBreakpoint;
+    final screen = Scaffold(
+      appBar: AppBar(title: Text(_titleOf(active.value)), actions: const [_SyncButton(), _AccountMenu()]),
+      drawer: wide ? null : const Drawer(child: SafeArea(child: ListsSidebar())),
       body: Column(
         children: [
           const _SyncBanner(),
           Expanded(
-            child: inbox.when(
+            child: active.when(
               data: (list) => list == null ? const _NoInbox() : _InboxBody(list: list),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Could not read the local database: $e')),
@@ -41,6 +46,26 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         ],
       ),
     );
+    if (!wide) return screen;
+    return Row(
+      children: [
+        SizedBox(
+          width: kSidebarWidth,
+          child: Material(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            child: const SafeArea(right: false, child: ListsSidebar()),
+          ),
+        ),
+        const VerticalDivider(width: 1),
+        Expanded(child: screen),
+      ],
+    );
+  }
+
+  String _titleOf(TaskList? list) {
+    if (list == null) return 'Inbox';
+    if (list.name.isNotEmpty) return list.name;
+    return list.isInbox ? 'Inbox' : '(untitled)';
   }
 }
 
@@ -132,6 +157,7 @@ class _SyncBanner extends ConsumerWidget {
     );
   }
 }
+
 /// Shown until the Inbox list has arrived from the Sheet (first sign-in on this device).
 class _NoInbox extends ConsumerWidget {
   const _NoInbox();
@@ -157,7 +183,9 @@ class _NoInbox extends ConsumerWidget {
             if (signedOut)
               FilledButton.icon(
                 key: const Key('signInButton'),
-                onPressed: auth.busy || auth.restoring ? null : () => ref.read(authControllerProvider.notifier).signIn(),
+                onPressed: auth.busy || auth.restoring
+                    ? null
+                    : () => ref.read(authControllerProvider.notifier).signIn(),
                 icon: const Icon(Icons.login),
                 label: Text(auth.busy ? 'Waiting for Google...' : 'Sign in with Google'),
               )
@@ -231,7 +259,10 @@ class _TaskTile extends ConsumerWidget {
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref) async {
-    final title = await showDialog<String>(context: context, builder: (_) => _EditTitleDialog(initial: task.title));
+    final title = await showDialog<String>(
+      context: context,
+      builder: (_) => NameDialog(title: 'Edit title', initial: task.title),
+    );
     if (title == null || title.trim().isEmpty || title.trim() == task.title) return;
     final writer = await ref.read(localWriterProvider.future);
     await writer.update('tasks', task.id, {'title': title.trim()});
@@ -248,42 +279,6 @@ class _TaskTile extends ConsumerWidget {
         style: _done ? TextStyle(decoration: TextDecoration.lineThrough, color: muted) : null,
       ),
       onTap: () => _rename(context, ref),
-    );
-  }
-}
-
-class _EditTitleDialog extends StatefulWidget {
-  const _EditTitleDialog({required this.initial});
-
-  final String initial;
-
-  @override
-  State<_EditTitleDialog> createState() => _EditTitleDialogState();
-}
-
-class _EditTitleDialogState extends State<_EditTitleDialog> {
-  late final _controller = TextEditingController(text: widget.initial);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Edit title'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        textInputAction: TextInputAction.done,
-        onSubmitted: (v) => Navigator.pop(context, v),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(context, _controller.text), child: const Text('Save')),
-      ],
     );
   }
 }
@@ -340,7 +335,12 @@ class _AddBarState extends ConsumerState<_AddBar> {
                 onSubmitted: (_) => _add(),
               ),
             ),
-            IconButton(key: const Key('addTaskButton'), tooltip: 'Add task', icon: const Icon(Icons.add), onPressed: _add),
+            IconButton(
+              key: const Key('addTaskButton'),
+              tooltip: 'Add task',
+              icon: const Icon(Icons.add),
+              onPressed: _add,
+            ),
           ],
         ),
       ),
