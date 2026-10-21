@@ -41,8 +41,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   /// Writes the fields the user changed. A blank title is not saved, so the last real title stays.
   Future<void> _saveEdits() async {
-    // A task deleted elsewhere (by sync) stays deleted: nothing is written back to it.
-    if (ref.read(taskProvider(_id)).value?.deleted ?? false) return;
+    // Nothing is written until the row has loaded, and never to a task that sync has deleted.
+    final taskAsync = ref.read(taskProvider(_id));
+    if (taskAsync.isLoading || (taskAsync.value?.deleted ?? false)) return;
     final title = _title.text.trim();
     final notes = _notes.text;
     final changes = <String, Object?>{
@@ -95,8 +96,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _close();
+      onPopInvokedWithResult: (didPop, _) async {
+        if (!didPop) await _close();
       },
       child: Scaffold(
         appBar: AppBar(

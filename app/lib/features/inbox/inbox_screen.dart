@@ -268,7 +268,7 @@ class _TaskTile extends ConsumerWidget {
 
   final Task task;
 
-  bool get _done => task.status == 2;
+  bool get _done => task.status == TaskStatus.completed.value;
 
   Future<void> _toggle(WidgetRef ref, bool done) async {
     final writer = await ref.read(localWriterProvider.future);
