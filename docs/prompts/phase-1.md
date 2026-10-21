@@ -1,6 +1,6 @@
 # Prompt: start phase 1
 
-Open a new Claude Code session in `C:\Users\laure\Documents\GitHub\sheettick` and paste everything between the lines.
+Open a new Claude Code session in the SheetTick repo root and paste everything between the lines.
 
 ---
 
@@ -32,7 +32,7 @@ verified on real devices (Windows app + my Samsung phone, one Google Workspace a
   focus, so wake it before screenshots. USB debugging is already set up.
 - `app/secrets/` is git-ignored and already filled in (OAuth client files). **Never print, commit or paste its contents.**
   Google no longer shows a client secret after creation; if one is lost, add a new one and delete the old.
-- Local databases: Windows `C:\Users\laure\Documents\sheettick.sqlite`; phone via
+- Local databases: Windows `%USERPROFILE%\Documents\sheettick.sqlite`; phone via
   `adb exec-out run-as com.lmathieu.sheettick cat app_flutter/sheettick.sqlite`. Read them with Python's `sqlite3`
   (`mode=ro`). The spreadsheet id is in the `device_state` table. The Sheet holds only my test tasks: edit or delete
   them freely, but ask before doing anything destructive to the spreadsheet.
