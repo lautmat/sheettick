@@ -161,4 +161,25 @@ void main() {
     expect((await sectionRow(tester, sectionId)).name, 'Bills');
     await unmount(tester);
   });
+
+  testWidgets('a heading with a long name and a task count fits on a phone without overflow', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final inbox = await seed(tester, 'lists', {'name': 'Inbox', 'is_inbox': true});
+    final sectionId = await seed(tester, 'sections', {
+      'list_id': inbox,
+      'name': 'A very long section name that keeps going well past the width of a phone screen',
+    });
+    for (var i = 0; i < 12; i++) {
+      await seed(tester, 'tasks', {'list_id': inbox, 'title': 'Task $i', 'section_id': sectionId});
+    }
+    await tester.pumpWidget(app());
+    await settle(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(Key('sectionMenu-$sectionId')), findsOneWidget);
+    await unmount(tester);
+  });
 }
