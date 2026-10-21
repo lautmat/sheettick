@@ -155,7 +155,7 @@ void main() {
     await settle(tester);
 
     await openListMenu(tester, listId, 'Move to folder');
-    await tester.tap(find.byKey(Key('folder-pick-$folderId')));
+    await tester.tap(find.byKey(Key('pick-$folderId')));
     await animate(tester);
     await settle(tester);
 

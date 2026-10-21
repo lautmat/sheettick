@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
+import '../common/local_edit.dart';
 import '../common/name_dialog.dart';
+import '../common/pick_dialog.dart';
 import 'lists_providers.dart';
 
 /// Screens at least this wide keep the sidebar beside the list; narrower ones put it in a drawer.
@@ -107,7 +109,7 @@ class _ListMenu extends ConsumerWidget {
           case _ListAction.archive:
             // Leave the list on screen if it was the one open; the Inbox takes its place.
             if (ref.read(selectedListIdProvider) == list.id) ref.read(selectedListIdProvider.notifier).select(null);
-            _update(ref, 'lists', list.id, {'archived': true});
+            updateRow(ref, 'lists', list.id, {'archived': true});
         }
       },
       itemBuilder: (_) => const [
@@ -140,7 +142,7 @@ class _ArchivedSection extends ConsumerWidget {
             trailing: IconButton(
               tooltip: 'Restore',
               icon: const Icon(Icons.unarchive_outlined),
-              onPressed: () => _update(ref, 'lists', l.id, {'archived': false}),
+              onPressed: () => updateRow(ref, 'lists', l.id, {'archived': false}),
             ),
           ),
       ],
@@ -159,7 +161,7 @@ Future<void> _newList(BuildContext context, WidgetRef ref) async {
   final writer = await ref.read(localWriterProvider.future);
   final id = await writer.insert('lists', {
     'name': name.trim(),
-    'sort_order': _nextOrder(lists.map((l) => l.sortOrder)),
+    'sort_order': nextSortOrder(lists.map((l) => l.sortOrder)),
   });
   ref.read(selectedListIdProvider.notifier).select(id);
   ref.read(syncControllerProvider.notifier).requestSoon();
@@ -171,7 +173,7 @@ Future<void> _renameList(BuildContext context, WidgetRef ref, TaskList list) asy
     builder: (_) => NameDialog(title: 'Rename list', initial: list.name),
   );
   if (name == null || name.trim().isEmpty || name.trim() == list.name) return;
-  await _update(ref, 'lists', list.id, {'name': name.trim()});
+  await updateRow(ref, 'lists', list.id, {'name': name.trim()});
 }
 
 Future<void> _colourList(BuildContext context, WidgetRef ref, TaskList list) async {
@@ -181,7 +183,7 @@ Future<void> _colourList(BuildContext context, WidgetRef ref, TaskList list) asy
     builder: (_) => _ColourDialog(current: list.color),
   );
   if (picked == null) return;
-  await _update(ref, 'lists', list.id, {'color': picked.isEmpty ? null : picked});
+  await updateRow(ref, 'lists', list.id, {'color': picked.isEmpty ? null : picked});
 }
 
 Future<void> _moveList(BuildContext context, WidgetRef ref, TaskList list) async {
@@ -191,10 +193,15 @@ Future<void> _moveList(BuildContext context, WidgetRef ref, TaskList list) async
   // '' means "no folder"; null means the dialog was cancelled.
   final picked = await showDialog<String>(
     context: context,
-    builder: (_) => _FolderPickDialog(folders: folders, current: list.folderId),
+    builder: (_) => PickDialog(
+      title: 'Move to folder',
+      noneLabel: 'No folder',
+      options: [for (final f in folders) (id: f.id, name: f.name)],
+      current: list.folderId,
+    ),
   );
   if (picked == null) return;
-  await _update(ref, 'lists', list.id, {'folder_id': picked.isEmpty ? null : picked});
+  await updateRow(ref, 'lists', list.id, {'folder_id': picked.isEmpty ? null : picked});
 }
 
 // ---- Folders ----------------------------------------------------------------------------------------------------
@@ -245,7 +252,7 @@ Future<void> _newFolder(BuildContext context, WidgetRef ref) async {
   if (name == null || name.trim().isEmpty) return;
   final folders = await ref.read(foldersProvider.future);
   final writer = await ref.read(localWriterProvider.future);
-  await writer.insert('folders', {'name': name.trim(), 'sort_order': _nextOrder(folders.map((f) => f.sortOrder))});
+  await writer.insert('folders', {'name': name.trim(), 'sort_order': nextSortOrder(folders.map((f) => f.sortOrder))});
   ref.read(syncControllerProvider.notifier).requestSoon();
 }
 
@@ -255,7 +262,7 @@ Future<void> _renameFolder(BuildContext context, WidgetRef ref, Folder folder) a
     builder: (_) => NameDialog(title: 'Rename folder', initial: folder.name),
   );
   if (name == null || name.trim().isEmpty || name.trim() == folder.name) return;
-  await _update(ref, 'folders', folder.id, {'name': name.trim()});
+  await updateRow(ref, 'folders', folder.id, {'name': name.trim()});
 }
 
 Future<void> _deleteFolder(BuildContext context, WidgetRef ref, Folder folder) async {
@@ -316,47 +323,10 @@ class _ColourDialog extends StatelessWidget {
   }
 }
 
-class _FolderPickDialog extends StatelessWidget {
-  const _FolderPickDialog({required this.folders, required this.current});
-
-  final List<Folder> folders;
-  final String? current;
-
-  @override
-  Widget build(BuildContext context) {
-    return SimpleDialog(
-      title: const Text('Move to folder'),
-      children: [
-        SimpleDialogOption(
-          key: const Key('noFolder'),
-          onPressed: () => Navigator.pop(context, ''),
-          child: Text(current == null ? 'No folder (current)' : 'No folder'),
-        ),
-        for (final f in folders)
-          SimpleDialogOption(
-            key: Key('folder-pick-${f.id}'),
-            onPressed: () => Navigator.pop(context, f.id),
-            child: Text(f.id == current ? '${f.name} (current)' : f.name),
-          ),
-      ],
-    );
-  }
-}
-
 // ---- Helpers ----------------------------------------------------------------------------------------------------
-
-/// Writes [changes] to the row [id] of [tab] through the local writer, then asks for a sync.
-Future<void> _update(WidgetRef ref, String tab, String id, Map<String, Object?> changes) async {
-  final writer = await ref.read(localWriterProvider.future);
-  await writer.update(tab, id, changes);
-  ref.read(syncControllerProvider.notifier).requestSoon();
-}
 
 /// `#RRGGBB` as a colour. Null for no colour, or for a value a hand edit in the Sheet left unreadable.
 Color? _parseColour(String? hex) {
   if (hex == null || !RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)) return null;
   return Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
 }
-
-/// One step after the highest existing order.
-double _nextOrder(Iterable<double> orders) => orders.fold<double>(0, (m, v) => v > m ? v : m) + 1;

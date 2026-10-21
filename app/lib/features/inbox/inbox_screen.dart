@@ -9,6 +9,8 @@ import '../../core/time.dart';
 import '../common/name_dialog.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
+import '../sections/sections_providers.dart';
+import '../sections/sections_widgets.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -31,7 +33,14 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     final active = ref.watch(activeListProvider);
     final wide = MediaQuery.sizeOf(context).width >= kSidebarBreakpoint;
     final screen = Scaffold(
-      appBar: AppBar(title: Text(_titleOf(active.value)), actions: const [_SyncButton(), _AccountMenu()]),
+      appBar: AppBar(
+        title: Text(_titleOf(active.value)),
+        actions: [
+          if (active.value case final list?) NewSectionButton(listId: list.id),
+          const _SyncButton(),
+          const _AccountMenu(),
+        ],
+      ),
       drawer: wide ? null : const Drawer(child: SafeArea(child: ListsSidebar())),
       body: Column(
         children: [
@@ -210,13 +219,14 @@ class _InboxBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tasks = ref.watch(listTasksProvider(list.id));
+    final sections = ref.watch(sectionsProvider(list.id)).value ?? const <Section>[];
     return Column(
       children: [
         Expanded(
           child: RefreshIndicator(
             onRefresh: () => ref.read(syncControllerProvider.notifier).sync(),
             child: tasks.when(
-              data: (items) => items.isEmpty
+              data: (items) => items.isEmpty && sections.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: const [
@@ -226,11 +236,7 @@ class _InboxBody extends ConsumerWidget {
                         ),
                       ],
                     )
-                  : ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: items.length,
-                      itemBuilder: (context, i) => _TaskTile(key: ValueKey(items[i].id), task: items[i]),
-                    ),
+                  : ListView(physics: const AlwaysScrollableScrollPhysics(), children: _rows(items, sections)),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Could not read tasks: $e')),
             ),
@@ -240,6 +246,21 @@ class _InboxBody extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// The rows of a list: the tasks outside any section first, then each section's heading and, unless it is
+/// folded, its tasks.
+List<Widget> _rows(List<Task> items, List<Section> sections) {
+  final known = {for (final s in sections) s.id};
+  return [
+    for (final t in items)
+      if (t.sectionId == null || !known.contains(t.sectionId)) _TaskTile(key: ValueKey(t.id), task: t),
+    for (final s in sections) ...[
+      SectionHeader(section: s, count: items.where((t) => t.sectionId == s.id).length),
+      if (!s.collapsed)
+        for (final t in items.where((t) => t.sectionId == s.id)) _TaskTile(key: ValueKey(t.id), task: t),
+    ],
+  ];
 }
 
 class _TaskTile extends ConsumerWidget {
@@ -279,6 +300,12 @@ class _TaskTile extends ConsumerWidget {
         style: _done ? TextStyle(decoration: TextDecoration.lineThrough, color: muted) : null,
       ),
       onTap: () => _rename(context, ref),
+      trailing: PopupMenuButton<String>(
+        key: Key('taskMenu-${task.id}'),
+        tooltip: 'Task options',
+        onSelected: (_) => moveTaskToSection(context, ref, task),
+        itemBuilder: (_) => const [PopupMenuItem(value: 'section', child: Text('Move to section'))],
+      ),
     );
   }
 }
