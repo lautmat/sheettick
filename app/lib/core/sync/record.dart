@@ -73,17 +73,28 @@ Object? decodeCell(ColumnType type, Object? cell) {
     case ColumnType.number:
       if (cell is num) return cell.toDouble();
       return double.tryParse('$cell'.trim());
-    case ColumnType.uuid ||
-        ColumnType.text ||
-        ColumnType.markdown ||
-        ColumnType.enumeration ||
-        ColumnType.json ||
-        ColumnType.datetime ||
-        ColumnType.date ||
-        ColumnType.timestamp:
+    case ColumnType.date || ColumnType.datetime || ColumnType.timestamp:
+      // Sheets turns a date typed into a cell without the plain-text format into a serial number. Read it back
+      // as the date the user meant instead of the number 46320.
+      if (cell is num) return serialToIso(cell, type);
+      return '$cell';
+    case ColumnType.uuid || ColumnType.text || ColumnType.markdown || ColumnType.enumeration || ColumnType.json:
       if (cell is num && cell == cell.truncate()) return '${cell.truncate()}';
       return '$cell';
   }
+}
+
+/// A Sheets date serial (days since 1899-12-30) as ISO 8601: `2026-10-25`, or with a time part
+/// `2026-10-25T14:30:00` (floating, no zone; timestamp columns are UTC, so those end in `Z`).
+String serialToIso(num serial, ColumnType type) {
+  final days = serial.floor();
+  final seconds = ((serial - days) * 86400).round();
+  final date = DateTime.utc(1899, 12, 30).add(Duration(days: days, seconds: seconds));
+  String two(int n) => n.toString().padLeft(2, '0');
+  final day = '${date.year.toString().padLeft(4, '0')}-${two(date.month)}-${two(date.day)}';
+  if (type == ColumnType.date || seconds == 0) return day;
+  final time = '${two(date.hour)}:${two(date.minute)}:${two(date.second)}';
+  return type == ColumnType.timestamp ? '${day}T${time}Z' : '${day}T$time';
 }
 
 /// A Dart value → the cell to write. `null` becomes an empty string, which clears the cell (a `null` would
