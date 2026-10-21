@@ -73,6 +73,10 @@ class _SyncBanner extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final (text, color) = switch (status.phase) {
       SyncPhase.needsSignIn => ('Not signed in to Google: changes stay on this device.', scheme.secondaryContainer),
+      SyncPhase.offline => (
+        'Offline: your changes are saved on this device and will sync when you are back online.',
+        scheme.surfaceContainerHighest,
+      ),
       SyncPhase.error => ('Sync failed: ${status.message}', scheme.errorContainer),
       _ => (null, null),
     };

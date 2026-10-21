@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../db/database.dart';
 import '../providers.dart';
 import '../sheets/bootstrap.dart';
+import 'offline.dart';
 import 'sync_engine.dart';
 
-enum SyncPhase { idle, syncing, needsSignIn, error }
+/// [offline] is not a failure: the device cannot reach Google right now, everything stays saved locally and the
+/// next cycle (timer, resume, Sync now) tries again.
+enum SyncPhase { idle, syncing, needsSignIn, offline, error }
 
 class SyncStatus {
   const SyncStatus(this.phase, {this.lastSyncedAt, this.message});
@@ -64,7 +67,9 @@ class SyncController extends Notifier<SyncStatus> {
       await SyncEngine(backend: backend, store: store, deviceId: deviceId).sync();
       state = SyncStatus(SyncPhase.idle, lastSyncedAt: DateTime.now());
     } catch (e) {
-      state = SyncStatus(SyncPhase.error, lastSyncedAt: state.lastSyncedAt, message: _describe(e));
+      state = isOfflineError(e)
+          ? SyncStatus(SyncPhase.offline, lastSyncedAt: state.lastSyncedAt)
+          : SyncStatus(SyncPhase.error, lastSyncedAt: state.lastSyncedAt, message: _describe(e));
     }
   }
 
