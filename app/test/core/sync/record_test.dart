@@ -30,6 +30,24 @@ void main() {
       expect(decodeCell(ColumnType.number, 'x'), isNull);
     });
 
+    test('date columns read a Sheets date serial back as the date the user typed', () {
+      expect(decodeCell(ColumnType.date, 46320), '2026-10-25');
+      expect(decodeCell(ColumnType.datetime, 46320), '2026-10-25');
+      expect(decodeCell(ColumnType.datetime, 46320.0), '2026-10-25');
+      expect(decodeCell(ColumnType.datetime, 46320.5), '2026-10-25T12:00:00');
+      expect(decodeCell(ColumnType.datetime, 46320.604166666664), '2026-10-25T14:30:00');
+      expect(decodeCell(ColumnType.timestamp, 46320.5), '2026-10-25T12:00:00Z');
+      expect(decodeCell(ColumnType.date, 46320.75), '2026-10-25'); // a date column keeps only the date
+      expect(decodeCell(ColumnType.date, 1), '1899-12-31');
+      expect(decodeCell(ColumnType.date, 45658), '2025-01-01');
+    });
+
+    test('date columns leave real strings alone', () {
+      expect(decodeCell(ColumnType.datetime, '2026-10-25T14:30:00+09:00'), '2026-10-25T14:30:00+09:00');
+      expect(decodeCell(ColumnType.date, '2026-10-25'), '2026-10-25');
+      expect(decodeCell(ColumnType.timestamp, '2026-10-19T13:05:00Z'), '2026-10-19T13:05:00Z');
+    });
+
     test('text columns keep strings, and render a typed number without ".0"', () {
       expect(decodeCell(ColumnType.text, 'hello'), 'hello');
       expect(decodeCell(ColumnType.text, 42), '42');

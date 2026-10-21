@@ -12,8 +12,22 @@ class _Wire {
   Map<String, Object?> Function(http.Request)? reply;
   int? failFirstWith;
 
+  /// Answers 403 to the formatting `spreadsheets:batchUpdate` (not to `values:batchUpdate`).
+  bool rejectFormatting = false;
+
+  /// The requests that wrote values (`values:batchUpdate`).
+  List<http.Request> get valueWrites => requests.where((r) => r.url.path.endsWith('/values:batchUpdate')).toList();
+
+  /// The requests that changed formatting (`spreadsheets/<id>:batchUpdate`).
+  List<http.Request> get formatBatches =>
+      requests.where((r) => r.url.path.endsWith(':batchUpdate') && !r.url.path.contains('/values')).toList();
+
   late final client = MockClient((req) async {
     requests.add(req);
+    if (rejectFormatting && req.url.path.endsWith(':batchUpdate') && !req.url.path.contains('/values')) {
+      return http.Response(jsonEncode({'error': {'code': 403, 'message': 'no'}}), 403,
+          headers: {'content-type': 'application/json'});
+    }
     if (failFirstWith != null) {
       final status = failFirstWith!;
       failFirstWith = null;
@@ -119,17 +133,126 @@ void main() {
         ['y'],
       ],
     });
-    expect(wire.requests, hasLength(1));
-    expect(wire.last.url.path, endsWith('/spreadsheets/s1/values:batchUpdate'));
-    expect(wire.lastBody['valueInputOption'], 'RAW');
-    expect((wire.lastBody['data'] as List).map((d) => d['range']), ['tasks!A2:C2', 'lists!A3']);
+    expect(wire.valueWrites, hasLength(1));
+    expect(wire.valueWrites.single.url.path, endsWith('/spreadsheets/s1/values:batchUpdate'));
+    final first = jsonDecode(wire.valueWrites.single.body) as Map;
+    expect(first['valueInputOption'], 'RAW');
+    expect((first['data'] as List).map((d) => d['range']), ['tasks!A2:C2', 'lists!A3']);
 
     await backend.writeRanges('s1', {
       'View!A1': [
         ['=1+1'],
       ],
     }, userEntered: true);
-    expect(wire.lastBody['valueInputOption'], 'USER_ENTERED');
+    expect(jsonDecode(wire.valueWrites.last.body)['valueInputOption'], 'USER_ENTERED');
+  });
+
+  group('plain-text format is restored after writes', () {
+    Map<String, Object?> reply(http.Request req) => req.url.path.endsWith(':append')
+        ? {
+            'updates': {'updatedRange': 'tasks!A9:AB9', 'updatedRows': 1},
+          }
+        : {
+            'sheets': [
+              {'properties': {'sheetId': 42, 'title': 'tasks'}},
+              {'properties': {'sheetId': 43, 'title': 'View'}},
+            ],
+          };
+
+    /// Columns (0-based) covered by plain-text `repeatCell` requests in [batch].
+    Set<int> textColumns(http.Request batch) {
+      final out = <int>{};
+      for (final r in (jsonDecode(batch.body) as Map)['requests'] as List) {
+        final rc = (r as Map)['repeatCell'] as Map;
+        expect(rc['fields'], 'userEnteredFormat.numberFormat');
+        expect(rc['cell']['userEnteredFormat']['numberFormat']['type'], 'TEXT');
+        expect(rc['range']['sheetId'], 42);
+        for (var c = rc['range']['startColumnIndex'] as int; c < (rc['range']['endColumnIndex'] as int); c++) {
+          out.add(c);
+        }
+      }
+      return out;
+    }
+
+    test('writeRanges: one formatting request afterwards, only on text columns, whole column', () async {
+      wire.reply = reply;
+      await backend.writeRanges('s1', {
+        'tasks!A2:AB2': [
+          ['x'],
+        ],
+        'tasks!A3:AB3': [
+          ['y'],
+        ],
+      });
+      expect(wire.formatBatches, hasLength(1)); // two ranges, one tab: one request
+      final spec = tabSpec('tasks');
+      expect(textColumns(wire.formatBatches.single), {
+        for (var i = 0; i < spec.columns.length; i++)
+          if (spec.columns[i].type.isTextual) i,
+      });
+      final ranges = [
+        for (final r in (jsonDecode(wire.formatBatches.single.body) as Map)['requests'] as List)
+          (r as Map)['repeatCell']['range'] as Map,
+      ];
+      expect(ranges.every((r) => !r.containsKey('endRowIndex') && r['startRowIndex'] == 0), isTrue);
+    });
+
+    test('appendRows restores it as well', () async {
+      wire.reply = reply;
+      await backend.appendRows('s1', 'tasks', [
+        ['x'],
+      ]);
+      expect(wire.formatBatches, hasLength(1));
+      expect(textColumns(wire.formatBatches.single), isNotEmpty);
+    });
+
+    test('the View tab and unknown tabs are not touched', () async {
+      wire.reply = reply;
+      await backend.writeRanges('s1', {
+        'View!A1': [
+          ['=1+1'],
+        ],
+      }, userEntered: true);
+      await backend.writeRanges('s1', {
+        "'My notes'!A1": [
+          ['x'],
+        ],
+      });
+      expect(wire.formatBatches, isEmpty);
+    });
+
+    test('a refused formatting request never fails (or repeats) the write', () async {
+      wire.reply = reply;
+      wire.rejectFormatting = true;
+      final r = await backend.appendRows('s1', 'tasks', [
+        ['x'],
+      ]);
+      expect(r.firstRow, 9);
+      expect(wire.requests.where((q) => q.url.path.contains(':append')), hasLength(1));
+    });
+
+    test('tab ids are looked up once per spreadsheet', () async {
+      wire.reply = reply;
+      await backend.writeRanges('s1', {
+        'tasks!A2': [
+          ['a'],
+        ],
+      });
+      await backend.writeRanges('s1', {
+        'tasks!A3': [
+          ['b'],
+        ],
+      });
+      final lookups = wire.requests.where((q) => q.method == 'GET' && q.url.path.endsWith('/spreadsheets/s1'));
+      expect(lookups, hasLength(1));
+    });
+
+    test('tabOfRange', () {
+      expect(tabOfRange('tasks!A2:C2'), 'tasks');
+      expect(tabOfRange("'My Tab'!A1"), 'My Tab');
+      expect(tabOfRange("'It''s'!A1"), "It's");
+      expect(tabOfRange('lists'), 'lists');
+    });
   });
 
   test('readRanges is one batchGet with unformatted values, and tolerates empty ranges', () async {
@@ -166,9 +289,10 @@ void main() {
       ['b'],
     ]);
     expect((r.firstRow, r.rowCount), (5, 2));
-    expect(Uri.decodeComponent(wire.last.url.path), contains('values/tasks!A1:append'));
-    expect(wire.last.url.queryParameters['valueInputOption'], 'RAW');
-    expect(wire.last.url.queryParameters['insertDataOption'], 'INSERT_ROWS');
+    final append = wire.requests.firstWhere((q) => Uri.decodeComponent(q.url.path).contains(':append'));
+    expect(Uri.decodeComponent(append.url.path), contains('values/tasks!A1:append'));
+    expect(append.url.queryParameters['valueInputOption'], 'RAW');
+    expect(append.url.queryParameters['insertDataOption'], 'INSERT_ROWS');
   });
 
   test('changeTabs adds tabs with a frozen header and plain-text columns, then removes, in one request', () async {
