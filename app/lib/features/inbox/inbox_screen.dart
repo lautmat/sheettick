@@ -105,6 +105,9 @@ class _SyncBanner extends ConsumerWidget {
       text = auth.error ?? 'Not signed in to Google: changes stay on this device.';
       color = auth.error == null ? scheme.secondaryContainer : scheme.errorContainer;
       offerSignIn = true;
+    } else if (status.phase == SyncPhase.offline) {
+      text = 'Offline: your changes are saved on this device and will sync when you are back online.';
+      color = scheme.surfaceContainerHighest;
     } else if (status.phase == SyncPhase.error) {
       text = 'Sync failed: ${status.message}';
       color = scheme.errorContainer;

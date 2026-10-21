@@ -135,18 +135,7 @@ class GoogleSheetsBackend implements SheetsBackend {
       );
       if (columns.isEmpty) continue;
       requests.add(_boldHeader(sheetId, columns.length));
-      // Plain-text format on every contiguous run of textual columns (header row included), so values typed
-      // by hand stay literal instead of turning into dates or numbers.
-      int? runStart;
-      for (var i = 0; i <= columns.length; i++) {
-        final textual = i < columns.length && columns[i].type.isTextual;
-        if (textual) {
-          runStart ??= i;
-        } else if (runStart != null) {
-          requests.add(_plainText(sheetId, runStart, i));
-          runStart = null;
-        }
-      }
+      requests.addAll(_plainTextRuns(sheetId, columns));
     }
     for (final id in removeSheetIds) {
       requests.add(sheets.Request(deleteSheet: sheets.DeleteSheetRequest(sheetId: id)));
@@ -173,6 +162,23 @@ class GoogleSheetsBackend implements SheetsBackend {
       fields: 'userEnteredFormat.textFormat.bold',
     ),
   );
+
+  /// Plain-text format on every contiguous run of textual columns (header row included), so values typed by
+  /// hand stay literal instead of turning into dates or numbers.
+  List<sheets.Request> _plainTextRuns(int sheetId, List<ColumnSpec> columns) {
+    final out = <sheets.Request>[];
+    int? runStart;
+    for (var i = 0; i <= columns.length; i++) {
+      final textual = i < columns.length && columns[i].type.isTextual;
+      if (textual) {
+        runStart ??= i;
+      } else if (runStart != null) {
+        out.add(_plainText(sheetId, runStart, i));
+        runStart = null;
+      }
+    }
+    return out;
+  }
 
   sheets.Request _plainText(int sheetId, int fromColumn, int toColumnExclusive) => sheets.Request(
     repeatCell: sheets.RepeatCellRequest(
@@ -220,6 +226,39 @@ class GoogleSheetsBackend implements SheetsBackend {
         spreadsheetId,
       ),
     );
+    await _restoreTextFormat(spreadsheetId, [for (final range in data.keys) tabOfRange(range)]);
+  }
+
+  final Map<String, Map<String, int>> _sheetIds = {};
+
+  Future<int?> _sheetIdOf(String spreadsheetId, String tab) async {
+    var ids = _sheetIds[spreadsheetId];
+    if (ids == null || !ids.containsKey(tab)) {
+      ids = _sheetIds[spreadsheetId] = {for (final t in await listTabs(spreadsheetId)) t.title: t.sheetId};
+    }
+    return ids[tab];
+  }
+
+  /// Writing values through the API clears a cell's plain-text format, and a cell that lost it turns a value
+  /// typed by hand (`2026-10-25`) into a date serial. So after every write the text columns of the tabs
+  /// touched get the format back, in one request. Best effort: the data is already written, and a failure
+  /// here must not make the caller retry (and duplicate) it; the next write tries again.
+  Future<void> _restoreTextFormat(String spreadsheetId, Iterable<String> tabs) async {
+    try {
+      final requests = <sheets.Request>[];
+      for (final tab in tabs.toSet()) {
+        final spec = kTabs.where((t) => t.name == tab).firstOrNull;
+        if (spec == null) continue; // View and tabs the user added are left alone.
+        final sheetId = await _sheetIdOf(spreadsheetId, tab);
+        if (sheetId != null) requests.addAll(_plainTextRuns(sheetId, spec.columns));
+      }
+      if (requests.isEmpty) return;
+      await _call(
+        () => _sheets.spreadsheets.batchUpdate(sheets.BatchUpdateSpreadsheetRequest(requests: requests), spreadsheetId),
+      );
+    } on Object {
+      // See above.
+    }
   }
 
   @override
@@ -235,6 +274,7 @@ class GoogleSheetsBackend implements SheetsBackend {
     );
     final range = res.updates?.updatedRange;
     if (range == null) throw StateError('Sheets append returned no updatedRange');
+    await _restoreTextFormat(spreadsheetId, [tab]);
     return AppendResult(firstRow: firstRowOfRange(range), rowCount: res.updates?.updatedRows ?? rows.length);
   }
 
@@ -252,6 +292,15 @@ class GoogleSheetsBackend implements SheetsBackend {
 /// True for HTTP 429 and 5xx, the errors worth retrying.
 bool isTransientApiError(Object error) =>
     error is drive.DetailedApiRequestError && (error.status == 429 || (error.status ?? 0) >= 500);
+
+/// The tab name of an A1 range: `tasks!A2:C2` ? `tasks`, `'My Tab'!A1` ? `My Tab`.
+String tabOfRange(String a1) {
+  final bang = a1.indexOf('!');
+  final name = bang < 0 ? a1 : a1.substring(0, bang);
+  return name.startsWith("'") && name.endsWith("'") && name.length >= 2
+      ? name.substring(1, name.length - 1).replaceAll("''", "'")
+      : name;
+}
 
 /// First row (1-based) of an A1 range as returned in `updates.updatedRange`:
 /// `tasks!A5:AB6` → 5, `'My Tab'!A12` → 12.

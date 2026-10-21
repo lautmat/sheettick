@@ -431,6 +431,21 @@ void main() {
       expect((await b.task(id)).fields['title'], 'original');
     });
 
+    test('a date that Sheets turned into a serial number arrives as the date, and is written back as text', () async {
+      final id = await a.addTask('Pay rent');
+      await a.sync();
+      final row = sheetRowOf(backend, a.spreadsheetId, 'tasks', id)!;
+
+      backend.setCell(a.spreadsheetId, 'tasks', row, 'due_at', 46320); // what Sheets stores for 2026-10-25
+      a.tick();
+      await a.sync();
+
+      expect((await a.task(id)).fields['due_at'], '2026-10-25');
+      expect(cell(backend, a.spreadsheetId, 'tasks', row, 'due_at'), '2026-10-25');
+      await b.sync();
+      expect((await b.task(id)).fields['due_at'], '2026-10-25');
+    });
+
     test('a row deleted by hand stays on the device and is appended again when edited', () async {
       final id = await a.addTask('precious');
       await a.sync();

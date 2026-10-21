@@ -9,9 +9,12 @@ import '../auth/auth_service.dart' show AuthException;
 import '../db/database.dart';
 import '../providers.dart';
 import '../sheets/bootstrap.dart';
+import 'offline.dart';
 import 'sync_engine.dart';
 
-enum SyncPhase { idle, syncing, needsSignIn, error }
+/// [offline] is not a failure: the device cannot reach Google right now, everything stays saved locally and the
+/// next cycle (timer, resume, Sync now) tries again.
+enum SyncPhase { idle, syncing, needsSignIn, offline, error }
 
 class SyncStatus {
   const SyncStatus(this.phase, {this.lastSyncedAt, this.message});
@@ -76,6 +79,8 @@ class SyncController extends Notifier<SyncStatus> {
         const message = 'Google no longer accepts this sign-in. Please sign in again.';
         ref.read(authControllerProvider.notifier).sessionExpired(message);
         state = SyncStatus(SyncPhase.needsSignIn, lastSyncedAt: state.lastSyncedAt);
+      } else if (isOfflineError(e)) {
+        state = SyncStatus(SyncPhase.offline, lastSyncedAt: state.lastSyncedAt);
       } else {
         state = SyncStatus(SyncPhase.error, lastSyncedAt: state.lastSyncedAt, message: _describe(e));
       }

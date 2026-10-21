@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:googleapis/drive/v3.dart' show DetailedApiRequestError;
+import 'package:http/http.dart' as http;
 import 'package:sheettick/app.dart';
 import 'package:sheettick/core/auth/auth_controller.dart';
 import 'package:sheettick/core/auth/auth_service.dart';
@@ -39,6 +40,17 @@ class _Forbidden extends FakeSheetsBackend {
   Future<List<SpreadsheetFile>> findSpreadsheets() => throw DetailedApiRequestError(403, 'Google Sheets API has not been used');
   @override
   Future<SpreadsheetFile?> getFile(String id) => throw DetailedApiRequestError(403, 'Rate limit exceeded');
+}
+
+/// The device has no network: every Google call fails the way it does in airplane mode.
+class _NoNetwork extends FakeSheetsBackend {
+  static const _message = "Failed host lookup: 'www.googleapis.com' (OS Error: No address associated with hostname)";
+  @override
+  Future<SpreadsheetFile?> getFile(String id) =>
+      throw http.ClientException('SocketException: $_message', Uri.parse('https://www.googleapis.com/drive/v3/files/x'));
+  @override
+  Future<List<SpreadsheetFile>> findSpreadsheets() =>
+      throw http.ClientException('SocketException: $_message', Uri.parse('https://www.googleapis.com/drive/v3/files'));
 }
 
 /// A writer whose database write fails.
@@ -268,6 +280,26 @@ void main() {
     expect(titles, {'From my phone', 'From my PC'});
     await unmount(tester);
     await tester.runAsync(() => other!.close());
+  });
+
+  testWidgets('with no network the banner is a calm offline note, not a red error', (tester) async {
+    await seedInbox(tester);
+    await tester.pumpWidget(app(backend: _NoNetwork()));
+    await settle(tester);
+
+    expect(find.textContaining('Offline'), findsOneWidget);
+    expect(find.textContaining('saved on this device'), findsOneWidget);
+    expect(find.textContaining('Sync failed'), findsNothing);
+    expect(find.textContaining('SocketException'), findsNothing);
+    expect(find.textContaining('googleapis'), findsNothing);
+
+    // Editing carries on, and the task is kept for the next sync.
+    await tester.enterText(find.byKey(const Key('addTaskField')), 'made in airplane mode');
+    await tester.tap(find.byKey(const Key('addTaskButton')));
+    await settle(tester);
+    expect(find.text('made in airplane mode'), findsOneWidget);
+    expect((await tasksInDb(tester)).single.dirty, isTrue);
+    await unmount(tester);
   });
 
   testWidgets('a failing sync shows a message and keeps working offline', (tester) async {
