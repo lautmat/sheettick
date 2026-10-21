@@ -62,7 +62,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     );
   }
 
-  String _titleOf(TaskList? list) => list == null || list.name.isEmpty ? 'Inbox' : list.name;
+  String _titleOf(TaskList? list) {
+    if (list == null) return 'Inbox';
+    if (list.name.isNotEmpty) return list.name;
+    return list.isInbox ? 'Inbox' : '(untitled)';
+  }
 }
 
 class _SyncButton extends ConsumerWidget {
@@ -153,6 +157,7 @@ class _SyncBanner extends ConsumerWidget {
     );
   }
 }
+
 /// Shown until the Inbox list has arrived from the Sheet (first sign-in on this device).
 class _NoInbox extends ConsumerWidget {
   const _NoInbox();
@@ -178,7 +183,9 @@ class _NoInbox extends ConsumerWidget {
             if (signedOut)
               FilledButton.icon(
                 key: const Key('signInButton'),
-                onPressed: auth.busy || auth.restoring ? null : () => ref.read(authControllerProvider.notifier).signIn(),
+                onPressed: auth.busy || auth.restoring
+                    ? null
+                    : () => ref.read(authControllerProvider.notifier).signIn(),
                 icon: const Icon(Icons.login),
                 label: Text(auth.busy ? 'Waiting for Google...' : 'Sign in with Google'),
               )
@@ -328,7 +335,12 @@ class _AddBarState extends ConsumerState<_AddBar> {
                 onSubmitted: (_) => _add(),
               ),
             ),
-            IconButton(key: const Key('addTaskButton'), tooltip: 'Add task', icon: const Icon(Icons.add), onPressed: _add),
+            IconButton(
+              key: const Key('addTaskButton'),
+              tooltip: 'Add task',
+              icon: const Icon(Icons.add),
+              onPressed: _add,
+            ),
           ],
         ),
       ),

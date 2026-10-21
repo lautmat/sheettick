@@ -42,13 +42,13 @@ class ListsSidebar extends ConsumerWidget {
           key: const Key('newList'),
           leading: const Icon(Icons.add),
           title: const Text('New list'),
-          onTap: () => _newList(context, ref, lists),
+          onTap: () => _newList(context, ref),
         ),
         ListTile(
           key: const Key('newFolder'),
           leading: const Icon(Icons.create_new_folder_outlined),
           title: const Text('New folder'),
-          onTap: () => _newFolder(context, ref, folders),
+          onTap: () => _newFolder(context, ref),
         ),
       ],
     );
@@ -105,6 +105,8 @@ class _ListMenu extends ConsumerWidget {
           case _ListAction.move:
             _moveList(context, ref, list);
           case _ListAction.archive:
+            // Leave the list on screen if it was the one open; the Inbox takes its place.
+            if (ref.read(selectedListIdProvider) == list.id) ref.read(selectedListIdProvider.notifier).select(null);
             _update(ref, 'lists', list.id, {'archived': true});
         }
       },
@@ -146,12 +148,14 @@ class _ArchivedSection extends ConsumerWidget {
   }
 }
 
-Future<void> _newList(BuildContext context, WidgetRef ref, List<TaskList> lists) async {
+Future<void> _newList(BuildContext context, WidgetRef ref) async {
   final name = await showDialog<String>(
     context: context,
     builder: (_) => const NameDialog(title: 'New list'),
   );
   if (name == null || name.trim().isEmpty) return;
+  // Read the lists when the name is in, not when the sidebar was built: the snapshot may still be loading.
+  final lists = await ref.read(sidebarListsProvider.future);
   final writer = await ref.read(localWriterProvider.future);
   final id = await writer.insert('lists', {
     'name': name.trim(),
@@ -181,7 +185,9 @@ Future<void> _colourList(BuildContext context, WidgetRef ref, TaskList list) asy
 }
 
 Future<void> _moveList(BuildContext context, WidgetRef ref, TaskList list) async {
-  final folders = ref.read(foldersProvider).value ?? const <Folder>[];
+  // Wait for the first emission, so the dialog never opens with the folders missing.
+  final folders = await ref.read(foldersProvider.future);
+  if (!context.mounted) return;
   // '' means "no folder"; null means the dialog was cancelled.
   final picked = await showDialog<String>(
     context: context,
@@ -231,12 +237,13 @@ class _FolderHeader extends ConsumerWidget {
   }
 }
 
-Future<void> _newFolder(BuildContext context, WidgetRef ref, List<Folder> folders) async {
+Future<void> _newFolder(BuildContext context, WidgetRef ref) async {
   final name = await showDialog<String>(
     context: context,
     builder: (_) => const NameDialog(title: 'New folder'),
   );
   if (name == null || name.trim().isEmpty) return;
+  final folders = await ref.read(foldersProvider.future);
   final writer = await ref.read(localWriterProvider.future);
   await writer.insert('folders', {'name': name.trim(), 'sort_order': _nextOrder(folders.map((f) => f.sortOrder))});
   ref.read(syncControllerProvider.notifier).requestSoon();

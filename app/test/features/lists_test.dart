@@ -107,6 +107,7 @@ void main() {
       () => (db.select(db.lists)..where((l) => l.name.equals('Groceries'))).getSingle(),
     );
     expect(created.dirty, isTrue);
+    expect(created.sortOrder, 1.0); // after the Inbox, which is at 0
     expect(find.byKey(Key('list-${created.id}')), findsOneWidget);
     expect(find.descendant(of: find.byType(AppBar), matching: find.text('Groceries')), findsOneWidget);
     await unmount(tester);
@@ -251,6 +252,36 @@ void main() {
     await animate(tester);
     await settle(tester);
     expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen, isFalse);
+    expect(find.descendant(of: find.byType(AppBar), matching: find.text('Groceries')), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('turning a phone window wide while the drawer is open leaves no error and a working sidebar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await seed(tester, 'lists', {'name': 'Inbox', 'is_inbox': true});
+    final groceries = await seed(tester, 'lists', {'name': 'Groceries'});
+    await tester.pumpWidget(app());
+    await settle(tester);
+
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await animate(tester);
+    expect(tester.state<ScaffoldState>(find.byType(Scaffold)).isDrawerOpen, isTrue);
+
+    tester.view.physicalSize = const Size(800, 600);
+    await animate(tester);
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+
+    // The sidebar is beside the list now, so picking a list there works.
+    await tester.tap(find.byKey(Key('list-$groceries')).last);
+    await animate(tester);
+    await settle(tester);
+    expect(tester.takeException(), isNull);
     expect(find.descendant(of: find.byType(AppBar), matching: find.text('Groceries')), findsOneWidget);
     await unmount(tester);
   });

@@ -28,7 +28,7 @@ class _NameDialogState extends State<NameDialog> {
         controller: _controller,
         autofocus: true,
         textInputAction: TextInputAction.done,
-        onSubmitted: (v) => Navigator.pop(context, v),
+        onSubmitted: (_) => Navigator.pop(context, _controller.text),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
