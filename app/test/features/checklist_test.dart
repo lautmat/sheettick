@@ -207,4 +207,24 @@ void main() {
     expect(tester.getTopLeft(find.text('Shirts')).dy, lessThan(tester.getTopLeft(find.text('Socks')).dy));
     await unmount(tester);
   });
+
+  testWidgets('two items submitted back to back each get their own place', (tester) async {
+    final inbox = await seedInbox(tester);
+    await addTask(tester, inbox, 'Pack for the trip');
+    await tester.pumpWidget(app());
+    await settle(tester);
+    await openTask(tester, 'Pack for the trip');
+
+    // No settle between the two: the second Enter comes before the first item has reached the list.
+    await tester.enterText(find.byKey(const Key('addChecklistItemField')), 'Socks');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.enterText(find.byKey(const Key('addChecklistItemField')), 'Shirts');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await settle(tester);
+
+    final socks = await itemTitled(tester, 'Socks');
+    final shirts = await itemTitled(tester, 'Shirts');
+    expect(shirts.sortOrder, greaterThan(socks.sortOrder));
+    await unmount(tester);
+  });
 }
