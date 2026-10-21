@@ -24,7 +24,8 @@ Android Studio and the Android emulator are intentionally not installed. Android
    sdkmanager --sdk_root=%LOCALAPPDATA%\Android\Sdk platform-tools "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
    ```
    The NDK is required by Flutter's Android template. Gradle cannot auto-install it with the new `sdkmanager` shim,
-   so install it up front (about 2 GB unpacked).
+   so install it up front (about 2 GB unpacked). The first Android build also lets Gradle download CMake 3.22.1
+   into the SDK (needed by the SQLite plugin); that one works unattended.
    Set `ANDROID_HOME` to the SDK folder and add `platform-tools` to `PATH`.
 4. `flutter config --android-sdk %ANDROID_HOME% --no-analytics`, then `flutter doctor --android-licenses`.
 5. `flutter doctor -v` must show no issues.

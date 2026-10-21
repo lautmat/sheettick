@@ -1,10 +1,10 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sheettick/core/db/database.dart';
 import 'package:sheettick/core/db/fts.dart';
+
+import '../../support/schema_doc.dart';
 
 const _now = '2026-10-19T13:05:00Z';
 
@@ -21,34 +21,6 @@ TasksCompanion _task(
   content: Value(content),
   deleted: Value(deleted),
 );
-
-/// The body of the `docs/sheet-schema.md` section whose heading line starts with [heading].
-String _section(String doc, String heading) {
-  final match = RegExp(
-    '^### ${RegExp.escape(heading)}[^\\n]*\\n(.*?)(?=^##|(?![\\s\\S]))',
-    multiLine: true,
-    dotAll: true,
-  ).firstMatch(doc);
-  if (match == null) throw StateError('Section "### $heading" not found in docs/sheet-schema.md');
-  return match.group(1)!;
-}
-
-/// Column names declared for [heading] in the doc: either the first cell of each table row, or the
-/// backticked names of the one-line listing (ignoring parenthesised value lists and the "+ sync columns" tail).
-List<String> _docColumns(String doc, String heading) {
-  final section = _section(doc, heading);
-  if (section.contains('| Column |')) {
-    return [
-      for (final line in section.split('\n'))
-        if (RegExp(r'^\| `(\w+)` \|').firstMatch(line) case final m?) m.group(1)!,
-    ];
-  }
-  var listing = section.contains('columns:')
-      ? section.split('columns:').last.split('. ').first
-      : section.split('+ sync columns').first;
-  listing = listing.replaceAll(RegExp(r'\([^)]*\)'), '');
-  return [for (final m in RegExp(r'`(\w+)`').allMatches(listing)) m.group(1)!];
-}
 
 void main() {
   late AppDatabase db;
@@ -147,14 +119,10 @@ void main() {
   });
 
   group('docs/sheet-schema.md is canonical', () {
-    // Read inside setUpAll, not while the group is registered: a missing file then fails these tests with a
-    // clear error instead of aborting the whole test run.
-    late String doc;
-    late List<String> syncColumns;
-    setUpAll(() {
-      doc = File('../docs/sheet-schema.md').readAsStringSync();
-      syncColumns = _docColumns(doc, 'Sync columns');
-    });
+    // Read in setUpAll, not while the group is registered: a missing file then fails these tests with a clear
+    // error instead of aborting the whole test run.
+    late SchemaDoc doc;
+    setUpAll(() => doc = SchemaDoc());
 
     List<String> dbColumns(String table) => db.allTables
         .firstWhere((t) => t.actualTableName == table)
@@ -166,7 +134,7 @@ void main() {
 
     for (final table in ['tasks', 'lists']) {
       test('$table columns match the doc, plus sync columns and local bookkeeping', () {
-        final fromDoc = {..._docColumns(doc, '`$table`'), ...syncColumns};
+        final fromDoc = {...doc.tabColumns(table), ...doc.syncColumns};
         final fromDb = dbColumns(table).toSet();
         expect(fromDb.difference(localOnly), fromDoc);
         expect(fromDb.intersection(localOnly), localOnly);
@@ -174,7 +142,7 @@ void main() {
     }
 
     test('meta columns match the doc', () {
-      expect(dbColumns('meta').toSet(), _docColumns(doc, '`meta`').toSet());
+      expect(dbColumns('meta').toSet(), doc.tabColumns('meta').toSet());
     });
   });
 }
