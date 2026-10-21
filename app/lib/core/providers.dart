@@ -1,8 +1,11 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
+import 'auth/auth_controller.dart';
 import 'db/database.dart';
+import 'sheets/google_sheets_backend.dart';
 import 'sheets/sheets_backend.dart';
 import 'sync/local_store.dart';
 import 'sync/local_writer.dart';
@@ -31,5 +34,12 @@ final localWriterProvider = FutureProvider<LocalWriter>((ref) async {
   return LocalWriter(ref.watch(localStoreProvider), deviceId: deviceId);
 });
 
-/// The Drive + Sheets client, or null while the user is not signed in. The sign-in layer overrides this.
-final sheetsBackendProvider = Provider<SheetsBackend?>((ref) => null);
+/// Builds the Drive + Sheets backend for a signed-in client. Tests override this with a fake.
+final backendFactoryProvider = Provider<SheetsBackend Function(http.Client)>((ref) => GoogleSheetsBackend.new);
+
+/// The Drive + Sheets client, or null while the user is not signed in.
+final sheetsBackendProvider = Provider<SheetsBackend?>((ref) {
+  final session = ref.watch(authControllerProvider.select((s) => s.session));
+  if (session == null) return null;
+  return ref.watch(backendFactoryProvider)(session.client);
+});
