@@ -5,12 +5,12 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
-import '../../core/time.dart';
-import '../common/name_dialog.dart';
+import '../../core/tasks/task_status.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
 import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
+import '../tasks/task_detail_screen.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -268,25 +268,11 @@ class _TaskTile extends ConsumerWidget {
 
   final Task task;
 
-  bool get _done => task.status == 2;
+  bool get _done => task.status == TaskStatus.completed.value;
 
   Future<void> _toggle(WidgetRef ref, bool done) async {
     final writer = await ref.read(localWriterProvider.future);
-    await writer.update('tasks', task.id, {
-      'status': done ? 2 : 0,
-      'completed_at': done ? formatUtc(DateTime.now()) : null,
-    });
-    ref.read(syncControllerProvider.notifier).requestSoon();
-  }
-
-  Future<void> _rename(BuildContext context, WidgetRef ref) async {
-    final title = await showDialog<String>(
-      context: context,
-      builder: (_) => NameDialog(title: 'Edit title', initial: task.title),
-    );
-    if (title == null || title.trim().isEmpty || title.trim() == task.title) return;
-    final writer = await ref.read(localWriterProvider.future);
-    await writer.update('tasks', task.id, {'title': title.trim()});
+    await writer.update('tasks', task.id, statusFields(done ? TaskStatus.completed : TaskStatus.open, DateTime.now()));
     ref.read(syncControllerProvider.notifier).requestSoon();
   }
 
@@ -299,7 +285,7 @@ class _TaskTile extends ConsumerWidget {
         task.title.isEmpty ? '(untitled)' : task.title,
         style: _done ? TextStyle(decoration: TextDecoration.lineThrough, color: muted) : null,
       ),
-      onTap: () => _rename(context, ref),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
       trailing: PopupMenuButton<String>(
         key: Key('taskMenu-${task.id}'),
         tooltip: 'Task options',

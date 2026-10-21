@@ -219,37 +219,6 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('edit a title: the dialog saves a new one, ignores blank, and cancel changes nothing', (tester) async {
-    final inbox = await seedInbox(tester);
-    await tester.runAsync(() async => writer().insert('tasks', {'list_id': inbox, 'title': 'draft'}));
-    await tester.pumpWidget(app());
-    await settle(tester);
-
-    await tester.tap(find.text('draft'));
-    await tester.pumpAndSettle();
-    expect(find.text('Edit title'), findsOneWidget);
-    await tester.enterText(find.byType(TextField).last, 'final report');
-    await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
-    await settle(tester);
-    expect(find.text('final report'), findsOneWidget);
-    var t = (await tasksInDb(tester)).single;
-    expect((t.title, t.version), ('final report', 2));
-
-    await tester.tap(find.text('final report'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, '   ');
-    await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('final report'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-    t = (await tasksInDb(tester)).single;
-    expect((t.title, t.version), ('final report', 2));
-    await unmount(tester);
-  });
-
   testWidgets('Sync now signs the device in to the Sheet: bootstrap, then the tasks of another device appear', (tester) async {
     final backend = FakeSheetsBackend();
     final other = await tester.runAsync(() async {
