@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/task_status.dart';
 import '../common/local_edit.dart';
+import 'checklist_section.dart';
 import 'task_providers.dart';
 
 /// One task on its own page: its title and Markdown notes, its status, and Delete.
@@ -142,6 +143,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 padding: const EdgeInsets.only(left: 12, top: 4),
                 child: Text(done ? 'Completed' : "Won't do", style: TextStyle(color: muted)),
               ),
+            ChecklistSection(task: task),
             const Divider(height: 32),
             TextField(
               key: const Key('taskNotesField'),

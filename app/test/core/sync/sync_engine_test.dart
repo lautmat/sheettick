@@ -154,6 +154,29 @@ void main() {
       await a.sync();
       expect((await a.task(child)).fields['parent_id'], isNull);
     });
+
+    test('checklist items added offline on two devices both survive, and a reorder comes back', () async {
+      final taskId = await a.addTask('Pack');
+      await a.sync();
+      await b.sync();
+
+      a.tick();
+      final socks = await a.writer.insert('checklist', {'task_id': taskId, 'title': 'Socks', 'sort_order': 1.0});
+      b.tick();
+      final shirts = await b.writer.insert('checklist', {'task_id': taskId, 'title': 'Shirts', 'sort_order': 2.0});
+      await a.sync();
+      await b.sync();
+      await a.sync();
+      expect((await a.store.getRow('checklist', shirts))!.fields['title'], 'Shirts');
+      expect((await b.store.getRow('checklist', socks))!.fields['title'], 'Socks');
+
+      a.tick();
+      await a.writer.update('checklist', shirts, {'sort_order': 0.5});
+      await a.sync();
+      await b.sync();
+      expect((await b.store.getRow('checklist', shirts))!.fields['sort_order'], 0.5);
+      expect((await b.store.getRow('checklist', socks))!.fields['sort_order'], 1.0);
+    });
   });
 
   group('required: conflicts', () {
