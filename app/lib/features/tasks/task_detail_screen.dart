@@ -7,11 +7,13 @@ import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/task_status.dart';
 import '../common/local_edit.dart';
 import 'checklist_section.dart';
+import 'task_attributes.dart';
 import 'task_providers.dart';
 
-/// One task on its own page: its title and Markdown notes, its status, and Delete.
+/// One task on its own page: its title and Markdown notes, its priority and tags, its status, and Delete.
 ///
-/// Edits are saved when the page closes and before a status change, not on every keystroke. A field the user did
+/// Title and notes are saved when the page closes and before a status change, not on every keystroke; priority and
+/// tags are saved as they change. A field the user did
 /// not change is never written, so a change that came from the Sheet while the page was open is not overwritten.
 class TaskDetailScreen extends ConsumerStatefulWidget {
   const TaskDetailScreen({super.key, required this.task});
@@ -143,6 +145,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 padding: const EdgeInsets.only(left: 12, top: 4),
                 child: Text(done ? 'Completed' : "Won't do", style: TextStyle(color: muted)),
               ),
+            TaskAttributes(task: task),
             ChecklistSection(task: task),
             const Divider(height: 32),
             TextField(
