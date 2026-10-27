@@ -281,14 +281,19 @@ List<Widget> _rows(List<Task> items, List<Section> sections) {
   final widgets = <Widget>[];
   // The task shown just above the next row: indenting a task puts it under that one. A heading breaks the chain.
   String? above;
+  // The section the rows are shown in, null above the first heading.
+  String? section;
   for (final entry in shown) {
     if (entry is Section) {
       above = null;
+      section = entry.id;
       final count = blocks.where((b) => inSection(b, entry.id)).fold(0, (n, b) => n + b.length);
       widgets.add(SectionHeader(section: entry, count: count));
     } else {
       final row = entry as ({Task item, int depth});
-      widgets.add(_TaskTile(key: ValueKey(row.item.id), task: row.item, depth: row.depth, above: above));
+      widgets.add(
+        _TaskTile(key: ValueKey(row.item.id), task: row.item, depth: row.depth, above: above, section: section),
+      );
       above = row.item.id;
     }
   }
@@ -296,7 +301,7 @@ List<Widget> _rows(List<Task> items, List<Section> sections) {
 }
 
 class _TaskTile extends ConsumerWidget {
-  const _TaskTile({super.key, required this.task, this.depth = 0, this.above});
+  const _TaskTile({super.key, required this.task, this.depth = 0, this.above, this.section});
 
   final Task task;
 
@@ -306,6 +311,10 @@ class _TaskTile extends ConsumerWidget {
   /// The id of the task shown directly above this one, or null when a heading or the list's start is above it.
   final String? above;
 
+  /// The section the task is shown in, null when it is shown outside any section. A subtask is shown in its
+  /// top-level task's section, whatever its own `section_id` says.
+  final String? section;
+
   bool get _done => task.status == TaskStatus.completed.value;
 
   Future<void> _toggle(WidgetRef ref, bool done) async {
@@ -314,9 +323,10 @@ class _TaskTile extends ConsumerWidget {
     ref.read(syncControllerProvider.notifier).requestSoon();
   }
 
-  /// Makes this task a subtask of [parentId], or back to a top-level task when it is null.
+  /// Makes this task a subtask of [parentId], or back to a top-level task when it is null. Its `section_id` is set to
+  /// the section it is shown in, so an outdented task stays where it was rather than following a stale section.
   Future<void> _setParent(WidgetRef ref, String? parentId) async {
-    await updateRow(ref, 'tasks', task.id, {'parent_id': parentId});
+    await updateRow(ref, 'tasks', task.id, {'parent_id': parentId, 'section_id': section});
   }
 
   Future<void> _onMenu(BuildContext context, WidgetRef ref, String value) async {
