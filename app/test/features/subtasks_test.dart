@@ -194,4 +194,31 @@ void main() {
     expect(find.text('Pack'), findsOneWidget);
     await unmount(tester);
   });
+
+  testWidgets("outdenting a subtask keeps it in its parent's section, even when its own section_id was empty", (
+    tester,
+  ) async {
+    final inbox = await seedInbox(tester);
+    late String section;
+    await tester.runAsync(() async {
+      section = await writer().insert('sections', {'list_id': inbox, 'name': 'Later', 'sort_order': 1.0});
+    });
+    await addTask(tester, inbox, 'Loose', 0);
+    final plan = await addTask(tester, inbox, 'Plan', 1, section: section);
+    // Added before its parent moved to the section: it is shown under Plan, but its own section_id is empty.
+    final pack = await addTask(tester, inbox, 'Pack', 2);
+    await tester.runAsync(() => writer().update('tasks', pack, {'parent_id': plan}));
+    await tester.pumpWidget(app());
+    await settle(tester);
+
+    await pickMenu(tester, pack, 'Outdent');
+
+    final outdented = await taskTitled(tester, 'Pack');
+    expect(outdented.parentId, isNull);
+    expect(outdented.sectionId, section);
+    final heading = find.byKey(Key('section-$section'));
+    expect(find.descendant(of: heading, matching: find.text('2')), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Pack')).dy, greaterThan(tester.getTopLeft(heading).dy));
+    await unmount(tester);
+  });
 }
