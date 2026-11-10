@@ -10,7 +10,11 @@ void main() {
     ProviderScope(
       overrides: [
         // Tests keep the default (no notifications); the app shows real ones.
-        reminderSchedulerProvider.overrideWith((ref) => PlatformReminderScheduler(ref.watch(appDatabaseProvider))),
+        reminderSchedulerProvider.overrideWith((ref) {
+          final scheduler = PlatformReminderScheduler(ref.watch(appDatabaseProvider));
+          ref.onDispose(scheduler.dispose);
+          return scheduler;
+        }),
       ],
       child: const SheetTickApp(),
     ),

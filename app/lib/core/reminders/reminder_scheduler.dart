@@ -13,6 +13,9 @@ abstract class ReminderScheduler {
 
   /// Makes [plan] the reminders to deliver. [now] is the current time.
   Future<void> replaceAll(List<PlannedReminder> plan, DateTime now);
+
+  /// Stops anything the scheduler runs in the background. Called when the app shuts down.
+  void dispose();
 }
 
 /// For a platform with no notifications (and for tests): accepts every plan and shows nothing.
@@ -24,6 +27,9 @@ class NoopReminderScheduler implements ReminderScheduler {
 
   @override
   Future<void> replaceAll(List<PlannedReminder> plan, DateTime now) async {}
+
+  @override
+  void dispose() {}
 }
 
 /// Shows reminders while the app runs, for platforms where a scheduled notification cannot be cancelled or changed
@@ -33,6 +39,8 @@ class NoopReminderScheduler implements ReminderScheduler {
 /// shown once. After the app was closed or the computer asleep, reminders from up to [catchUp] ago that were missed are
 /// shown on the first look. The time of the last look is kept through [loadLastLook] and [saveLastLook].
 class PollingReminderScheduler implements ReminderScheduler {
+  // A failed toast is retried on the following looks, in memory: after a restart it is not retried, which is the same
+  // as any reminder the app was closed for beyond the last look.
   PollingReminderScheduler({
     required this.show,
     required this.clock,
@@ -50,6 +58,9 @@ class PollingReminderScheduler implements ReminderScheduler {
   final Duration catchUp;
 
   List<PlannedReminder> _plan = const [];
+
+  /// Reminders whose toast failed, tried again on the next look while they are in the plan and within [catchUp].
+  List<PlannedReminder> _failed = const [];
   Timer? _timer;
   Future<void>? _looking;
 
@@ -73,16 +84,29 @@ class PollingReminderScheduler implements ReminderScheduler {
     // The first run on a device has no past to catch up on.
     var since = saved == null ? now : (saved.isBefore(earliest) ? earliest : saved);
     if (since.isAfter(now)) since = now;
+    // What failed last time, if the plan still holds it (same reminder, same time), and what fell due since.
+    final retry = {for (final r in _failed) '${r.key}@${r.at.millisecondsSinceEpoch}'};
+    final failed = <PlannedReminder>[];
     for (final reminder in _plan) {
-      if (!reminder.at.isAfter(since) || reminder.at.isAfter(now)) continue;
+      final wasFailed = retry.contains('${reminder.key}@${reminder.at.millisecondsSinceEpoch}');
+      final fresh = reminder.at.isAfter(since);
+      if (reminder.at.isAfter(now) || !(fresh || wasFailed) || reminder.at.isBefore(earliest)) continue;
       try {
         await show(reminder);
       } catch (e) {
         debugPrint('Could not show the reminder for ${reminder.taskId}: $e');
+        failed.add(reminder);
       }
     }
+    _failed = failed;
+    // The look is recorded even after a failure: the failed ones are kept above, and holding the time back would show
+    // the ones that did work a second time.
     await saveLastLook(now);
   }
 
-  void dispose() => _timer?.cancel();
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
+  }
 }

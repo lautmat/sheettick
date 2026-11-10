@@ -41,6 +41,10 @@ class AlarmReminderScheduler implements ReminderScheduler {
   @override
   Future<bool> requestPermission() => _port.requestPermission();
 
+  /// Alarms belong to the system and keep firing with the app closed: nothing to stop.
+  @override
+  void dispose() {}
+
   @override
   Future<void> replaceAll(List<PlannedReminder> plan, DateTime now) {
     // Plans arrive faster than the platform answers: handle them one at a time, in order.

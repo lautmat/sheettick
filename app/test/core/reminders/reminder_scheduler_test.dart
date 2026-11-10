@@ -248,6 +248,67 @@ void main() {
       expect(shown, ['good']);
     });
 
+    test('a reminder whose toast failed is tried again on the next look, and once it shows, not again', () async {
+      var refuse = true;
+      final flaky = PollingReminderScheduler(
+        show: (r) async {
+          if (refuse) throw StateError('toast refused');
+          shown.add(r.taskId);
+        },
+        clock: () => clock,
+        loadLastLook: () async => lastLook,
+        saveLastLook: (t) async => lastLook = t,
+        interval: const Duration(hours: 1),
+      );
+      addTearDown(flaky.dispose);
+      lastLook = now.subtract(const Duration(hours: 1));
+      final plan = [reminder('a', now.subtract(const Duration(minutes: 10)))];
+      await flaky.replaceAll(plan, clock);
+      expect(shown, isEmpty);
+      refuse = false;
+      clock = now.add(const Duration(minutes: 1));
+      await flaky.look();
+      expect(shown, ['a']);
+      clock = now.add(const Duration(minutes: 2));
+      await flaky.look();
+      expect(shown, ['a']);
+    });
+
+    test('a failed reminder that left the plan is not retried', () async {
+      var refuse = true;
+      final flaky = PollingReminderScheduler(
+        show: (r) async {
+          if (refuse) throw StateError('toast refused');
+          shown.add(r.taskId);
+        },
+        clock: () => clock,
+        loadLastLook: () async => lastLook,
+        saveLastLook: (t) async => lastLook = t,
+        interval: const Duration(hours: 1),
+      );
+      addTearDown(flaky.dispose);
+      lastLook = now.subtract(const Duration(hours: 1));
+      await flaky.replaceAll([reminder('a', now.subtract(const Duration(minutes: 10)))], clock);
+      refuse = false;
+      await flaky.replaceAll([], clock);
+      expect(shown, isEmpty);
+    });
+
+    test('dispose stops the timer, and a later plan starts it again', () async {
+      final ticking = PollingReminderScheduler(
+        show: (r) async => shown.add(r.taskId),
+        clock: () => clock,
+        loadLastLook: () async => lastLook,
+        saveLastLook: (t) async => lastLook = t,
+        interval: const Duration(milliseconds: 10),
+      );
+      await ticking.replaceAll([reminder('a', now.add(const Duration(minutes: 1)))], clock);
+      ticking.dispose();
+      clock = now.add(const Duration(minutes: 2));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      expect(shown, isEmpty);
+    });
+
     test('permission is never asked of the user on Windows', () async {
       expect(await scheduler.requestPermission(), isTrue);
     });

@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show debugPrint;
@@ -62,6 +63,12 @@ class PlatformReminderScheduler implements ReminderScheduler {
       debugPrint('Notifications are not available: $e');
     }
     return const NoopReminderScheduler();
+  }
+
+  @override
+  void dispose() {
+    final inner = _inner;
+    if (inner != null) unawaited(inner.then((s) => s.dispose(), onError: (Object _) {}));
   }
 
   @override

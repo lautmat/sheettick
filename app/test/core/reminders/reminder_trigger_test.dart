@@ -41,6 +41,20 @@ void main() {
       expect(const ReminderTrigger(seconds: 5415).format(), 'TRIGGER:PT1H30M15S');
     });
 
+    test('days and seconds that point opposite ways cannot be built, so format never changes a trigger', () {
+      int days = -1, seconds = 3600; // not const: the check runs at run time
+      expect(() => ReminderTrigger(days: days, seconds: seconds), throwsAssertionError);
+      days = 1;
+      seconds = -3600;
+      expect(() => ReminderTrigger(days: days, seconds: seconds), throwsAssertionError);
+    });
+
+    test('-P1D and -PT24H are kept apart and ordered the same way every time', () {
+      final triggers = parseReminders('["TRIGGER:-PT24H","TRIGGER:-P1D","TRIGGER:-PT24H"]');
+      expect(triggers, [const ReminderTrigger(days: -1), const ReminderTrigger(seconds: -86400)]);
+      expect(parseReminders('["TRIGGER:-P1D","TRIGGER:-PT24H"]'), triggers);
+    });
+
     test('every preset round-trips', () {
       for (final p in [...timedReminderPresets, ...allDayReminderPresets]) {
         expect(ReminderTrigger.parse(p.trigger.format()), p.trigger, reason: p.label);

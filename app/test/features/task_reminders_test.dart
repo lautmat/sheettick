@@ -31,6 +31,9 @@ class RecordingScheduler implements ReminderScheduler {
 
   @override
   Future<void> replaceAll(List<PlannedReminder> plan, DateTime now) async => plans.add(plan);
+
+  @override
+  void dispose() {}
 }
 
 void main() {

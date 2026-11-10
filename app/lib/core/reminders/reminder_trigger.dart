@@ -5,8 +5,12 @@ import 'dart:convert';
 /// The duration is split the way a person reads it. [days] are calendar days, so "1 day before" stays at the same
 /// clock time across a daylight-saving change; [seconds] is the rest, an exact length of time. Both are negative for a
 /// reminder before the anchor. `PT0S` (both zero) fires at the anchor itself.
+///
+/// An iCal duration has one sign for the whole value, so [days] and [seconds] never point opposite ways; [parse] always
+/// gives that, and the assert keeps hand-built triggers to it. That is what lets [format] write the sign once.
 class ReminderTrigger {
-  const ReminderTrigger({this.days = 0, this.seconds = 0});
+  const ReminderTrigger({this.days = 0, this.seconds = 0})
+    : assert(days == 0 || seconds == 0 || (days < 0) == (seconds < 0), 'days and seconds must share a sign');
 
   final int days;
   final int seconds;
@@ -82,7 +86,13 @@ String? encodeReminders(Iterable<ReminderTrigger> triggers) {
 }
 
 List<ReminderTrigger> _sorted(Set<ReminderTrigger> triggers) {
-  return triggers.toList()..sort((a, b) => (a.days * 86400 + a.seconds).compareTo(b.days * 86400 + b.seconds));
+  // `-P1D` and `-PT24H` are different triggers (across a daylight-saving change) with the same length, so the text
+  // breaks the tie and the order is the same on every device.
+  return triggers.toList()
+    ..sort((a, b) {
+      final byLength = (a.days * 86400 + a.seconds).compareTo(b.days * 86400 + b.seconds);
+      return byLength != 0 ? byLength : a.format().compareTo(b.format());
+    });
 }
 
 /// A reminder the picker offers.
