@@ -399,6 +399,13 @@ void main() {
       expect(r.dates.due, w(2026, 11, 12));
     });
 
+    test('characters outside the basic plane (emoji) stay whole in the title', () {
+      final r = parse('Party 🎉 tomorrow 🥳 #fun');
+      expect(r.title, 'Party 🎉 🥳');
+      expect(r.dates.due, w(2026, 11, 12));
+      expect(r.tags, ['fun']);
+    });
+
     test('a stray control character in pasted text is not taken for a part already read', () {
       final r = parse('Buymilk tomorrow');
       expect(r.title, 'Buy milk');

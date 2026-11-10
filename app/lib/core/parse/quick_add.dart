@@ -101,9 +101,13 @@ final _monthWords = _alternation(_months.keys);
 String _fold(String s) {
   assert(_foldFrom.length == _foldTo.length, 'each accented letter needs exactly one plain letter');
   final b = StringBuffer();
-  for (final ch in s.toLowerCase().split('')) {
-    final i = _foldFrom.indexOf(ch);
-    b.write(i >= 0 ? _foldTo[i] : ch);
+  // One UTF-16 unit in, one out, so positions in the folded text are positions in the original. A unit whose lower
+  // case is not one unit long is kept as it is.
+  for (final ch in s.split('')) {
+    final lower = ch.toLowerCase();
+    final c = lower.length == 1 ? lower : ch;
+    final i = _foldFrom.indexOf(c);
+    b.write(i >= 0 ? _foldTo[i] : c);
   }
   return b.toString();
 }
@@ -116,9 +120,8 @@ const _gone = '\u0001';
 
 class _Parser {
   _Parser(this.original, this.now, this.zone) {
-    var folded = _fold(original);
-    // Folding is one for one; if some character broke that, fall back to plain lower case rather than misalign.
-    if (folded.length != original.length) folded = original.toLowerCase();
+    final folded = _fold(original);
+    assert(folded.length == original.length, 'folding must keep every position');
     _view = folded.split('');
     _taken = List.filled(original.length, false);
   }
