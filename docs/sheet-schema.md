@@ -76,6 +76,11 @@ calendar (so "1 day before" keeps its clock time across a daylight-saving change
 The app writes `TRIGGER:` before each duration and reads it with or without. Unreadable entries are ignored. Only open,
 undeleted tasks have reminders.
 
+A **snooze** (remind me again in 10 minutes, an hour, tomorrow, or at a picked time) is not in the Sheet. It lives in
+the device's local `device_state` table (key `reminder_snoozes`), so it changes no row, no `version` and no date, and
+another device still reminds at the original time. It belongs to the occurrence it was made for: when the task's dates
+or the trigger move the reminder to another time, the snooze no longer applies.
+
 ### `checklist`
 `id`, `task_id`, `title`, `status` (0/2), `sort_order`, `start_at`, `all_day`, `completed_at`, + sync columns.
 

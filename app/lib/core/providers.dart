@@ -48,7 +48,7 @@ final deviceZoneProvider = FutureProvider<String?>((ref) async {
 /// which keeps tests off the platform plugin.
 final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) => const NoopReminderScheduler());
 
-final localStoreProvider =Provider<LocalStore>((ref) => DriftLocalStore(ref.watch(appDatabaseProvider)));
+final localStoreProvider = Provider<LocalStore>((ref) => DriftLocalStore(ref.watch(appDatabaseProvider)));
 
 /// How the UI changes rows (see [LocalWriter]).
 final localWriterProvider = FutureProvider<LocalWriter>((ref) async {

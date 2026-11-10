@@ -17,6 +17,9 @@ abstract final class DeviceStateKeys {
 
   /// When this device last checked which reminders were due (Windows shows reminders while the app runs).
   static const lastReminderLook = 'last_reminder_look';
+
+  /// Reminders moved to a later time on this device (JSON; see `core/reminders/snooze.dart`). Not synced.
+  static const reminderSnoozes = 'reminder_snoozes';
 }
 
 /// Local SQLite database. The UI reads and writes only this; the sync engine reconciles it with the Sheet.

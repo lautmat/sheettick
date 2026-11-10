@@ -28,7 +28,11 @@ class _SheetTickAppState extends ConsumerState<SheetTickApp> with WidgetsBinding
   /// Regaining focus is a sync trigger.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) ref.read(syncControllerProvider.notifier).sync();
+    if (state == AppLifecycleState.resumed) {
+      ref.read(syncControllerProvider.notifier).sync();
+      // A reminder may have been snoozed from its notification while the app was closed.
+      ref.read(planRevisionProvider.notifier).bump();
+    }
   }
 
   @override
