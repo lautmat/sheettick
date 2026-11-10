@@ -9,6 +9,8 @@ import 'package:sheettick/core/db/database.dart';
 import 'package:sheettick/core/providers.dart';
 import 'package:sheettick/core/reminders/reminder_planner.dart';
 import 'package:sheettick/core/reminders/reminder_scheduler.dart';
+import 'package:sheettick/core/reminders/snooze.dart';
+import 'package:sheettick/core/time.dart';
 import 'package:sheettick/core/sync/local_store.dart';
 import 'package:sheettick/core/sync/local_writer.dart';
 
@@ -311,5 +313,112 @@ void main() {
     await settle(tester);
     expect(scheduler.latest.map((r) => r.taskId), [id]);
     await unmount(tester);
+  });
+
+  group('snooze', () {
+    /// A task that was due 30 minutes ago and has a reminder at that moment.
+    Future<String> seedDuePast(WidgetTester tester) async {
+      final inbox = await seedInbox(tester);
+      late String id;
+      await tester.runAsync(() async {
+        id = await writer().insert('tasks', {
+          'list_id': inbox,
+          'title': 'Call the bank',
+          'due_at': formatUtc(DateTime.now().subtract(const Duration(minutes: 30))),
+          'tz': zone,
+          'reminders': '["TRIGGER:PT0S"]',
+        });
+      });
+      return id;
+    }
+
+    Future<void> snoozeWith(WidgetTester tester, String choice) async {
+      await tester.tap(find.byKey(const Key('taskSnooze')));
+      await animate(tester);
+      await tester.tap(find.byKey(Key(choice)));
+      await animate(tester);
+      await settle(tester);
+    }
+
+    testWidgets('Snooze moves the reminder 10 minutes on, leaves the task as it was, and the plan follows', (
+      tester,
+    ) async {
+      final id = await seedDuePast(tester);
+      final scheduler = RecordingScheduler();
+      await tester.pumpWidget(app(scheduler));
+      await settle(tester);
+      await openTask(tester, 'Call the bank');
+      // Due half an hour ago: still in the plan (a closed app catches up on the last day), at its own time.
+      expect(scheduler.latest.single.at.isBefore(DateTime.now()), isTrue);
+      final before = await onlyTask(tester);
+
+      await snoozeWith(tester, 'snooze:10m');
+
+      final task = await onlyTask(tester);
+      expect(task.dueAt, before.dueAt);
+      expect(task.reminders, before.reminders);
+      expect(task.version, before.version);
+      final r = scheduler.latest.single;
+      expect(r.taskId, id);
+      final wait = r.at.difference(DateTime.now());
+      expect(wait, greaterThan(const Duration(minutes: 9)));
+      expect(wait, lessThanOrEqualTo(const Duration(minutes: 10)));
+      expect(find.textContaining('Snoozed until'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('snoozing again replaces the first snooze', (tester) async {
+      await seedDuePast(tester);
+      final scheduler = RecordingScheduler();
+      await tester.pumpWidget(app(scheduler));
+      await settle(tester);
+      await openTask(tester, 'Call the bank');
+
+      await snoozeWith(tester, 'snooze:10m');
+      await snoozeWith(tester, 'snooze:1h');
+      expect(scheduler.latest, hasLength(1));
+      expect(scheduler.latest.single.at.difference(DateTime.now()), greaterThan(const Duration(minutes: 50)));
+      await unmount(tester);
+    });
+
+    testWidgets('a snooze made on the notification with the app closed is read when the plan is made again', (
+      tester,
+    ) async {
+      final id = await seedDuePast(tester);
+      final scheduler = RecordingScheduler();
+      await tester.pumpWidget(app(scheduler));
+      await settle(tester);
+      expect(scheduler.latest.single.at.isBefore(DateTime.now()), isTrue);
+
+      await tester.runAsync(() async {
+        final row = await db.select(db.tasks).getSingle();
+        // A moment is held to the minute, so the reminder was due at the start of that minute.
+        final d = DateTime.parse(row.dueAt!).toUtc();
+        await snoozeStoreOf(db).snooze(
+          '$id|TRIGGER:PT0S',
+          from: DateTime.utc(d.year, d.month, d.day, d.hour, d.minute),
+          until: DateTime.now().add(const Duration(minutes: 5)),
+          now: DateTime.now(),
+        );
+        // Any task change makes the plan again, as the app coming back to the front does.
+        await writer().update('tasks', id, {'title': 'Call the bank today'});
+      });
+      await settle(tester);
+      expect(scheduler.latest.single.taskId, id);
+      expect(scheduler.latest.single.at.isAfter(DateTime.now()), isTrue);
+      await unmount(tester);
+    });
+
+    testWidgets('there is nothing to snooze on a task with no reminder', (tester) async {
+      final inbox = await seedInbox(tester);
+      await tester.runAsync(
+        () => writer().insert('tasks', {'list_id': inbox, 'title': 'Pay rent', 'due_at': day(3), 'all_day': true}),
+      );
+      await tester.pumpWidget(app(RecordingScheduler()));
+      await settle(tester);
+      await openTask(tester, 'Pay rent');
+      expect(find.byKey(const Key('taskSnooze')), findsNothing);
+      await unmount(tester);
+    });
   });
 }

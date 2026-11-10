@@ -10,6 +10,7 @@ import '../../core/tasks/priority.dart';
 import '../../core/tasks/tags.dart';
 import '../common/local_edit.dart';
 import '../reminders/task_reminders.dart';
+import '../reminders/task_snooze.dart';
 import 'task_dates_dialog.dart';
 
 /// The names in the `tags` tab that are not deleted, in their order, each name once whatever its case.
@@ -94,6 +95,7 @@ class _TaskAttributesState extends ConsumerState<TaskAttributes> {
         children: [
           TaskDatesChip(task: widget.task),
           TaskRemindersChip(task: widget.task),
+          TaskSnoozeChip(task: widget.task),
           PopupMenuButton<Priority>(
             key: const Key('taskPriority'),
             tooltip: 'Priority',

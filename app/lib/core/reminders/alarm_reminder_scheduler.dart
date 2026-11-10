@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'reminder_planner.dart';
 import 'reminder_scheduler.dart';
+import 'snooze.dart';
 
 /// What [AlarmReminderScheduler] needs from the platform: alarms that fire a notification at a time even when the app
 /// is closed.
@@ -72,7 +73,7 @@ class AlarmReminderScheduler implements ReminderScheduler {
         at: r.at,
         title: r.title,
         body: r.body,
-        payload: r.taskId,
+        payload: ReminderPayload.of(r).encode(),
         exact: exact,
       );
       _set[entry.key] = r.signature;
