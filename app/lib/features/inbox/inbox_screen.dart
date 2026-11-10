@@ -465,10 +465,11 @@ class _AddBarState extends ConsumerState<_AddBar> {
     }
   }
 
-  /// What the text will become, in a few words, or null when it is plain text.
+  /// What the text will become, in a few words, or null when it is plain text or the device zone is not known yet
+  /// (without it "today" could be the wrong day, so no preview is better than a wrong one).
   String? _previewText(String? zone) {
     final text = _controller.text.trim();
-    if (text.isEmpty) return null;
+    if (text.isEmpty || zone == null) return null;
     final parsed = _parse(text, zone);
     if (!parsed.hasFields) return null;
     final parts = <String>[
