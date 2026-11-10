@@ -64,9 +64,11 @@ Future<String?> setTaskStatus(
     await writer.update('tasks', task.id, changes);
     if (next == null) return null;
 
-    final row = await writer.store.getRow('tasks', task.id);
+    // The update above found the row, so it is there; if it somehow is not, abort the whole transaction rather than
+    // write a task with no title or list.
+    final row = await writer.store.getRow('tasks', task.id) ?? (throw StateError('No tasks row ${task.id}'));
     final copy = <String, Object?>{
-      for (final e in (row?.fields ?? <String, Object?>{}).entries)
+      for (final e in row.fields.entries)
         if (!_notCopied.contains(e.key)) e.key: e.value,
       ...next.dates.toFields(),
       'rrule': next.rrule,
