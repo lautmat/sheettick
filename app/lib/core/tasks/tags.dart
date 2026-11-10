@@ -39,12 +39,11 @@ List<String> withoutTag(List<String> tags, String name) {
   ];
 }
 
-/// Adds the tag [raw] to the task [taskId] and returns the name stored, or null when [raw] is blank.
+/// The name to store for the tag [raw], or null when [raw] is blank.
 ///
 /// A tag the `tags` tab already has, in any case, is stored with that tab's spelling. A new one gets a row in the tab,
-/// at the end, so it syncs to the other devices. The task's current `tags` value is read here rather than taken from
-/// the caller, so a change that landed since the screen last drew is kept.
-Future<String?> addTaskTag(LocalWriter writer, String taskId, String raw) async {
+/// at the end, so it syncs to the other devices.
+Future<String?> ensureTag(LocalWriter writer, String raw) async {
   final cleaned = cleanTagName(raw);
   if (cleaned == null) return null;
   final defs = (await writer.store.rowsById('tags')).values.map((r) => r.fields).where((f) => f['deleted'] != true);
@@ -54,6 +53,15 @@ Future<String?> addTaskTag(LocalWriter writer, String taskId, String raw) async 
     final orders = defs.map((f) => (f['sort_order'] as num?)?.toDouble() ?? 0);
     await writer.insert('tags', {'name': name, 'sort_order': orders.fold<double>(0, (m, v) => v > m ? v : m) + 1});
   }
+  return name;
+}
+
+/// Adds the tag [raw] to the task [taskId] and returns the name stored, or null when [raw] is blank (see [ensureTag] for
+/// how the name is chosen). The task's current `tags` value is read here rather than taken from the caller, so a change
+/// that landed since the screen last drew is kept.
+Future<String?> addTaskTag(LocalWriter writer, String taskId, String raw) async {
+  final name = await ensureTag(writer, raw);
+  if (name == null) return null;
   await _changeTags(writer, taskId, (tags) => withTag(tags, name));
   return name;
 }
