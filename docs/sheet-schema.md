@@ -61,6 +61,13 @@ Column order in the Sheet follows this document; the app locates columns by head
 | `completed_at` | timestamp | |
 | + sync columns | | |
 
+**Dates.** `start_at` and `due_at` share `all_day` and `tz`, so both are all-day dates or both are timed values.
+An all-day task stores `YYYY-MM-DD` in each and leaves `tz` empty. A timed task stores ISO 8601 with the offset the zone
+had at that moment (`2026-11-07T09:00:00+01:00`) and the IANA zone in `tz` (`Europe/Paris`); the app reads it back on the
+device's own zone, so the instant is kept and the clock time follows the traveller. A timed value with an empty `tz` is
+floating: it reads as the clock time written, whatever its offset. Text in either cell that is not a real date reads as
+no date and is left untouched until the task's dates are edited.
+
 ### `checklist`
 `id`, `task_id`, `title`, `status` (0/2), `sort_order`, `start_at`, `all_day`, `completed_at`, + sync columns.
 

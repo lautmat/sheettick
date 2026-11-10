@@ -1,6 +1,9 @@
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart' show MissingPluginException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:http/http.dart' as http;
 
 import 'auth/auth_controller.dart';
@@ -24,6 +27,20 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 final deviceIdProvider = FutureProvider<String>((ref) {
   final prefix = Platform.isWindows ? 'win' : (Platform.isAndroid ? 'and' : 'dev');
   return ref.watch(appDatabaseProvider).ensureDeviceId(prefix);
+});
+
+/// The IANA name of the device's time zone (`Europe/Paris`), or null when the platform cannot say. Dates then fall back
+/// to the platform's own zone, with no name. Tests override this.
+final deviceZoneProvider = FutureProvider<String?>((ref) async {
+  try {
+    return (await FlutterTimezone.getLocalTimezone()).identifier;
+  } on MissingPluginException {
+    // No platform side, as in a unit test: the platform's own zone is used.
+    return null;
+  } catch (e) {
+    debugPrint('Could not read the device time zone: $e');
+    return null;
+  }
 });
 
 final localStoreProvider = Provider<LocalStore>((ref) => DriftLocalStore(ref.watch(appDatabaseProvider)));
