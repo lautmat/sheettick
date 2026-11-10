@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/db/database.dart';
+import '../../core/parse/quick_add.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/priority.dart';
+import '../../core/tasks/quick_add_create.dart';
 import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
+import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
@@ -410,6 +413,7 @@ class _TaskTile extends ConsumerWidget {
 class _AddBar extends ConsumerStatefulWidget {
   const _AddBar({required this.listId});
 
+  /// The list on screen: where a task goes when its text names no list.
   final String listId;
 
   @override
@@ -420,50 +424,110 @@ class _AddBarState extends ConsumerState<_AddBar> {
   final _controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // The preview under the field follows what is typed.
+    _controller.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
 
+  QuickAddResult _parse(String text, String? zone) =>
+      parseQuickAdd(text, now: TaskDates(zone: zone).wallOf(DateTime.now()), zone: zone);
+
   Future<void> _add() async {
-    final title = _controller.text.trim();
-    if (title.isEmpty) return;
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
     // Cleared first so a second tap or Enter cannot add the same task twice while the write is in flight; the
     // text is put back if the write fails, so nothing the user typed is lost.
     _controller.clear();
+    String? missingList;
     try {
+      final zone = await ref.read(deviceZoneProvider.future);
       final writer = await ref.read(localWriterProvider.future);
-      await writer.insert('tasks', {'list_id': widget.listId, 'title': title});
+      final created = await createQuickAddTask(writer, _parse(text, zone), fallbackListId: widget.listId);
+      missingList = created.missingList;
     } catch (e) {
       if (!mounted) return;
-      if (_controller.text.isEmpty) _controller.text = title;
+      if (_controller.text.isEmpty) _controller.text = text;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save the task: $e')));
       return;
     }
     ref.read(syncControllerProvider.notifier).requestSoon();
+    if (missingList != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('There is no list called "$missingList", so the task was added to this list.')),
+      );
+    }
+  }
+
+  /// What the text will become, in a few words, or null when it is plain text or the device zone is not known yet
+  /// (without it "today" could be the wrong day, so no preview is better than a wrong one).
+  String? _previewText(String? zone) {
+    final text = _controller.text.trim();
+    if (text.isEmpty || zone == null) return null;
+    final parsed = _parse(text, zone);
+    if (!parsed.hasFields) return null;
+    final parts = <String>[
+      if (!parsed.dates.isEmpty)
+        datesSummary(
+          context,
+          TaskDates(due: parsed.dates.due, allDay: parsed.dates.allDay, zone: zone),
+          DateTime.now(),
+        ),
+      if (parsed.rrule != null) 'repeats',
+      for (final tag in parsed.tags) '#$tag',
+      if (parsed.listName != null) '^${parsed.listName}',
+      if (parsed.priority != null && parsed.priority != 0) '${Priority.of(parsed.priority!).label} priority',
+    ];
+    return parts.join('  ·  ');
   }
 
   @override
   Widget build(BuildContext context) {
+    final zone = ref.watch(deviceZoneProvider).value;
+    final preview = _previewText(zone);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: TextField(
-                key: const Key('addTaskField'),
-                controller: _controller,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(hintText: 'Add a task', border: InputBorder.none),
-                onSubmitted: (_) => _add(),
+            if (preview != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  preview,
+                  key: const Key('quickAddPreview'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                ),
               ),
-            ),
-            IconButton(
-              key: const Key('addTaskButton'),
-              tooltip: 'Add task',
-              icon: const Icon(Icons.add),
-              onPressed: _add,
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const Key('addTaskField'),
+                    controller: _controller,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      hintText: 'Add a task: "call Sam fri 3pm #work !high"',
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: (_) => _add(),
+                  ),
+                ),
+                IconButton(
+                  key: const Key('addTaskButton'),
+                  tooltip: 'Add task',
+                  icon: const Icon(Icons.add),
+                  onPressed: _add,
+                ),
+              ],
             ),
           ],
         ),
