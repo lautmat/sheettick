@@ -68,6 +68,14 @@ device's own zone, so the instant is kept and the clock time follows the travell
 floating: it reads as the clock time written, whatever its offset. Text in either cell that is not a real date reads as
 no date and is left untouched until the task's dates are edited.
 
+**Reminders.** `reminders` is a JSON array of iCal durations, each relative to the task's start, or to its due when it
+has no start (`PT0S` at the moment, `-PT15M` fifteen minutes before, `-P1D` one day before). A timed moment is the
+instant above. An all-day moment is midnight at the start of the day on the device's zone, so its trigger holds the
+time of day, as TickTick writes it: `PT9H` is 9:00 that day, `-PT15H` is 9:00 the day before. Whole days count on the
+calendar (so "1 day before" keeps its clock time across a daylight-saving change); the rest is an exact length of time.
+The app writes `TRIGGER:` before each duration and reads it with or without. Unreadable entries are ignored. Only open,
+undeleted tasks have reminders.
+
 ### `checklist`
 `id`, `task_id`, `title`, `status` (0/2), `sort_order`, `start_at`, `all_day`, `completed_at`, + sync columns.
 

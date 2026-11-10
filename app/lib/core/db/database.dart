@@ -14,6 +14,9 @@ abstract final class DeviceStateKeys {
   static const spreadsheetId = 'spreadsheet_id';
   static const lastDriveModifiedTime = 'last_drive_modified_time';
   static const lastCompactionEpoch = 'last_compaction_epoch';
+
+  /// When this device last checked which reminders were due (Windows shows reminders while the app runs).
+  static const lastReminderLook = 'last_reminder_look';
 }
 
 /// Local SQLite database. The UI reads and writes only this; the sync engine reconciles it with the Sheet.
