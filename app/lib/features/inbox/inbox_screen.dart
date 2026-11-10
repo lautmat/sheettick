@@ -14,6 +14,7 @@ import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
 import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
+import '../tasks/date_labels.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
 import 'inbox_providers.dart';
@@ -349,6 +350,9 @@ class _TaskTile extends ConsumerWidget {
     // The box is drawn in the priority's colour, as in TickTick; a done task's box keeps the theme's colour.
     final flag = _done ? null : priorityColor(Priority.of(task.priority));
     final tags = parseTags(task.tags);
+    final headline = task.dates(ref.watch(deviceZoneProvider).value).headline(DateTime.now());
+    // A past due is red until the task is done or dropped.
+    final overdue = (headline?.overdue ?? false) && task.status == TaskStatus.open.value;
     return ListTile(
       contentPadding: EdgeInsetsDirectional.only(start: 16 + 32.0 * depth, end: 16),
       leading: Checkbox(
@@ -361,14 +365,28 @@ class _TaskTile extends ConsumerWidget {
         task.title.isEmpty ? '(untitled)' : task.title,
         style: _done ? TextStyle(decoration: TextDecoration.lineThrough, color: muted) : null,
       ),
-      subtitle: tags.isEmpty
+      subtitle: headline == null && tags.isEmpty
           ? null
-          : Text(
-              tags.map((t) => '#$t').join('  '),
-              key: Key('taskTags-${task.id}'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: muted),
+          : Row(
+              children: [
+                if (headline != null)
+                  Text(
+                    headlineText(context, headline),
+                    key: Key('taskDue-${task.id}'),
+                    style: TextStyle(color: overdue ? Theme.of(context).colorScheme.error : muted),
+                  ),
+                if (headline != null && tags.isNotEmpty) const SizedBox(width: 12),
+                if (tags.isNotEmpty)
+                  Flexible(
+                    child: Text(
+                      tags.map((t) => '#$t').join('  '),
+                      key: Key('taskTags-${task.id}'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: muted),
+                    ),
+                  ),
+              ],
             ),
       onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
       trailing: PopupMenuButton<String>(

@@ -9,6 +9,7 @@ import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/priority.dart';
 import '../../core/tasks/tags.dart';
 import '../common/local_edit.dart';
+import 'task_dates_dialog.dart';
 
 /// The names in the `tags` tab that are not deleted, in their order, each name once whatever its case.
 final tagNamesProvider = StreamProvider<List<String>>((ref) {
@@ -27,7 +28,7 @@ Color? priorityColor(Priority priority) => switch (priority) {
   Priority.none => null,
 };
 
-/// A task's priority and tags on its page. Each change is written at once.
+/// A task's dates, priority and tags on its page. Each change is written at once.
 class TaskAttributes extends ConsumerStatefulWidget {
   const TaskAttributes({super.key, required this.task});
 
@@ -90,6 +91,7 @@ class _TaskAttributesState extends ConsumerState<TaskAttributes> {
         runSpacing: 4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          TaskDatesChip(task: widget.task),
           PopupMenuButton<Priority>(
             key: const Key('taskPriority'),
             tooltip: 'Priority',
