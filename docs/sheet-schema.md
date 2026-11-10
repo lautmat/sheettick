@@ -76,6 +76,17 @@ calendar (so "1 day before" keeps its clock time across a daylight-saving change
 The app writes `TRIGGER:` before each duration and reads it with or without. Unreadable entries are ignored. Only open,
 undeleted tasks have reminders.
 
+**Recurrence.** `rrule` holds an RFC 5545 rule (`RRULE:FREQ=WEEKLY;BYDAY=MO,TH`; the `RRULE:` label is optional when
+reading). A task repeats from its due, or from its start when it has no due. Finishing an open repeating task (completing
+it, or marking it won't do) creates the next one as a new row: a copy with the same list, section, priority, tags, notes,
+reminders, `rrule`, `repeat_from` and `ex_dates`, open, with its checklist unticked, and its start and due moved on
+together. The finished task's own `rrule` is cleared, so only the live task repeats and reopening the old one starts no
+second series. With `repeat_from = DUE` the next due is the next occurrence of the rule after both the task's due and
+the moment it was finished, so a task finished late does not return already overdue. With `COMPLETION` the rule is
+counted from the day it was finished, at the task's time of day (every 3 days means 3 days after finishing). Occurrences
+on a day listed in `ex_dates` (`YYYY-MM-DD`, or an ISO date-time whose day counts) are skipped. A rule with `COUNT` counts
+down in each new task's `rrule`; when none is left, or `UNTIL` has passed, no new task is created. Subtasks are not copied.
+
 A **snooze** (remind me again in 10 minutes, an hour, tomorrow, or at a picked time) is not in the Sheet. It lives in
 the device's local `device_state` table (one `reminder_snooze:<reminder>` row each), so it changes no row, no `version` and no date, and
 another device still reminds at the original time. It belongs to the occurrence it was made for: when the task's dates

@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/priority.dart';
 import '../../core/tasks/tags.dart';
+import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
@@ -323,7 +324,9 @@ class _TaskTile extends ConsumerWidget {
 
   Future<void> _toggle(WidgetRef ref, bool done) async {
     final writer = await ref.read(localWriterProvider.future);
-    await writer.update('tasks', task.id, statusFields(done ? TaskStatus.completed : TaskStatus.open, DateTime.now()));
+    final zone = await ref.read(deviceZoneProvider.future);
+    // Finishing a repeating task also creates its next round.
+    await setTaskStatus(writer, task, done ? TaskStatus.completed : TaskStatus.open, now: DateTime.now(), zone: zone);
     ref.read(syncControllerProvider.notifier).requestSoon();
   }
 

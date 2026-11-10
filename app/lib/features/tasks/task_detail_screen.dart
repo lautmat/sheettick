@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
+import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_status.dart';
 import '../common/local_edit.dart';
 import 'checklist_section.dart';
@@ -68,7 +69,12 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   /// Saves the edits first, so none are lost, then sets the status. The page stays open to show the change.
   Future<void> _setStatus(TaskStatus status) async {
     await _saveEdits();
-    await updateRow(ref, 'tasks', _id, statusFields(status, DateTime.now()));
+    final task = ref.read(taskProvider(_id)).value ?? widget.task;
+    final zone = await ref.read(deviceZoneProvider.future);
+    final writer = await ref.read(localWriterProvider.future);
+    // Finishing a repeating task also creates its next round.
+    await setTaskStatus(writer, task, status, now: DateTime.now(), zone: zone);
+    ref.read(syncControllerProvider.notifier).requestSoon();
   }
 
   Future<void> _delete() async {

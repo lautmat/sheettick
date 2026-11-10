@@ -12,6 +12,7 @@ import '../common/local_edit.dart';
 import '../reminders/task_reminders.dart';
 import '../reminders/task_snooze.dart';
 import 'task_dates_dialog.dart';
+import 'task_repeat.dart';
 
 /// The names in the `tags` tab that are not deleted, in their order, each name once whatever its case.
 final tagNamesProvider = StreamProvider<List<String>>((ref) {
@@ -94,6 +95,7 @@ class _TaskAttributesState extends ConsumerState<TaskAttributes> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           TaskDatesChip(task: widget.task),
+          TaskRepeatChip(task: widget.task),
           TaskRemindersChip(task: widget.task),
           TaskSnoozeChip(task: widget.task),
           PopupMenuButton<Priority>(
