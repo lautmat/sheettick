@@ -9,6 +9,7 @@ import 'package:sheettick/core/db/database.dart';
 import 'package:sheettick/core/providers.dart';
 import 'package:sheettick/core/sync/local_store.dart';
 import 'package:sheettick/core/sync/local_writer.dart';
+import 'package:sheettick/core/tasks/task_dates.dart';
 
 import '../support/fake_auth_service.dart';
 
@@ -50,9 +51,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  /// `YYYY-MM-DD` for today plus [offset] days, on the machine's clock (the test zone is the one the app reads).
+  /// `YYYY-MM-DD` for today plus [offset] days, in the zone the app is told the device is in.
   String day(int offset) {
-    final d = DateTime.now().add(Duration(days: offset));
+    final d = dayOf(const TaskDates(zone: 'Europe/Paris').wallOf(DateTime.now())).add(Duration(days: offset));
     return '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }
 

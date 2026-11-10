@@ -12,11 +12,13 @@ import '../../core/tasks/smart_lists.dart';
 import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
+import '../../core/tasks/task_order.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
+import '../lists/sort_group_dialog.dart';
 import '../search/search_screen.dart';
 import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
@@ -50,7 +52,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
       appBar: AppBar(
         title: Text(smart?.label ?? _titleOf(active.value)),
         actions: [
-          if (smart == null && active.value != null) NewSectionButton(listId: active.value!.id),
+          if (smart == null && active.value != null) ...[
+            SortGroupButton(list: active.value!),
+            NewSectionButton(listId: active.value!.id),
+          ],
           IconButton(
             key: const Key('searchButton'),
             tooltip: 'Search',
@@ -243,6 +248,10 @@ class _InboxBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasks = ref.watch(listTasksProvider(list.id));
     final sections = ref.watch(sectionsProvider(list.id)).value ?? const <Section>[];
+    final zone = ref.watch(deviceZoneProvider).value;
+    final listNames = {
+      for (final l in ref.watch(sidebarListsProvider).value ?? const <TaskList>[]) l.id: l.name,
+    };
     return Column(
       children: [
         Expanded(
@@ -259,7 +268,16 @@ class _InboxBody extends ConsumerWidget {
                         ),
                       ],
                     )
-                  : ListView(physics: const AlwaysScrollableScrollPhysics(), children: _rows(items, sections)),
+                  : ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: _rows(
+                        sortTasks(items, TaskOrder.of(list.orderBy), zone: zone),
+                        sections,
+                        group: TaskGroup.of(list.groupBy),
+                        zone: zone,
+                        listNames: listNames,
+                      ),
+                    ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Could not read tasks: $e')),
             ),
@@ -267,6 +285,24 @@ class _InboxBody extends ConsumerWidget {
         ),
         _AddBar(listId: list.id),
       ],
+    );
+  }
+}
+
+/// The heading above a group of tasks, with how many top-level tasks are in it.
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      key: Key('group-$label'),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text('$label  $count', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
     );
   }
 }
@@ -342,7 +378,30 @@ class _TrashTile extends ConsumerWidget {
 
 /// The rows of a list: the tasks outside any section first, then each section's heading and, unless it is
 /// folded, its tasks. A subtask is shown under its top-level task, in that task's section.
-List<Widget> _rows(List<Task> items, List<Section> sections) {
+List<Widget> _rows(
+  List<Task> items,
+  List<Section> sections, {
+  TaskGroup group = TaskGroup.none,
+  String? zone,
+  Map<String, String> listNames = const {},
+}) {
+  if (group != TaskGroup.none) {
+    // Grouped, the list is shown by group instead of by section, and a task has no place to be moved or indented to.
+    final groups = groupRows(
+      arrangeTree(items, idOf: (t) => t.id, parentOf: (t) => t.parentId),
+      group,
+      now: DateTime.now(),
+      zone: zone,
+      listNames: listNames,
+    );
+    return [
+      for (final g in groups) ...[
+        _GroupHeader(label: g.label, count: g.rows.where((r) => r.depth == 0).length),
+        for (final row in g.rows)
+          _TaskTile(key: ValueKey('${g.label}/${row.item.id}'), task: row.item, depth: row.depth, menu: false),
+      ],
+    ];
+  }
   final known = {for (final s in sections) s.id};
   // Each block is a top-level task followed by the subtasks under it.
   final blocks = <List<({Task item, int depth})>>[];

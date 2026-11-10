@@ -77,10 +77,12 @@ class TaskDates {
     // A date with no time in a row that says timed is an all-day date: the text is what the user can see in the Sheet.
     final allDayRow = allDay || (start?.dateOnly ?? false) || (due?.dateOnly ?? false);
     if (allDayRow) {
+      // The days have no zone of their own, but "today" is read where the device is, so the zone is kept for that.
       return TaskDates(
         start: start == null ? null : dayOf(start.wall),
         due: due == null ? null : dayOf(due.wall),
         allDay: true,
+        zone: locationOf(deviceZone)?.name,
       );
     }
     final writer = locationOf(tz);
@@ -101,7 +103,8 @@ class TaskDates {
   /// Both moments are calendar days with no time.
   final bool allDay;
 
-  /// The IANA zone the times are in; null for all-day dates and when the device's zone is not known.
+  /// The IANA zone the times are in, or for all-day dates the zone "today" is read in; null when the device's zone is
+  /// not known.
   final String? zone;
 
   bool get isEmpty => start == null && due == null;

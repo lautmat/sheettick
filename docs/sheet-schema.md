@@ -99,6 +99,14 @@ or the trigger move the reminder to another time, the snooze no longer applies.
 `id`, `name`, `folder_id` (→ `folders.id`), `color` (hex), `kind` (`TASK`/`NOTE`), `view` (`list`/`kanban`/`timeline`),
 `group_by`, `order_by`, `sort_order`, `is_inbox`, `muted`, `archived`, + sync columns.
 
+`order_by` is how the list orders its tasks: empty is manual (the tasks' `sort_order`), else `due`, `priority`,
+`created` or `title`. `group_by` is how it groups them: empty is no grouping, else `due`, `priority`, `tag` or `list`.
+Both are written by the app when the user picks them in the list's Sort and group dialog, so they sync like any other
+list field; an unknown value reads as the empty one. While a list is grouped its sections are not shown (the tasks keep
+their `section_id`). Open tasks always come before done ones. Sorting is stable: tasks the sort cannot tell apart stay
+in manual order. `due` puts the earliest due (else start) first and tasks with no date last, `priority` puts high
+first, `created` puts the newest first.
+
 ### `folders`
 `id`, `name`, `sort_order`, `collapsed`, + sync columns.
 
