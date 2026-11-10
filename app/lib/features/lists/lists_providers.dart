@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
+import '../../core/tasks/smart_lists.dart';
 
 /// The list the user picked in the sidebar, by id. Null means the Inbox.
 class SelectedListId extends Notifier<String?> {
@@ -13,6 +14,22 @@ class SelectedListId extends Notifier<String?> {
 }
 
 final selectedListIdProvider = NotifierProvider<SelectedListId, String?>(SelectedListId.new);
+
+/// The smart list on screen, or null when the picked list (or the Inbox) is. It wins over [selectedListIdProvider].
+class SelectedSmartList extends Notifier<SmartList?> {
+  @override
+  SmartList? build() => null;
+
+  void select(SmartList? list) => state = list;
+}
+
+final selectedSmartListProvider = NotifierProvider<SelectedSmartList, SmartList?>(SelectedSmartList.new);
+
+/// Shows the list [id] (null: the Inbox), leaving any smart list.
+void openList(WidgetRef ref, String? id) {
+  ref.read(selectedSmartListProvider.notifier).select(null);
+  ref.read(selectedListIdProvider.notifier).select(id);
+}
 
 /// The list on screen: the picked list while it is live (not deleted, not archived), otherwise the Inbox. Null
 /// until the Inbox exists, which is before the first sign-in has synced it down.

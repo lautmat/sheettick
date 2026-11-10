@@ -8,6 +8,7 @@ import '../../core/providers.dart';
 import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/priority.dart';
 import '../../core/tasks/quick_add_create.dart';
+import '../../core/tasks/smart_lists.dart';
 import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
@@ -18,6 +19,7 @@ import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
 import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
+import '../smart/smart_providers.dart';
 import '../tasks/date_labels.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
@@ -41,12 +43,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     final active = ref.watch(activeListProvider);
+    final smart = ref.watch(selectedSmartListProvider);
     final wide = MediaQuery.sizeOf(context).width >= kSidebarBreakpoint;
     final screen = Scaffold(
       appBar: AppBar(
-        title: Text(_titleOf(active.value)),
+        title: Text(smart?.label ?? _titleOf(active.value)),
         actions: [
-          if (active.value case final list?) NewSectionButton(listId: list.id),
+          if (smart == null && active.value != null) NewSectionButton(listId: active.value!.id),
           const _SyncButton(),
           const _AccountMenu(),
         ],
@@ -56,11 +59,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         children: [
           const _SyncBanner(),
           Expanded(
-            child: active.when(
-              data: (list) => list == null ? const _NoInbox() : _InboxBody(list: list),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Could not read the local database: $e')),
-            ),
+            child: smart != null
+                ? _SmartBody(smart: smart)
+                : active.when(
+                    data: (list) => list == null ? const _NoInbox() : _InboxBody(list: list),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('Could not read the local database: $e')),
+                  ),
           ),
         ],
       ),
@@ -258,6 +263,75 @@ class _InboxBody extends ConsumerWidget {
   }
 }
 
+/// What each smart list says when it has no tasks.
+const _smartEmpty = {
+  SmartList.today: 'Nothing due today.',
+  SmartList.tomorrow: 'Nothing due tomorrow.',
+  SmartList.next7Days: 'Nothing due in the next 7 days.',
+  SmartList.all: 'No open tasks.',
+  SmartList.completed: 'No completed tasks yet.',
+  SmartList.wontDo: "No tasks marked Won't Do.",
+  SmartList.trash: 'The Trash is empty.',
+};
+
+/// A smart list: tasks from every list, flat, with no add bar. Trash rows carry a Restore button.
+class _SmartBody extends ConsumerWidget {
+  const _SmartBody({required this.smart});
+
+  final SmartList smart;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rows = ref.watch(smartListRowsProvider(smart));
+    return RefreshIndicator(
+      onRefresh: () => ref.read(syncControllerProvider.notifier).sync(),
+      child: rows.when(
+        data: (items) => items.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(48),
+                    child: Center(child: Text(_smartEmpty[smart]!, key: const Key('smartEmpty'))),
+                  ),
+                ],
+              )
+            : ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  for (final t in items)
+                    smart == SmartList.trash
+                        ? _TrashTile(key: ValueKey(t.id), task: t)
+                        : _TaskTile(key: ValueKey(t.id), task: t, menu: false),
+                ],
+              ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Could not read tasks: $e')),
+      ),
+    );
+  }
+}
+
+/// A task in the Trash: its title, and a button that puts it back.
+class _TrashTile extends ConsumerWidget {
+  const _TrashTile({super.key, required this.task});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      title: Text(task.title.isEmpty ? '(untitled)' : task.title),
+      trailing: IconButton(
+        key: Key('restore-${task.id}'),
+        tooltip: 'Restore',
+        icon: const Icon(Icons.restore_from_trash_outlined),
+        onPressed: () => updateRow(ref, 'tasks', task.id, {'deleted': false}),
+      ),
+    );
+  }
+}
+
 /// The rows of a list: the tasks outside any section first, then each section's heading and, unless it is
 /// folded, its tasks. A subtask is shown under its top-level task, in that task's section.
 List<Widget> _rows(List<Task> items, List<Section> sections) {
@@ -309,9 +383,12 @@ List<Widget> _rows(List<Task> items, List<Section> sections) {
 }
 
 class _TaskTile extends ConsumerWidget {
-  const _TaskTile({super.key, required this.task, this.depth = 0, this.above, this.section});
+  const _TaskTile({super.key, required this.task, this.depth = 0, this.above, this.section, this.menu = true});
 
   final Task task;
+
+  /// False in the smart lists, where a task has no section or place among its siblings to move to.
+  final bool menu;
 
   /// How many levels the task is nested under a top-level task.
   final int depth;
@@ -395,17 +472,20 @@ class _TaskTile extends ConsumerWidget {
               ],
             ),
       onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
-      trailing: PopupMenuButton<String>(
-        key: Key('taskMenu-${task.id}'),
-        tooltip: 'Task options',
-        onSelected: (value) => _onMenu(context, ref, value),
-        itemBuilder: (_) => [
-          // A subtask is filed under its parent's section, so only a top-level task moves on its own.
-          if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
-          if (above != null && task.parentId != above) const PopupMenuItem(value: 'indent', child: Text('Indent')),
-          if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
-        ],
-      ),
+      trailing: menu
+          ? PopupMenuButton<String>(
+              key: Key('taskMenu-${task.id}'),
+              tooltip: 'Task options',
+              onSelected: (value) => _onMenu(context, ref, value),
+              itemBuilder: (_) => [
+                // A subtask is filed under its parent's section, so only a top-level task moves on its own.
+                if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
+                if (above != null && task.parentId != above)
+                  const PopupMenuItem(value: 'indent', child: Text('Indent')),
+                if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
+              ],
+            )
+          : null,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
+import '../../core/tasks/smart_lists.dart';
 import '../../core/sync/sync_controller.dart';
 import '../common/local_edit.dart';
 import '../common/name_dialog.dart';
@@ -33,12 +34,16 @@ class ListsSidebar extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
+        for (final s in SmartList.values.where((s) => s.index < SmartList.completed.index)) _SmartTile(smart: s),
+        const Divider(),
         for (final l in live.where((l) => !inFolder(l))) _ListTile(list: l),
         for (final f in folders) ...[
           _FolderHeader(folder: f),
           for (final l in live.where((l) => l.folderId == f.id && !l.isInbox)) _ListTile(list: l, indented: true),
         ],
         if (archived.isNotEmpty) _ArchivedSection(lists: archived),
+        const Divider(),
+        for (final s in SmartList.values.where((s) => s.index >= SmartList.completed.index)) _SmartTile(smart: s),
         const Divider(),
         ListTile(
           key: const Key('newList'),
@@ -59,6 +64,37 @@ class ListsSidebar extends ConsumerWidget {
 
 // ---- Lists ------------------------------------------------------------------------------------------------------
 
+const _smartIcons = {
+  SmartList.today: Icons.today_outlined,
+  SmartList.tomorrow: Icons.event_outlined,
+  SmartList.next7Days: Icons.date_range_outlined,
+  SmartList.all: Icons.all_inbox_outlined,
+  SmartList.completed: Icons.check_circle_outline,
+  SmartList.wontDo: Icons.block_outlined,
+  SmartList.trash: Icons.delete_outline,
+};
+
+/// One of the built-in lists that show tasks from every list.
+class _SmartTile extends ConsumerWidget {
+  const _SmartTile({required this.smart});
+
+  final SmartList smart;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      key: Key('smart-${smart.name}'),
+      selected: ref.watch(selectedSmartListProvider) == smart,
+      leading: Icon(_smartIcons[smart]),
+      title: Text(smart.label),
+      onTap: () {
+        ref.read(selectedSmartListProvider.notifier).select(smart);
+        Scaffold.maybeOf(context)?.closeDrawer();
+      },
+    );
+  }
+}
+
 class _ListTile extends ConsumerWidget {
   const _ListTile({required this.list, this.indented = false});
 
@@ -67,7 +103,8 @@ class _ListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeId = ref.watch(activeListProvider).value?.id;
+    final inSmart = ref.watch(selectedSmartListProvider) != null;
+    final activeId = inSmart ? null : ref.watch(activeListProvider).value?.id;
     final scheme = Theme.of(context).colorScheme;
     return ListTile(
       key: Key('list-${list.id}'),
@@ -79,7 +116,7 @@ class _ListTile extends ConsumerWidget {
       title: Text(list.name.isEmpty ? '(untitled)' : list.name, overflow: TextOverflow.ellipsis),
       trailing: list.isInbox ? null : _ListMenu(list: list),
       onTap: () {
-        ref.read(selectedListIdProvider.notifier).select(list.id);
+        openList(ref, list.id);
         Scaffold.maybeOf(context)?.closeDrawer();
       },
     );
@@ -163,7 +200,7 @@ Future<void> _newList(BuildContext context, WidgetRef ref) async {
     'name': name.trim(),
     'sort_order': nextSortOrder(lists.map((l) => l.sortOrder)),
   });
-  ref.read(selectedListIdProvider.notifier).select(id);
+  openList(ref, id);
   ref.read(syncControllerProvider.notifier).requestSoon();
 }
 
