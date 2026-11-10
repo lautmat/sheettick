@@ -26,8 +26,8 @@ enum SmartList {
 ///   there is no due: Today is that day being today or already past (what is overdue is still to do), Tomorrow is
 ///   tomorrow, and Next 7 Days is today and the six days after it. A task with no date is only in All.
 bool smartListHas(SmartList list, Task task, {required DateTime now, String? zone}) {
-  if (list == SmartList.trash) return task.deleted;
-  if (task.deleted) return false;
+  // Every list but Trash leaves out the tombstones; the Trash arm below is the only place that takes them in.
+  if (task.deleted && list != SmartList.trash) return false;
   switch (list) {
     case SmartList.completed:
       return task.status == TaskStatus.completed.value;
