@@ -68,6 +68,15 @@ void main() {
       expect(d.allDay, isFalse);
     });
 
+    test('"today" for an all-day date is read on the device zone, not the platform zone', () {
+      final d = TaskDates.fromRow(dueAt: '2026-11-12', allDay: true, deviceZone: 'Europe/Paris');
+      // 23:30 UTC on the 11th is already the 12th in Paris, and still the 11th in New York.
+      final now = DateTime.utc(2026, 11, 11, 23, 30);
+      expect(d.headline(now)!.days, 0);
+      final ny = TaskDates.fromRow(dueAt: '2026-11-12', allDay: true, deviceZone: 'America/New_York');
+      expect(ny.headline(now)!.days, 1);
+    });
+
     test('on the zone it was set in, a timed value reads back as set', () {
       const zone = 'Europe/Paris';
       final set = TaskDates(start: w(2026, 7, 7, 9), due: w(2026, 7, 7, 17, 30), zone: zone);
