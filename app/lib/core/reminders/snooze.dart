@@ -18,60 +18,70 @@ class Snooze {
   int get hashCode => Object.hash(from, until);
 }
 
-/// The snoozed reminders of this device, by reminder key (see [PlannedReminder.key]), kept in one `device_state` value.
+/// The snoozed reminders of this device, by reminder key (see [PlannedReminder.key]).
+///
+/// Each snooze is its own stored value, so two writers (the app and the background handler of a notification button,
+/// which have separate database connections) never overwrite each other: setting one is a single upsert, and nothing
+/// reads the others first.
 ///
 /// A snooze is not synced: it is "remind me again here, soon", and the task's dates and `reminders` are not touched.
 /// Another device still reminds at the original time.
 class SnoozeStore {
-  SnoozeStore({required this.read, required this.write});
+  SnoozeStore({required this.readAll, required this.write, required this.remove});
 
-  final Future<String?> Function() read;
-  final Future<void> Function(String json) write;
+  /// Every stored snooze: reminder key to the stored text.
+  final Future<Map<String, String>> Function() readAll;
+  final Future<void> Function(String key, String value) write;
+  final Future<void> Function(Iterable<String> keys) remove;
 
   /// A snooze that ended more than this long ago is forgotten.
   static const keepAfterEnd = Duration(days: 1);
 
   Future<Map<String, Snooze>> load() async {
-    final text = await read();
-    if (text == null || text.isEmpty) return {};
-    final Object? decoded;
-    try {
-      decoded = jsonDecode(text);
-    } on FormatException {
-      return {};
-    }
-    if (decoded is! Map) return {};
     final result = <String, Snooze>{};
-    decoded.forEach((key, value) {
-      if (key is! String || value is! Map) return;
-      final from = value['from'], until = value['until'];
-      if (from is! int || until is! int) return;
-      result[key] = Snooze(
-        from: DateTime.fromMillisecondsSinceEpoch(from, isUtc: true),
-        until: DateTime.fromMillisecondsSinceEpoch(until, isUtc: true),
-      );
+    (await readAll()).forEach((key, text) {
+      final snooze = _decode(text);
+      if (snooze != null) result[key] = snooze;
     });
     return result;
   }
 
-  /// Moves the reminder [key], due at [from], to [until]. Snoozing it again replaces the earlier snooze.
+  static Snooze? _decode(String text) {
+    try {
+      final m = jsonDecode(text);
+      if (m is! Map) return null;
+      final from = m['from'], until = m['until'];
+      if (from is! int || until is! int) return null;
+      return Snooze(
+        from: DateTime.fromMillisecondsSinceEpoch(from, isUtc: true),
+        until: DateTime.fromMillisecondsSinceEpoch(until, isUtc: true),
+      );
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// Moves the reminder [key], due at [from], to [until]. Snoozing it again replaces the earlier snooze. Snoozes that
+  /// ended long ago are removed.
   Future<void> snooze(String key, {required DateTime from, required DateTime until, required DateTime now}) async {
-    final all = await load();
-    all[key] = Snooze(from: from.toUtc(), until: until.toUtc());
-    all.removeWhere((_, s) => s.until.isBefore(now.subtract(keepAfterEnd)));
     await write(
-      jsonEncode({
-        for (final e in all.entries)
-          e.key: {'from': e.value.from.millisecondsSinceEpoch, 'until': e.value.until.millisecondsSinceEpoch},
-      }),
+      key,
+      jsonEncode({'from': from.toUtc().millisecondsSinceEpoch, 'until': until.toUtc().millisecondsSinceEpoch}),
     );
+    final cutoff = now.subtract(keepAfterEnd);
+    final old = [
+      for (final e in (await load()).entries)
+        if (e.key != key && e.value.until.isBefore(cutoff)) e.key,
+    ];
+    if (old.isNotEmpty) await remove(old);
   }
 }
 
-/// The snooze store kept in [db]'s `device_state` table.
+/// The snooze store kept in [db]'s `device_state` table, one row per snoozed reminder.
 SnoozeStore snoozeStoreOf(AppDatabase db) => SnoozeStore(
-  read: () => db.getDeviceState(DeviceStateKeys.reminderSnoozes),
-  write: (json) => db.setDeviceState(DeviceStateKeys.reminderSnoozes, json),
+  readAll: () => db.deviceStateWithPrefix(DeviceStateKeys.reminderSnoozePrefix),
+  write: (key, value) => db.setDeviceState('${DeviceStateKeys.reminderSnoozePrefix}$key', value),
+  remove: (keys) => db.deleteDeviceState([for (final k in keys) '${DeviceStateKeys.reminderSnoozePrefix}$k']),
 );
 
 /// What a notification carries back to the app when it is tapped or one of its buttons is: enough to snooze it with the

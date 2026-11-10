@@ -16,11 +16,12 @@ class TaskSnoozeChip extends ConsumerWidget {
   final Task task;
 
   Future<void> _snooze(BuildContext context, WidgetRef ref, PlannedReminder target, String? zone) async {
-    final now = DateTime.now();
-    final until = await showSnoozeDialog(context, now: now, zone: zone);
+    final until = await showSnoozeDialog(context, zone: zone);
     if (until == null) return;
     // The page may have gone while the dialog was open; a disposed widget's ref must not be used.
     if (!context.mounted) return;
+    // The time now, after the dialog: a picked time can have passed while the dialog was open.
+    final now = DateTime.now();
     if (!until.isAfter(now)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pick a time in the future.')));
       return;
@@ -55,8 +56,9 @@ String _untilText(BuildContext context, DateTime until, DateTime now) {
   return sameDay ? time : '${l10n.formatShortMonthDay(local)}, $time';
 }
 
-/// Asks when to remind again. Returns that instant, or null when the user cancels. [zone] is the device's IANA zone.
-Future<DateTime?> showSnoozeDialog(BuildContext context, {required DateTime now, required String? zone}) {
+/// Asks when to remind again. Returns that instant, or null when the user cancels. [zone] is the device's IANA zone. "In
+/// 10 minutes" counts from the moment it is chosen, not from when the dialog opened.
+Future<DateTime?> showSnoozeDialog(BuildContext context, {required String? zone}) {
   return showDialog<DateTime>(
     context: context,
     builder: (dialogContext) {
@@ -67,18 +69,18 @@ Future<DateTime?> showSnoozeDialog(BuildContext context, {required DateTime now,
           for (final a in SnoozeAction.values)
             SimpleDialogOption(
               key: Key(a.id),
-              onPressed: () => choose(now.add(a.length)),
+              onPressed: () => choose(DateTime.now().add(a.length)),
               child: Text(a.label == '1 hour' ? 'In 1 hour' : 'In ${a.label}'),
             ),
           SimpleDialogOption(
             key: const Key('snooze:tomorrow'),
-            onPressed: () => choose(_tomorrowAtNine(now, zone)),
+            onPressed: () => choose(_tomorrowAtNine(DateTime.now(), zone)),
             child: const Text('Tomorrow, 9:00'),
           ),
           SimpleDialogOption(
             key: const Key('snooze:pick'),
             onPressed: () async {
-              final picked = await _pickTime(dialogContext, now, zone);
+              final picked = await _pickTime(dialogContext, DateTime.now(), zone);
               if (picked != null && dialogContext.mounted) choose(picked);
             },
             child: const Text('Pick a date and time…'),

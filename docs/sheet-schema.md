@@ -77,7 +77,7 @@ The app writes `TRIGGER:` before each duration and reads it with or without. Unr
 undeleted tasks have reminders.
 
 A **snooze** (remind me again in 10 minutes, an hour, tomorrow, or at a picked time) is not in the Sheet. It lives in
-the device's local `device_state` table (key `reminder_snoozes`), so it changes no row, no `version` and no date, and
+the device's local `device_state` table (one `reminder_snooze:<reminder>` row each), so it changes no row, no `version` and no date, and
 another device still reminds at the original time. It belongs to the occurrence it was made for: when the task's dates
 or the trigger move the reminder to another time, the snooze no longer applies.
 

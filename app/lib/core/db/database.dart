@@ -18,8 +18,9 @@ abstract final class DeviceStateKeys {
   /// When this device last checked which reminders were due (Windows shows reminders while the app runs).
   static const lastReminderLook = 'last_reminder_look';
 
-  /// Reminders moved to a later time on this device (JSON; see `core/reminders/snooze.dart`). Not synced.
-  static const reminderSnoozes = 'reminder_snoozes';
+  /// Prefix of the rows that hold reminders moved to a later time on this device, one row per reminder (see
+  /// `core/reminders/snooze.dart`). Not synced.
+  static const reminderSnoozePrefix = 'reminder_snooze:';
 }
 
 /// Local SQLite database. The UI reads and writes only this; the sync engine reconciles it with the Sheet.
@@ -66,6 +67,18 @@ class AppDatabase extends _$AppDatabase {
     final row = await (select(deviceState)..where((t) => t.key.equals(key))).getSingleOrNull();
     return row?.value;
   }
+
+  /// The rows whose key starts with [prefix], by key with the prefix removed.
+  Future<Map<String, String>> deviceStateWithPrefix(String prefix) async {
+    final rows = await select(deviceState).get();
+    return {
+      for (final r in rows)
+        if (r.key.startsWith(prefix)) r.key.substring(prefix.length): r.value,
+    };
+  }
+
+  Future<void> deleteDeviceState(Iterable<String> keys) =>
+      (delete(deviceState)..where((t) => t.key.isIn(keys.toList()))).go();
 
   Future<void> setDeviceState(String key, String value) =>
       into(deviceState).insertOnConflictUpdate(DeviceStateCompanion.insert(key: key, value: value));

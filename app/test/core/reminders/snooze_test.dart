@@ -13,13 +13,20 @@ void main() {
 
   final now = DateTime.utc(2026, 11, 7, 12);
 
+  /// A store over a plain map: one entry per snoozed reminder, as the database keeps them.
+  SnoozeStore storeOver(Map<String, String> rows) => SnoozeStore(
+    readAll: () async => Map.of(rows),
+    write: (k, v) async => rows[k] = v,
+    remove: (keys) async => keys.forEach(rows.remove),
+  );
+
   group('SnoozeStore', () {
-    late String? saved;
+    late Map<String, String> rows;
     late SnoozeStore store;
 
     setUp(() {
-      saved = null;
-      store = SnoozeStore(read: () async => saved, write: (j) async => saved = j);
+      rows = {};
+      store = storeOver(rows);
     });
 
     test('starts empty', () async {
@@ -41,18 +48,29 @@ void main() {
       expect(all['a']!.until, now.add(const Duration(hours: 3)));
     });
 
+    test('two snoozes made at the same time both survive: each is its own row', () async {
+      // The app and the notification's background handler have separate connections and can write together.
+      await Future.wait([
+        store.snooze('a', from: now, until: now.add(const Duration(minutes: 10)), now: now),
+        storeOver(rows).snooze('b', from: now, until: now.add(const Duration(minutes: 20)), now: now),
+      ]);
+      expect((await store.load()).keys, {'a', 'b'});
+    });
+
     test('a snooze that ended more than a day ago is forgotten', () async {
       await store.snooze('old', from: now, until: now.add(const Duration(minutes: 5)), now: now);
       final later = now.add(const Duration(days: 2));
       await store.snooze('new', from: later, until: later.add(const Duration(minutes: 5)), now: later);
       expect((await store.load()).keys, {'new'});
+      expect(rows.keys, ['new']);
     });
 
-    test('unreadable stored text reads as no snoozes and never throws', () async {
-      for (final text in ['', 'nope', '[]', '{"a":1}', '{"a":{"from":"x","until":2}}']) {
-        saved = text;
-        expect(await store.load(), isEmpty, reason: text);
-      }
+    test('an unreadable stored value is skipped and never throws', () async {
+      rows['bad1'] = 'nope';
+      rows['bad2'] = '[]';
+      rows['bad3'] = '{"from":"x","until":2}';
+      await store.snooze('good', from: now, until: now.add(const Duration(minutes: 5)), now: now);
+      expect((await store.load()).keys, {'good'});
     });
   });
 
@@ -81,7 +99,7 @@ void main() {
   });
 
   group('snoozeFromNotification', () {
-    late String? saved;
+    late Map<String, String> rows;
     late SnoozeStore store;
     final payload = ReminderPayload(
       taskId: 't',
@@ -92,8 +110,8 @@ void main() {
     ).encode();
 
     setUp(() {
-      saved = null;
-      store = SnoozeStore(read: () async => saved, write: (j) async => saved = j);
+      rows = {};
+      store = storeOver(rows);
     });
 
     test('a snooze button records the snooze for its length', () async {
@@ -107,7 +125,7 @@ void main() {
       expect(await snoozeFromNotification(actionId: null, payload: payload, now: now, store: store), isNull);
       expect(await snoozeFromNotification(actionId: 'other', payload: payload, now: now, store: store), isNull);
       expect(await snoozeFromNotification(actionId: 'snooze:10m', payload: 'id', now: now, store: store), isNull);
-      expect(saved, isNull);
+      expect(rows, isEmpty);
     });
   });
 
