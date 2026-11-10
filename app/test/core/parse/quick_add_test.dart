@@ -392,6 +392,19 @@ void main() {
       }
     });
 
+    test('every accented letter keeps its place: folding for matching never shifts the title', () {
+      const letters = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿœ';
+      final r = parse('$letters demain $letters');
+      expect(r.title, '$letters $letters');
+      expect(r.dates.due, w(2026, 11, 12));
+    });
+
+    test('a stray control character in pasted text is not taken for a part already read', () {
+      final r = parse('Buymilk tomorrow');
+      expect(r.title, 'Buy milk');
+      expect(r.dates.due, w(2026, 11, 12));
+    });
+
     test('empty and blank text', () {
       expect(parse('').title, '');
       expect(parse('   ').title, '');

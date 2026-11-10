@@ -49,7 +49,9 @@ class QuickAddResult {
 /// [now] is the current wall-clock reading where the dates are shown (see [TaskDates.wallOf]); [zone] is the device's
 /// IANA zone, which timed dates are set in. If nothing is left once the recognised parts are removed, the text is kept
 /// whole as the title and nothing is parsed from it.
-QuickAddResult parseQuickAdd(String text, {required DateTime now, String? zone}) {
+QuickAddResult parseQuickAdd(String input, {required DateTime now, String? zone}) {
+  // The mark for a taken-out part must not come from the input (pasted text can hold any character).
+  final text = input.replaceAll(_gone, ' ');
   final parser = _Parser(text, now, zone);
   final result = parser.run();
   if (result.title.isEmpty) return QuickAddResult(title: text.trim());
@@ -97,15 +99,17 @@ final _monthWords = _alternation(_months.keys);
 
 /// Lower-case [s] and take the accents off, one character for one character so positions line up with the original.
 String _fold(String s) {
-  const from = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿœ';
-  const to = 'aaaaaaceeeeiiiinooooouuuuyyo';
+  assert(_foldFrom.length == _foldTo.length, 'each accented letter needs exactly one plain letter');
   final b = StringBuffer();
   for (final ch in s.toLowerCase().split('')) {
-    final i = from.indexOf(ch);
-    b.write(i >= 0 ? to[i] : ch);
+    final i = _foldFrom.indexOf(ch);
+    b.write(i >= 0 ? _foldTo[i] : ch);
   }
   return b.toString();
 }
+
+const _foldFrom = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿœ';
+const _foldTo = 'aaaaaaceeeeiiiinooooouuuuyyo';
 
 /// A mark that replaces a part already taken out of the text, so later patterns cannot use it again.
 const _gone = '\u0001';
