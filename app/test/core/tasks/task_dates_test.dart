@@ -101,6 +101,13 @@ void main() {
       expect(d.due, w(2026, 11, 7, 9));
     });
 
+    test('an edited unknown tz is written on the device zone with the wall clock that was shown', () {
+      final d = TaskDates.fromRow(dueAt: '2026-11-07T09:00:00+01:00', tz: 'Mars/Olympus', deviceZone: 'Asia/Tokyo');
+      final fields = d.withDue(w(2026, 11, 7, 10)).toFields();
+      expect(fields['tz'], 'Asia/Tokyo');
+      expect(fields['due_at'], '2026-11-07T10:00:00+09:00');
+    });
+
     test('Z, +0100 and +01 offsets, a space for the T and fractional seconds are read', () {
       const zone = 'Europe/Paris';
       DateTime? due(String text) => TaskDates.fromRow(dueAt: text, tz: zone, deviceZone: zone).due;
@@ -124,7 +131,7 @@ void main() {
     });
 
     test('text that is not a date reads as no date and never throws', () {
-      for (final text in ['', '   ', 'tomorrow', '2026-13-01', '2026-02-30', '2026-11-07T25:00:00Z', '11/07/2026', '46000']) {
+      for (final text in ['', '   ', 'tomorrow', '2026-13-01', '2026-02-30', '2026-11-07T25:00:00Z', '2026-11-07T09:00:99+00:00', '11/07/2026', '46000']) {
         final d = TaskDates.fromRow(dueAt: text, startAt: text);
         expect(d.isEmpty, isTrue, reason: '"$text"');
       }

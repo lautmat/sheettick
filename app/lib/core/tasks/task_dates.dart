@@ -211,17 +211,19 @@ _Parsed? _parse(String? text) {
   }
   final m = _dateTime.firstMatch(value);
   if (m == null) return null;
-  final wall = _wallOrNull(m.group(1)!, m.group(2)!, m.group(3)!, m.group(4)!, m.group(5)!);
+  final wall = _wallOrNull(m.group(1)!, m.group(2)!, m.group(3)!, m.group(4)!, m.group(5)!, m.group(6));
   if (wall == null) return null;
   return (wall: wall, offsetMinutes: _offset(m.group(7)), dateOnly: false);
 }
 
-/// The wall clock for the digits given, or null when they are not a real moment (month 13, 30 February, hour 25).
-DateTime? _wallOrNull(String y, String mo, String d, String h, String mi) {
+/// The wall clock for the digits given, or null when they are not a real moment (month 13, 30 February, hour 25,
+/// second 99). The seconds are checked but not kept: a moment is held to the minute.
+DateTime? _wallOrNull(String y, String mo, String d, String h, String mi, [String? s]) {
   final year = int.parse(y), month = int.parse(mo), dayOfMonth = int.parse(d);
-  final hour = int.parse(h), minute = int.parse(mi);
+  final hour = int.parse(h), minute = int.parse(mi), second = s == null ? 0 : int.parse(s);
   final wall = DateTime.utc(year, month, dayOfMonth, hour, minute);
-  final real = wall.year == year && wall.month == month && wall.day == dayOfMonth && hour < 24 && minute < 60;
+  final real =
+      wall.year == year && wall.month == month && wall.day == dayOfMonth && hour < 24 && minute < 60 && second < 60;
   return real ? wall : null;
 }
 
