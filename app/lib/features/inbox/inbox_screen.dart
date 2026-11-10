@@ -17,6 +17,7 @@ import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
+import '../search/search_screen.dart';
 import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
 import '../smart/smart_providers.dart';
@@ -50,6 +51,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         title: Text(smart?.label ?? _titleOf(active.value)),
         actions: [
           if (smart == null && active.value != null) NewSectionButton(listId: active.value!.id),
+          IconButton(
+            key: const Key('searchButton'),
+            tooltip: 'Search',
+            icon: const Icon(Icons.search),
+            onPressed: () =>
+                Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
+          ),
           const _SyncButton(),
           const _AccountMenu(),
         ],
