@@ -49,7 +49,7 @@ List<Task> sortTasks(List<Task> tasks, TaskOrder order, {String? zone}) {
   if (order == TaskOrder.manual) return List.of(tasks);
   final dates = order == TaskOrder.due ? {for (final t in tasks) t.id: smartListDate(t, zone)} : const <String, DateTime?>{};
   int compare(Task a, Task b) {
-    final byStatus = a.status.compareTo(b.status);
+    final byStatus = _statusRank(a.status).compareTo(_statusRank(b.status));
     if (byStatus != 0) return byStatus;
     return switch (order) {
       TaskOrder.due => _byDate(dates[a.id], dates[b.id]),
@@ -68,6 +68,9 @@ List<Task> sortTasks(List<Task> tasks, TaskOrder order, {String? zone}) {
   });
   return [for (final e in indexed) e.task];
 }
+
+/// Open tasks first; done and won't-do ones (`status` 2 and -1) after them.
+int _statusRank(int status) => status == 0 ? 0 : 1;
 
 int _byDate(DateTime? a, DateTime? b) {
   if (a == null && b == null) return 0;

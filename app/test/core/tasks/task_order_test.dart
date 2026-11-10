@@ -85,6 +85,13 @@ void main() {
       final open = await add('z open');
       expect(titles(sortTasks([done, open], TaskOrder.title)), ['z open', 'a done']);
     });
+
+    test("won't-do tasks (status -1) also stay behind the open ones", () async {
+      final dropped = await add('a dropped', {'status': -1});
+      final open = await add('z open');
+      expect(titles(sortTasks([dropped, open], TaskOrder.title)), ['z open', 'a dropped']);
+      expect(titles(sortTasks([dropped, open], TaskOrder.priority)), ['z open', 'a dropped']);
+    });
   });
 
   group('groupRows', () {
