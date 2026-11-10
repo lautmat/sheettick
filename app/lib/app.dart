@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/sync/sync_controller.dart';
 import 'features/inbox/inbox_screen.dart';
+import 'features/reminders/reminders_providers.dart';
 
 class SheetTickApp extends ConsumerStatefulWidget {
   const SheetTickApp({super.key});
@@ -32,6 +33,8 @@ class _SheetTickAppState extends ConsumerState<SheetTickApp> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
+    // Keeps the platform's reminders in step with the tasks for as long as the app runs.
+    ref.watch(remindersBindingProvider);
     ThemeData theme(Brightness b) => ThemeData(colorSchemeSeed: Colors.indigo, brightness: b, useMaterial3: true);
     return MaterialApp(
       title: 'SheetTick',

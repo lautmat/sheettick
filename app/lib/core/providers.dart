@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import 'auth/auth_controller.dart';
 import 'db/database.dart';
+import 'reminders/reminder_scheduler.dart';
 import 'sheets/google_sheets_backend.dart';
 import 'sheets/sheets_backend.dart';
 import 'sync/local_store.dart';
@@ -43,7 +44,11 @@ final deviceZoneProvider = FutureProvider<String?>((ref) async {
   }
 });
 
-final localStoreProvider = Provider<LocalStore>((ref) => DriftLocalStore(ref.watch(appDatabaseProvider)));
+/// Delivers reminders (see `core/reminders`). Shows nothing until `main` overrides it with the platform's notifications,
+/// which keeps tests off the platform plugin.
+final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) => const NoopReminderScheduler());
+
+final localStoreProvider =Provider<LocalStore>((ref) => DriftLocalStore(ref.watch(appDatabaseProvider)));
 
 /// How the UI changes rows (see [LocalWriter]).
 final localWriterProvider = FutureProvider<LocalWriter>((ref) async {

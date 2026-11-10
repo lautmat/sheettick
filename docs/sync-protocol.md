@@ -34,7 +34,10 @@ every 15 min in background on Android (WorkManager), manual "Sync now".
      at `sheet_row` matches (from the pull); if not, it re-indexes that tab first.
    - New rows: one `values.append` per tab (`insertDataOption=INSERT_ROWS`); parse `updates.updatedRange` to store `sheet_row`.
    - Clear `dirty`, update `synced_hash`, `base_snapshot`, `last_drive_modified_time`.
-6. **Reminders.** Reschedule local notifications for every row that changed in this cycle.
+6. **Reminders.** Reschedule local notifications for every row that changed in this cycle. The app does this by planning
+   reminders from the local database whenever a task row changes, so rows changed by a pull, by a local edit or by hand
+   in the Sheet take the same path, and only the alarms that differ are touched. On Windows, where a scheduled toast
+   cannot be cancelled outside an MSIX package, reminders are shown by the running app instead (see `core/reminders`).
 
 ## Limits and errors
 - Sheets API: 60 read + 60 write requests per minute per user. A cycle uses 2–5 requests.
