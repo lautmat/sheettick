@@ -14,9 +14,11 @@ class ThemeChoiceState extends AsyncNotifier<ThemeChoice> {
     return ThemeChoice.parse(stored);
   }
 
+  /// Saves [choice], then shows it. The write comes first, so a failing write leaves the app showing the choice that is
+  /// still stored rather than one that would be gone at the next start.
   Future<void> choose(ThemeChoice choice) async {
-    state = AsyncData(choice);
     await ref.read(appDatabaseProvider).setDeviceState(DeviceStateKeys.themeChoice, choice.value);
+    state = AsyncData(choice);
   }
 }
 

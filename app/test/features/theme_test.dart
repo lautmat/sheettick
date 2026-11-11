@@ -134,6 +134,18 @@ void main() {
     await unmount(tester);
   });
 
+  test('a choice that could not be saved is not shown', () async {
+    final failing = _FailingDb();
+    addTearDown(failing.close);
+    final container = ProviderContainer(overrides: [appDatabaseProvider.overrideWithValue(failing)]);
+    addTearDown(container.dispose);
+    expect(await container.read(themeChoiceProvider.future), ThemeChoice.system);
+
+    await expectLater(container.read(themeChoiceProvider.notifier).choose(ThemeChoice.dark), throwsStateError);
+
+    expect(container.read(themeChoiceProvider).value, ThemeChoice.system);
+  });
+
   test('both themes are built, one light and one dark', () {
     expect(appTheme(Brightness.light).brightness, Brightness.light);
     expect(appTheme(Brightness.dark).brightness, Brightness.dark);
@@ -142,4 +154,12 @@ void main() {
       isNot(appTheme(Brightness.light).colorScheme.surface),
     );
   });
+}
+
+/// A database whose writes to `device_state` fail, as with a full disk.
+class _FailingDb extends AppDatabase {
+  _FailingDb() : super(NativeDatabase.memory());
+
+  @override
+  Future<void> setDeviceState(String key, String value) => Future.error(StateError('disk full'));
 }
