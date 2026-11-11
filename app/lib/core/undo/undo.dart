@@ -48,7 +48,8 @@ Future<UndoEntry?> recordUndo(
       final after = (await writer.store.getRow(e.key.tab, e.key.id))?.fields;
       if (after == null) continue;
       final changed = <String, Object?>{
-        for (final col in after.keys)
+        // Both key sets, so a column the write dropped from the row is put back too.
+        for (final col in {...after.keys, ...e.value.keys})
           if (!_bookkeeping.contains(col) && e.value[col] != after[col]) col: e.value[col],
       };
       if (changed.isNotEmpty) restore.add((row: e.key, before: changed));
