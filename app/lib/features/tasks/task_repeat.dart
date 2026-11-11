@@ -64,7 +64,7 @@ class TaskRepeatChip extends ConsumerWidget {
     await updateRow(ref, 'tasks', task.id, {
       'rrule': chosen.rrule,
       'repeat_from': chosen.from.value,
-    });
+    }, undo: 'Repeat changed');
   }
 
   @override

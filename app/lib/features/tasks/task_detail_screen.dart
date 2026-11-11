@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
-import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_status.dart';
 import '../common/local_edit.dart';
+import '../common/undo.dart';
 import 'checklist_section.dart';
 import 'task_attributes.dart';
 import 'task_providers.dart';
@@ -55,7 +55,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       if (notes != _savedNotes) 'content': notes,
     };
     if (changes.isEmpty) return;
-    await updateRow(ref, 'tasks', _id, changes);
+    await updateRow(ref, 'tasks', _id, changes, undo: 'Task edited');
     _savedTitle = title.isEmpty ? _savedTitle : title;
     _savedNotes = notes;
   }
@@ -71,10 +71,18 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     await _saveEdits();
     final task = ref.read(taskProvider(_id)).value ?? widget.task;
     final zone = await ref.read(deviceZoneProvider.future);
-    final writer = await ref.read(localWriterProvider.future);
-    // Finishing a repeating task also creates its next round.
-    await setTaskStatus(writer, task, status, now: DateTime.now(), zone: zone);
-    ref.read(syncControllerProvider.notifier).requestSoon();
+    // Finishing a repeating task also creates its next round, which undoing tombstones again.
+    await changeWithUndo<String?>(
+      ref,
+      switch (status) {
+        TaskStatus.completed => 'Task completed',
+        TaskStatus.wontDo => "Marked Won't Do",
+        TaskStatus.open => 'Task reopened',
+      },
+      [(tab: 'tasks', id: task.id)],
+      (writer) => setTaskStatus(writer, task, status, now: DateTime.now(), zone: zone),
+      created: (next) => [if (next != null) (tab: 'tasks', id: next)],
+    );
   }
 
   Future<void> _delete() async {
@@ -89,9 +97,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       ),
     );
     if (confirmed != true) return;
-    final writer = await ref.read(localWriterProvider.future);
-    await writer.delete('tasks', _id);
-    ref.read(syncControllerProvider.notifier).requestSoon();
+    await changeWithUndo<void>(ref, 'Task moved to Trash', [(tab: 'tasks', id: _id)], (writer) => writer.delete('tasks', _id));
     await _close(save: false);
   }
 

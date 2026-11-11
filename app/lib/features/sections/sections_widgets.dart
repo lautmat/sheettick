@@ -105,5 +105,5 @@ Future<void> moveTaskToSection(BuildContext context, WidgetRef ref, Task task) a
     ),
   );
   if (picked == null) return;
-  await updateRow(ref, 'tasks', task.id, {'section_id': picked.isEmpty ? null : picked});
+  await updateRow(ref, 'tasks', task.id, {'section_id': picked.isEmpty ? null : picked}, undo: 'Task moved');
 }
