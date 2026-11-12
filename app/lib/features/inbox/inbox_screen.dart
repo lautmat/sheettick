@@ -28,6 +28,7 @@ import '../smart/smart_providers.dart';
 import '../tasks/date_labels.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
+import '../tasks/task_drag.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -276,6 +277,8 @@ class _InboxBody extends ConsumerWidget {
                       children: _rows(
                         sortTasks(items, TaskOrder.of(list.orderBy), zone: zone),
                         sections,
+                        listId: list.id,
+                        manual: TaskOrder.of(list.orderBy) == TaskOrder.manual,
                         group: TaskGroup.of(list.groupBy),
                         zone: zone,
                         listNames: listNames,
@@ -381,9 +384,14 @@ class _TrashTile extends ConsumerWidget {
 
 /// The rows of a list: the tasks outside any section first, then each section's heading and, unless it is
 /// folded, its tasks. A subtask is shown under its top-level task, in that task's section.
+///
+/// Tasks can be dragged; with [manual] (the list is in its own order) one can also be dropped before another. A heading,
+/// "No section" above the first heading and the end of the list take a dropped task whatever the order.
 List<Widget> _rows(
   List<Task> items,
   List<Section> sections, {
+  required String listId,
+  bool manual = true,
   TaskGroup group = TaskGroup.none,
   String? zone,
   Map<String, String> listNames = const {},
@@ -435,20 +443,57 @@ List<Widget> _rows(
   String? above;
   // The section the rows are shown in, null above the first heading.
   String? section;
+  String? firstIn(String? sectionId) {
+    for (final b in blocks) {
+      final task = b.first.item;
+      if ((known.contains(task.sectionId) ? task.sectionId : null) == sectionId) return task.id;
+    }
+    return null;
+  }
+
+  if (sections.isNotEmpty) {
+    // Shown only while a task is dragged: the way out of every section, to the top of the unsectioned tasks.
+    widgets.add(
+      DropRow(
+        key: const Key('dropNoSection'),
+        label: 'No section',
+        accepts: (_) => true,
+        onDrop: (ref, dragged) => moveTaskTo(ref, dragged, listId: listId, beforeId: firstIn(null)),
+      ),
+    );
+  }
   for (final entry in shown) {
     if (entry is Section) {
       above = null;
       section = entry.id;
       final count = blocks.where((b) => inSection(b, entry.id)).fold(0, (n, b) => n + b.length);
-      widgets.add(SectionHeader(section: entry, count: count));
+      widgets.add(SectionHeader(section: entry, count: count, firstTaskId: firstIn(entry.id)));
     } else {
       final row = entry as ({Task item, int depth});
       widgets.add(
-        _TaskTile(key: ValueKey(row.item.id), task: row.item, depth: row.depth, above: above, section: section),
+        TaskDragShell(
+          key: ValueKey(row.item.id),
+          task: row.item,
+          depth: row.depth,
+          listId: listId,
+          section: section,
+          reorder: manual,
+          child: _TaskTile(task: row.item, depth: row.depth, above: above, section: section),
+        ),
       );
       above = row.item.id;
     }
   }
+  // Shown only while a task is dragged: the end of the last section, or of the list when it has none.
+  widgets.add(
+    DropRow(
+      key: const Key('dropEnd'),
+      label: sections.isEmpty ? 'End of the list' : 'End of ${sections.last.name}',
+      accepts: (_) => true,
+      onDrop: (ref, dragged) =>
+          moveTaskTo(ref, dragged, listId: listId, sectionId: sections.isEmpty ? null : sections.last.id),
+    ),
+  );
   return widgets;
 }
 
@@ -495,6 +540,8 @@ class _TaskTile extends ConsumerWidget {
     switch (value) {
       case 'section':
         await moveTaskToSection(context, ref, task);
+      case 'list':
+        await moveTaskToList(context, ref, task);
       case 'indent':
         await _setParent(ref, above);
       case 'outdent':
@@ -555,6 +602,7 @@ class _TaskTile extends ConsumerWidget {
               itemBuilder: (_) => [
                 // A subtask is filed under its parent's section, so only a top-level task moves on its own.
                 if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
+                if (depth == 0) const PopupMenuItem(value: 'list', child: Text('Move to list')),
                 if (above != null && task.parentId != above)
                   const PopupMenuItem(value: 'indent', child: Text('Indent')),
                 if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),

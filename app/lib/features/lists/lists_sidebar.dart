@@ -8,6 +8,7 @@ import '../../core/sync/sync_controller.dart';
 import '../common/local_edit.dart';
 import '../common/name_dialog.dart';
 import '../common/pick_dialog.dart';
+import '../tasks/task_drag.dart';
 import 'lists_providers.dart';
 
 /// Screens at least this wide keep the sidebar beside the list; narrower ones put it in a drawer.
@@ -106,6 +107,15 @@ class _ListTile extends ConsumerWidget {
     final inSmart = ref.watch(selectedSmartListProvider) != null;
     final activeId = inSmart ? null : ref.watch(activeListProvider).value?.id;
     final scheme = Theme.of(context).colorScheme;
+    // A task dropped on a list goes to the end of it, outside any section.
+    return TaskDropTarget(
+      accepts: (dragged) => dragged.listId != list.id && !list.archived,
+      onDrop: (dragged) => moveTaskTo(ref, dragged, listId: list.id, label: 'Moved to ${list.name}'),
+      child: _tile(context, ref, scheme, activeId),
+    );
+  }
+
+  Widget _tile(BuildContext context, WidgetRef ref, ColorScheme scheme, String? activeId) {
     return ListTile(
       key: Key('list-${list.id}'),
       contentPadding: EdgeInsets.only(left: indented ? 32 : 16, right: list.isInbox ? 16 : 0),
