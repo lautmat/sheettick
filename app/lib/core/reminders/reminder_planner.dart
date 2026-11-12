@@ -88,7 +88,7 @@ List<PlannedReminder> planReminders(
     final title = task.title.trim().isEmpty ? 'Untitled task' : task.title.trim();
     final body = '${fromStart ? 'Starts' : 'Due'} ${_when(anchor, timed: !dates.allDay)}';
     for (final trigger in triggers) {
-      final original = _instant(anchor, trigger, zone);
+      final original = _instant(anchor, trigger, zone, allDay: dates.allDay);
       final key = '${task.id}|${trigger.format()}';
       final snooze = snoozes[key];
       final at = snooze != null && snooze.from == original ? snooze.until : original;
@@ -107,7 +107,14 @@ List<PlannedReminder> planReminders(
 
 /// The instant [trigger] after the wall-clock [anchor] in [zone]: whole days on the calendar, then an exact length of
 /// time.
-DateTime _instant(DateTime anchor, ReminderTrigger trigger, tzdb.Location? zone) {
+///
+/// For an [allDay] anchor the duration is a time of day on the wall clock (`PT9H` is 9:00), not a length of time after
+/// midnight: on the day the clocks change, which is 23 or 25 hours long, nine hours after midnight is not 9:00.
+DateTime _instant(DateTime anchor, ReminderTrigger trigger, tzdb.Location? zone, {required bool allDay}) {
+  if (allDay) {
+    final wall = DateTime.utc(anchor.year, anchor.month, anchor.day + trigger.days, 0, 0, trigger.seconds);
+    return wallToInstant(wall, zone);
+  }
   final day = DateTime.utc(anchor.year, anchor.month, anchor.day + trigger.days, anchor.hour, anchor.minute);
   return wallToInstant(day, zone).add(Duration(seconds: trigger.seconds));
 }

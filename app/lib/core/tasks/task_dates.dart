@@ -1,4 +1,6 @@
-import 'package:timezone/data/latest.dart' as tzdata;
+// latest_all, not latest: `latest` leaves out the link names (Africa/Kampala, Asia/Calcutta, Europe/Kiev), which tasks
+// and phones do carry, and a zone that is not found reads as the platform's zone without a word.
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tzdb;
 
 var _zonesLoaded = false;
