@@ -16,6 +16,7 @@ import '../../core/tasks/task_order.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
+import '../common/theme.dart';
 import '../common/undo.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
@@ -65,6 +66,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
           ),
           const _SyncButton(),
+          const ThemeMenu(),
           const _AccountMenu(),
         ],
       ),

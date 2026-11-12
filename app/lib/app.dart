@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/sync/sync_controller.dart';
+import 'features/common/theme.dart';
 import 'features/common/undo.dart';
 import 'features/inbox/inbox_screen.dart';
 import 'features/reminders/reminders_providers.dart';
@@ -40,12 +41,11 @@ class _SheetTickAppState extends ConsumerState<SheetTickApp> with WidgetsBinding
   Widget build(BuildContext context) {
     // Keeps the platform's reminders in step with the tasks for as long as the app runs.
     ref.watch(remindersBindingProvider);
-    ThemeData theme(Brightness b) => ThemeData(colorSchemeSeed: Colors.indigo, brightness: b, useMaterial3: true);
     return MaterialApp(
       title: 'SheetTick',
-      theme: theme(Brightness.light),
-      darkTheme: theme(Brightness.dark),
-      themeMode: ThemeMode.system,
+      theme: appTheme(Brightness.light),
+      darkTheme: appTheme(Brightness.dark),
+      themeMode: themeModeOf(ref.watch(themeChoiceProvider).value),
       builder: (context, child) => UndoHost(child: child ?? const SizedBox.shrink()),
       home: const InboxScreen(),
     );
