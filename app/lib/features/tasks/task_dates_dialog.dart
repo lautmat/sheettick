@@ -28,7 +28,7 @@ class TaskDatesChip extends ConsumerWidget {
     if (result == null || (result.isEmpty && current.isEmpty)) return;
     // The page may have gone while the dialog was open; a disposed widget's ref must not be used.
     if (!context.mounted) return;
-    await updateRow(ref, 'tasks', task.id, result.toFields());
+    await updateRow(ref, 'tasks', task.id, result.toFields(), undo: 'Dates changed');
   }
 
   @override

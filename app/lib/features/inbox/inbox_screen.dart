@@ -17,6 +17,7 @@ import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
 import '../common/theme.dart';
+import '../common/undo.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
 import '../lists/sort_group_dialog.dart';
@@ -372,7 +373,7 @@ class _TrashTile extends ConsumerWidget {
         key: Key('restore-${task.id}'),
         tooltip: 'Restore',
         icon: const Icon(Icons.restore_from_trash_outlined),
-        onPressed: () => updateRow(ref, 'tasks', task.id, {'deleted': false}),
+        onPressed: () => updateRow(ref, 'tasks', task.id, {'deleted': false}, undo: 'Task restored'),
       ),
     );
   }
@@ -472,17 +473,22 @@ class _TaskTile extends ConsumerWidget {
   bool get _done => task.status == TaskStatus.completed.value;
 
   Future<void> _toggle(WidgetRef ref, bool done) async {
-    final writer = await ref.read(localWriterProvider.future);
     final zone = await ref.read(deviceZoneProvider.future);
-    // Finishing a repeating task also creates its next round.
-    await setTaskStatus(writer, task, done ? TaskStatus.completed : TaskStatus.open, now: DateTime.now(), zone: zone);
-    ref.read(syncControllerProvider.notifier).requestSoon();
+    // Finishing a repeating task also creates its next round, which undoing tombstones again.
+    await changeWithUndo<String?>(
+      ref,
+      done ? 'Task completed' : 'Task reopened',
+      [(tab: 'tasks', id: task.id)],
+      (writer) =>
+          setTaskStatus(writer, task, done ? TaskStatus.completed : TaskStatus.open, now: DateTime.now(), zone: zone),
+      created: (next) => [if (next != null) (tab: 'tasks', id: next)],
+    );
   }
 
   /// Makes this task a subtask of [parentId], or back to a top-level task when it is null. Its `section_id` is set to
   /// the section it is shown in, so an outdented task stays where it was rather than following a stale section.
   Future<void> _setParent(WidgetRef ref, String? parentId) async {
-    await updateRow(ref, 'tasks', task.id, {'parent_id': parentId, 'section_id': section});
+    await updateRow(ref, 'tasks', task.id, {'parent_id': parentId, 'section_id': section}, undo: 'Task moved');
   }
 
   Future<void> _onMenu(BuildContext context, WidgetRef ref, String value) async {

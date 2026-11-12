@@ -102,7 +102,7 @@ class _TaskAttributesState extends ConsumerState<TaskAttributes> {
             key: const Key('taskPriority'),
             tooltip: 'Priority',
             initialValue: priority,
-            onSelected: (p) => updateRow(ref, 'tasks', widget.task.id, {'priority': p.value}),
+            onSelected: (p) => updateRow(ref, 'tasks', widget.task.id, {'priority': p.value}, undo: 'Priority changed'),
             itemBuilder: (_) => [
               for (final p in Priority.values.reversed)
                 PopupMenuItem(
