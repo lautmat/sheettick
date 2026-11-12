@@ -11,7 +11,8 @@ a file in the folder whose name does not start with `SheetTick backup` is never 
 
 - The keep-30 rule is in `Retention.js`, with no Apps Script calls, so it is tested from Node:
   `node --test apps-script/test/*.test.js` (run in CI). With a bare directory argument, Node 22 fails.
-- The project needs the full `drive` scope (it copies a file it did not create). That is the script's own consent
+- The project needs the full `drive` scope: `DriveApp.createFolder`, `File.makeCopy` and `File.setTrashed` list no other
+  scope in Google's reference, and `drive.readonly` cannot create or trash anything. That is the script's own consent
   and has nothing to do with the app's `drive.file` scope.
 - `.claspignore` keeps `test/` and this README out of the script project.
 
