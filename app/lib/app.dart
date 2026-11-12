@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/sync/sync_controller.dart';
+import 'features/common/undo.dart';
 import 'features/inbox/inbox_screen.dart';
 import 'features/reminders/reminders_providers.dart';
 
@@ -45,6 +46,7 @@ class _SheetTickAppState extends ConsumerState<SheetTickApp> with WidgetsBinding
       theme: theme(Brightness.light),
       darkTheme: theme(Brightness.dark),
       themeMode: ThemeMode.system,
+      builder: (context, child) => UndoHost(child: child ?? const SizedBox.shrink()),
       home: const InboxScreen(),
     );
   }
