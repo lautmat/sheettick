@@ -95,7 +95,10 @@ void main() {
     await settle(tester);
   }
 
-  setUp(() => inbox = '');
+  setUp(() {
+    inbox = '';
+    _held = null;
+  });
 
   Future<void> seedInbox(WidgetTester tester) async => inbox = await seedList(tester, 'Inbox', isInbox: true);
 
