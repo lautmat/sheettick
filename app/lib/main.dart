@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
@@ -8,11 +9,14 @@ import 'core/desktop/desktop_shell.dart' show kStartHiddenArgument;
 import 'core/desktop/platform_desktop_shell.dart';
 import 'core/providers.dart';
 import 'core/reminders/platform_reminders.dart';
+import 'core/sync/background_sync_entry.dart';
 import 'features/desktop/desktop_providers.dart';
 import 'features/reminders/reminders_providers.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Android only: sync every 15 minutes while the app is closed.
+  unawaited(registerBackgroundSync());
   // Windows only: closing the window hides it to the tray, with a tray menu and a quick-add hotkey. Started by Windows at
   // sign-in (--minimized), the window stays in the tray.
   PlatformDesktopShell? desktop;
