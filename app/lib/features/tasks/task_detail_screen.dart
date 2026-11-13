@@ -10,6 +10,7 @@ import '../../core/tasks/task_status.dart';
 import '../common/local_edit.dart';
 import '../common/undo.dart';
 import 'checklist_section.dart';
+import 'notes_field.dart';
 import 'postpone_action.dart';
 import 'skip_action.dart';
 import 'task_attributes.dart';
@@ -183,18 +184,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             TaskAttributes(task: task),
             ChecklistSection(task: task),
             const Divider(height: 32),
-            TextField(
-              key: const Key('taskNotesField'),
-              controller: _notes,
-              minLines: 6,
-              maxLines: null,
-              keyboardType: TextInputType.multiline,
-              decoration: const InputDecoration(
-                hintText: 'Notes (Markdown)',
-                border: InputBorder.none,
-                alignLabelWithHint: true,
-              ),
-            ),
+            TaskNotesField(controller: _notes),
           ],
         ),
       ),
