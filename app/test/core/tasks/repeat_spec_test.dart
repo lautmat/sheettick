@@ -4,6 +4,7 @@ import 'package:sheettick/core/tasks/repeat_spec.dart';
 import 'package:sheettick/core/tasks/task_dates.dart';
 
 void main() {
+  hashTests();
   final monday = DateTime.utc(2026, 11, 16, 9);
 
   group('format', () {
@@ -150,4 +151,17 @@ void main() {
       expect(n.rrule, contains('COUNT=2'));
     });
   });
+}
+
+void hashTests() {
+  test('specs with the same weekdays hash alike, and different ones differ', () {
+    final a = RepeatSpec(unit: RepeatUnit.week, weekdays: {1, 3});
+    final b = RepeatSpec(unit: RepeatUnit.week, weekdays: {3, 1});
+    final c = RepeatSpec(unit: RepeatUnit.week, weekdays: {2, 4});
+    expect(a, b);
+    expect(a.hashCode, b.hashCode);
+    expect(a, isNot(c));
+    expect({a, b, c}, hasLength(2));
+  });
+  test('long dates are unambiguous', () => expect(longRepeatDate(DateTime.utc(2027, 3, 5)), '5 March 2027'));
 }

@@ -171,7 +171,7 @@ class RepeatSpec {
       other.weekdays.containsAll(weekdays);
 
   @override
-  int get hashCode => Object.hash(unit, interval, monthDay, end, weekdays.length);
+  int get hashCode => Object.hash(unit, interval, monthDay, end, Object.hashAll(weekdays.toList()..sort()));
 }
 
 String _ymd(DateTime d) => '${d.year.toString().padLeft(4, '0')}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
@@ -208,7 +208,8 @@ String _ordinal(int n) {
 String _dayList(List<String> names) =>
     names.length <= 1 ? names.join() : '${names.sublist(0, names.length - 1).join(', ')} and ${names.last}';
 
-String _longDate(DateTime d) => '${d.day} ${_monthNames[d.month - 1]} ${d.year}';
+/// A day written so that no locale can misread it: `5 March 2027`.
+String longRepeatDate(DateTime d) => '${d.day} ${_monthNames[d.month - 1]} ${d.year}';
 
 /// A rule in words ("Every 3 months on day 27", "Every week on Monday and Thursday, 10 times"), or null when [rrule]
 /// has no readable `FREQ`. It copes with rules the editor cannot show, such as `BYDAY=2TU`; parts it does not know are
@@ -250,7 +251,7 @@ String? describeRepeat(String? rrule) {
     b.write(' in ${_dayList([for (final m in months) _monthNames[m! - 1]])}');
   }
   final until = parts.containsKey('UNTIL') ? _untilDay(parts['UNTIL']!) : null;
-  if (until != null) b.write(', until ${_longDate(until)}');
+  if (until != null) b.write(', until ${longRepeatDate(until)}');
   final count = int.tryParse(parts['COUNT'] ?? '');
   if (count != null) b.write(count == 1 ? ', once' : ', $count times');
   return b.toString();

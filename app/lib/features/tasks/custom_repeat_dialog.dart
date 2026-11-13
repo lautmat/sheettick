@@ -155,7 +155,7 @@ class _CustomRepeatDialogState extends State<CustomRepeatDialog> {
               _endTile(
                 const Key('customEndUntil'),
                 end is RepeatUntil,
-                Text(end is RepeatUntil ? 'On ${_date(end.day)}' : 'On a date'),
+                Text(end is RepeatUntil ? 'On ${longRepeatDate(end.day)}' : 'On a date'),
                 _pickUntil,
                 trailing: const Icon(Icons.edit_calendar_outlined),
               ),
@@ -187,5 +187,3 @@ class _CustomRepeatDialogState extends State<CustomRepeatDialog> {
     );
   }
 }
-
-String _date(DateTime d) => '${d.day}/${d.month}/${d.year}';
