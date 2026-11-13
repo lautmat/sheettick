@@ -8,6 +8,7 @@ import '../../core/sync/sync_controller.dart';
 import '../common/local_edit.dart';
 import '../common/name_dialog.dart';
 import '../common/pick_dialog.dart';
+import '../import/import_dialog.dart';
 import '../tasks/task_drag.dart';
 import 'lists_providers.dart';
 
@@ -58,6 +59,13 @@ class ListsSidebar extends ConsumerWidget {
           title: const Text('New folder'),
           onTap: () => _newFolder(context, ref),
         ),
+        if (kDevTools)
+          ListTile(
+            key: const Key('importTickTick'),
+            leading: const Icon(Icons.download_outlined),
+            title: const Text('Import from TickTick (dev)'),
+            onTap: () => showTickTickImportDialog(context),
+          ),
       ],
     );
   }
