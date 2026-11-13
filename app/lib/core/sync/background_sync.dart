@@ -128,7 +128,8 @@ String describeBackgroundSync(String? raw, DateTime now) {
 }
 
 String _ago(Duration d) {
-  if (d.inMinutes < 1) return 'just now';
+  // A time in the future (clock skew, or a bad value in the database) is not "-2 d ago".
+  if (d.isNegative || d.inMinutes < 1) return 'just now';
   if (d.inMinutes < 60) return '${d.inMinutes} min ago';
   if (d.inHours < 24) return '${d.inHours} h ago';
   return '${d.inDays} d ago';

@@ -224,6 +224,12 @@ void main() {
       expect(at(const Duration(days: 3)), 'Background sync: synced, 3 d ago');
     });
 
+    test('a time in the future, from clock skew or a bad value, reads as just now', () {
+      String at(Duration ahead) => describeBackgroundSync('${now.add(ahead).toIso8601String()}|synced', now);
+      expect(at(const Duration(seconds: 30)), 'Background sync: synced, just now');
+      expect(at(const Duration(days: 2)), 'Background sync: synced, just now');
+    });
+
     test('each outcome has plain words', () {
       String say(String outcome) => describeBackgroundSync('2026-11-13T07:50:00Z|$outcome', now);
       expect(say('signedOut'), contains('sign in in the app'));
