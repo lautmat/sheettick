@@ -47,11 +47,13 @@ class _TickTickImportDialogState extends ConsumerState<TickTickImportDialog> {
       final inbox = await _inboxId();
       if (inbox == null) throw StateError('No Inbox yet: sign in and sync first.');
       final plan = planTickTickImport(_text.text, listId: inbox);
+      if (!mounted) return;
       setState(() {
         _plan = plan;
         _report = plan.describe();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _plan = null;
         _report = 'Cannot read this: $e';
@@ -68,11 +70,13 @@ class _TickTickImportDialogState extends ConsumerState<TickTickImportDialog> {
     try {
       final writer = await ref.read(localWriterProvider.future);
       final r = await applyTickTickImport(writer, plan);
+      if (!mounted) return;
       setState(() {
         _plan = null;
         _report = 'Done: ${r.written} written, ${r.skipped} already there. Sync to push them to the Sheet.';
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _report = 'Import failed: $e');
     } finally {
       if (mounted) setState(() => _busy = false);

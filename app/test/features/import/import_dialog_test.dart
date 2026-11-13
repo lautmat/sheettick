@@ -35,7 +35,11 @@ void main() {
       }
     }
 
-    Future<int> taskCount() async => (await tester.runAsync(() => store.rowsById('tasks')))!.length;
+    Future<int> taskCount() async {
+      final rows = await tester.runAsync(() => store.rowsById('tasks'));
+      expect(rows, isNotNull);
+      return rows!.length;
+    }
 
     expect(tester.widget<FilledButton>(find.byKey(const Key('importGo'))).onPressed, isNull);
 
