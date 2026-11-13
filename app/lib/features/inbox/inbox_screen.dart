@@ -13,9 +13,12 @@ import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_order.dart';
+import '../../core/tasks/task_skip.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
+import '../common/theme.dart';
+import '../common/undo.dart';
 import '../lists/lists_providers.dart';
 import '../lists/lists_sidebar.dart';
 import '../lists/sort_group_dialog.dart';
@@ -24,8 +27,10 @@ import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
 import '../smart/smart_providers.dart';
 import '../tasks/date_labels.dart';
+import '../tasks/skip_action.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
+import '../tasks/task_drag.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -64,6 +69,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
           ),
           const _SyncButton(),
+          const ThemeMenu(),
           const _AccountMenu(),
         ],
       ),
@@ -273,6 +279,8 @@ class _InboxBody extends ConsumerWidget {
                       children: _rows(
                         sortTasks(items, TaskOrder.of(list.orderBy), zone: zone),
                         sections,
+                        listId: list.id,
+                        manual: TaskOrder.of(list.orderBy) == TaskOrder.manual,
                         group: TaskGroup.of(list.groupBy),
                         zone: zone,
                         listNames: listNames,
@@ -313,6 +321,7 @@ const _smartEmpty = {
   SmartList.tomorrow: 'Nothing due tomorrow.',
   SmartList.next7Days: 'Nothing due in the next 7 days.',
   SmartList.all: 'No open tasks.',
+  SmartList.noDate: 'Every open task has a date.',
   SmartList.completed: 'No completed tasks yet.',
   SmartList.wontDo: "No tasks marked Won't Do.",
   SmartList.trash: 'The Trash is empty.',
@@ -370,7 +379,7 @@ class _TrashTile extends ConsumerWidget {
         key: Key('restore-${task.id}'),
         tooltip: 'Restore',
         icon: const Icon(Icons.restore_from_trash_outlined),
-        onPressed: () => updateRow(ref, 'tasks', task.id, {'deleted': false}),
+        onPressed: () => updateRow(ref, 'tasks', task.id, {'deleted': false}, undo: 'Task restored'),
       ),
     );
   }
@@ -378,9 +387,14 @@ class _TrashTile extends ConsumerWidget {
 
 /// The rows of a list: the tasks outside any section first, then each section's heading and, unless it is
 /// folded, its tasks. A subtask is shown under its top-level task, in that task's section.
+///
+/// Tasks can be dragged; with [manual] (the list is in its own order) one can also be dropped before another. A heading,
+/// "No section" above the first heading and the end of the list take a dropped task whatever the order.
 List<Widget> _rows(
   List<Task> items,
   List<Section> sections, {
+  required String listId,
+  bool manual = true,
   TaskGroup group = TaskGroup.none,
   String? zone,
   Map<String, String> listNames = const {},
@@ -432,20 +446,57 @@ List<Widget> _rows(
   String? above;
   // The section the rows are shown in, null above the first heading.
   String? section;
+  String? firstIn(String? sectionId) {
+    for (final b in blocks) {
+      final task = b.first.item;
+      if ((known.contains(task.sectionId) ? task.sectionId : null) == sectionId) return task.id;
+    }
+    return null;
+  }
+
+  if (sections.isNotEmpty) {
+    // Shown only while a task is dragged: the way out of every section, to the top of the unsectioned tasks.
+    widgets.add(
+      DropRow(
+        key: const Key('dropNoSection'),
+        label: 'No section',
+        accepts: (_) => true,
+        onDrop: (ref, dragged) => moveTaskTo(ref, dragged, listId: listId, beforeId: firstIn(null)),
+      ),
+    );
+  }
   for (final entry in shown) {
     if (entry is Section) {
       above = null;
       section = entry.id;
       final count = blocks.where((b) => inSection(b, entry.id)).fold(0, (n, b) => n + b.length);
-      widgets.add(SectionHeader(section: entry, count: count));
+      widgets.add(SectionHeader(section: entry, count: count, firstTaskId: firstIn(entry.id)));
     } else {
       final row = entry as ({Task item, int depth});
       widgets.add(
-        _TaskTile(key: ValueKey(row.item.id), task: row.item, depth: row.depth, above: above, section: section),
+        TaskDragShell(
+          key: ValueKey(row.item.id),
+          task: row.item,
+          depth: row.depth,
+          listId: listId,
+          section: section,
+          reorder: manual,
+          child: _TaskTile(task: row.item, depth: row.depth, above: above, section: section),
+        ),
       );
       above = row.item.id;
     }
   }
+  // Shown only while a task is dragged: the end of the last section, or of the list when it has none.
+  widgets.add(
+    DropRow(
+      key: const Key('dropEnd'),
+      label: sections.isEmpty ? 'End of the list' : 'End of ${sections.last.name}',
+      accepts: (_) => true,
+      onDrop: (ref, dragged) =>
+          moveTaskTo(ref, dragged, listId: listId, sectionId: sections.isEmpty ? null : sections.last.id),
+    ),
+  );
   return widgets;
 }
 
@@ -470,27 +521,36 @@ class _TaskTile extends ConsumerWidget {
   bool get _done => task.status == TaskStatus.completed.value;
 
   Future<void> _toggle(WidgetRef ref, bool done) async {
-    final writer = await ref.read(localWriterProvider.future);
     final zone = await ref.read(deviceZoneProvider.future);
-    // Finishing a repeating task also creates its next round.
-    await setTaskStatus(writer, task, done ? TaskStatus.completed : TaskStatus.open, now: DateTime.now(), zone: zone);
-    ref.read(syncControllerProvider.notifier).requestSoon();
+    // Finishing a repeating task also creates its next round, which undoing tombstones again.
+    await changeWithUndo<String?>(
+      ref,
+      done ? 'Task completed' : 'Task reopened',
+      [(tab: 'tasks', id: task.id)],
+      (writer) =>
+          setTaskStatus(writer, task, done ? TaskStatus.completed : TaskStatus.open, now: DateTime.now(), zone: zone),
+      created: (next) => [if (next != null) (tab: 'tasks', id: next)],
+    );
   }
 
   /// Makes this task a subtask of [parentId], or back to a top-level task when it is null. Its `section_id` is set to
   /// the section it is shown in, so an outdented task stays where it was rather than following a stale section.
   Future<void> _setParent(WidgetRef ref, String? parentId) async {
-    await updateRow(ref, 'tasks', task.id, {'parent_id': parentId, 'section_id': section});
+    await updateRow(ref, 'tasks', task.id, {'parent_id': parentId, 'section_id': section}, undo: 'Task moved');
   }
 
   Future<void> _onMenu(BuildContext context, WidgetRef ref, String value) async {
     switch (value) {
       case 'section':
         await moveTaskToSection(context, ref, task);
+      case 'list':
+        await moveTaskToList(context, ref, task);
       case 'indent':
         await _setParent(ref, above);
       case 'outdent':
         await _setParent(ref, null);
+      case 'skip':
+        await skipTaskOccurrence(context, ref, task);
     }
   }
 
@@ -545,8 +605,10 @@ class _TaskTile extends ConsumerWidget {
               tooltip: 'Task options',
               onSelected: (value) => _onMenu(context, ref, value),
               itemBuilder: (_) => [
+                if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
                 // A subtask is filed under its parent's section, so only a top-level task moves on its own.
                 if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
+                if (depth == 0) const PopupMenuItem(value: 'list', child: Text('Move to list')),
                 if (above != null && task.parentId != above)
                   const PopupMenuItem(value: 'indent', child: Text('Indent')),
                 if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),

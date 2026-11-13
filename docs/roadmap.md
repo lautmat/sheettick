@@ -23,7 +23,7 @@ Re-scoped on 2026-11-11 after an audit against the code, the GitHub issues and t
 
 ## P1 — Daily driver (weeks 2–5)
 
-**Status on 2026-11-11: 18 issues merged, 3 in review or on a branch, 10 to do.**
+**Status on 2026-11-13: 27 issues merged, 4 to do.**
 
 Merged:
 - [x] Sync for folders, sections, checklist and tags (#19)
@@ -31,19 +31,14 @@ Merged:
 - [x] Task detail (#22), subtasks (#23), checklist items (#24), priority and tags (#25)
 - [x] Start and due dates (#26), reminders (#27), snooze (#28), RRULE recurrence (#29)
 - [x] Quick-add parser in English and French (#30), quick-add bar (#31)
-- [x] Smart lists Today to Trash (#32), search (#33), sort and group (#34)
-
-In review or on a branch:
-- [ ] Undo (#35): PR 58 open
-- [ ] Light and dark theme (#37): PR 59 open
-- [ ] Drag and drop (#36): on a local branch built on the undo branch; rebase onto `main` once undo is merged
+- [x] Smart lists Today to Trash (#32), No Date smart list (#65), search (#33), sort and group (#34)
+- [x] Undo (#35), drag and drop (#36), light and dark theme (#37)
+- [x] Nightly snapshot of the spreadsheet (#63), one-time TickTick import (#38)
+- [x] Travel tests: all-day dates and repeats across time zones (#64)
+- [x] Custom repeat rule editor (#61), skip one occurrence (#62)
 
 To do:
-- [ ] Nightly snapshot of the spreadsheet (#63), before any real data goes in
-- [ ] One-time TickTick import (#38), after #63
-- [ ] Travel tests: all-day dates and repeats across time zones (#64)
-- [ ] Custom repeat rule editor (#61), skip one occurrence (#62)
-- [ ] No Date smart list (#65), postpone in one step (#66)
+- [ ] Postpone in one step (#66)
 - [ ] Render Markdown in notes (#60)
 - [ ] Background sync on Android with WorkManager (#42)
 - [ ] Windows tray, start with Windows and global quick-add hotkey (#43)

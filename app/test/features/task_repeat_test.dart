@@ -166,13 +166,128 @@ void main() {
     await settle(tester);
     await openTask(tester, 'Water the plants');
     expect(
-      find.descendant(of: find.byKey(const Key('taskRepeat')), matching: find.text('FREQ=MONTHLY;INTERVAL=3;BYDAY=2TU')),
+      find.descendant(of: find.byKey(const Key('taskRepeat')), matching: find.text('Every 3 months on 2nd Tuesday')),
       findsOneWidget,
     );
     await openRepeat(tester);
     expect(find.byKey(const Key('repeat:FREQ=MONTHLY;INTERVAL=3;BYDAY=2TU')), findsOneWidget);
     await tester.tap(find.byKey(const Key('repeatCancel')));
     await animate(tester);
+    await unmount(tester);
+  });
+
+  Future<void> seedRepeating(WidgetTester tester, String rrule) async {
+    final inbox = await seedInbox(tester);
+    await tester.runAsync(
+      () => writer().insert('tasks', {'list_id': inbox, 'title': 'Water the plants', 'due_at': day(1), 'all_day': true, 'rrule': rrule}),
+    );
+    await tester.pumpWidget(app());
+    await settle(tester);
+    await openTask(tester, 'Water the plants');
+  }
+
+  testWidgets('Custom builds a rule: every 3 months on day 27, ending after 4 times', (tester) async {
+    final inbox = await seedInbox(tester);
+    await tester.runAsync(
+      () => writer().insert('tasks', {'list_id': inbox, 'title': 'Water the plants', 'due_at': day(1), 'all_day': true}),
+    );
+    await tester.pumpWidget(app());
+    await settle(tester);
+    await openTask(tester, 'Water the plants');
+    await openRepeat(tester);
+
+    await tester.tap(find.byKey(const Key('repeat:custom')));
+    await animate(tester);
+    await tester.tap(find.descendant(of: find.byKey(const Key('customUnit')), matching: find.text('Month')));
+    await tester.pump();
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.byKey(const Key('customInterval:up')));
+      await tester.pump();
+    }
+    await tester.tap(find.byKey(const Key('customMonthDay')));
+    await animate(tester);
+    await tester.scrollUntilVisible(find.text('day 27'), 60, scrollable: find.byType(Scrollable).last);
+    await tester.tap(find.text('day 27').last);
+    await animate(tester);
+    await tester.tap(find.byKey(const Key('customEndCount')));
+    await tester.pump();
+    for (var i = 0; i < 6; i++) {
+      await tester.tap(find.byKey(const Key('customCount:down')));
+      await tester.pump();
+    }
+    expect(tester.widget<Text>(find.byKey(const Key('customPreview'))).data, 'Every 3 months on day 27, 4 times');
+    await tester.tap(find.byKey(const Key('customDone')));
+    await animate(tester);
+
+    // The new rule is listed, in words, and selected; Done writes it.
+    expect(find.text('Every 3 months on day 27, 4 times'), findsOneWidget);
+    await done(tester);
+    final task = await onlyTask(tester);
+    expect(task.rrule, 'RRULE:FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=27;COUNT=4');
+    expect(task.version, 2);
+    expect(
+      find.descendant(of: find.byKey(const Key('taskRepeat')), matching: find.text('Every 3 months on day 27, 4 times')),
+      findsOneWidget,
+    );
+    await unmount(tester);
+  });
+
+  testWidgets('Custom opens on the rule the task has, and leaving it unchanged writes nothing', (tester) async {
+    await seedRepeating(tester, 'RRULE:FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=27');
+    await openRepeat(tester);
+    await tester.ensureVisible(find.byKey(const Key('repeat:custom')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('repeat:custom')));
+    await animate(tester);
+    expect(tester.widget<Text>(find.byKey(const Key('customInterval:value'))).data, '3');
+    expect(tester.widget<Text>(find.byKey(const Key('customPreview'))).data, 'Every 3 months on day 27');
+    await tester.tap(find.byKey(const Key('customDone')));
+    await animate(tester);
+    await done(tester);
+    expect((await onlyTask(tester)).version, 1);
+    await unmount(tester);
+  });
+
+  testWidgets('a weekly rule keeps at least one weekday, and an end date can be picked', (tester) async {
+    await seedRepeating(tester, 'RRULE:FREQ=WEEKLY;BYDAY=MO');
+    await openRepeat(tester);
+    await tester.ensureVisible(find.byKey(const Key('repeat:custom')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('repeat:custom')));
+    await animate(tester);
+    await tester.tap(find.byKey(const Key('customWeekday1')));
+    await tester.pump();
+    expect(tester.widget<FilterChip>(find.byKey(const Key('customWeekday1'))).selected, true, reason: 'the last day stays');
+    await tester.tap(find.byKey(const Key('customWeekday4')));
+    await tester.pump();
+    expect(tester.widget<Text>(find.byKey(const Key('customPreview'))).data, 'Every week on Monday and Thursday');
+
+    await tester.tap(find.byKey(const Key('customEndUntil')));
+    await animate(tester);
+    await tester.tap(find.text('OK'));
+    await animate(tester);
+    expect(tester.widget<Text>(find.byKey(const Key('customPreview'))).data, startsWith('Every week on Monday and Thursday, until '));
+    await tester.tap(find.byKey(const Key('customDone')));
+    await animate(tester);
+    await done(tester);
+    final rule = (await onlyTask(tester)).rrule!;
+    expect(rule, matches(RegExp(r'^RRULE:FREQ=WEEKLY;BYDAY=MO,TH;UNTIL=\d{8}T235959Z$')));
+    await unmount(tester);
+  });
+
+  testWidgets('Cancel in the custom editor changes nothing', (tester) async {
+    await seedRepeating(tester, 'RRULE:FREQ=MONTHLY;INTERVAL=3;BYDAY=2TU');
+    await openRepeat(tester);
+    await tester.ensureVisible(find.byKey(const Key('repeat:custom')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('repeat:custom')));
+    await animate(tester);
+    await tester.tap(find.byKey(const Key('customCancel')));
+    await animate(tester);
+    await done(tester);
+    final task = await onlyTask(tester);
+    expect(task.rrule, 'RRULE:FREQ=MONTHLY;INTERVAL=3;BYDAY=2TU', reason: 'a rule the editor cannot show is kept as it is');
+    expect(task.version, 1);
     await unmount(tester);
   });
 

@@ -21,6 +21,9 @@ abstract final class DeviceStateKeys {
   /// Prefix of the rows that hold reminders moved to a later time on this device, one row per reminder (see
   /// `core/reminders/snooze.dart`). Not synced.
   static const reminderSnoozePrefix = 'reminder_snooze:';
+
+  /// The theme picked on this device: `system`, `light` or `dark` (see `core/theme/theme_choice.dart`). Not synced.
+  static const themeChoice = 'theme_choice';
 }
 
 /// Local SQLite database. The UI reads and writes only this; the sync engine reconciles it with the Sheet.

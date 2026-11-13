@@ -8,6 +8,8 @@ import '../../core/sync/sync_controller.dart';
 import '../common/local_edit.dart';
 import '../common/name_dialog.dart';
 import '../common/pick_dialog.dart';
+import '../import/import_dialog.dart';
+import '../tasks/task_drag.dart';
 import 'lists_providers.dart';
 
 /// Screens at least this wide keep the sidebar beside the list; narrower ones put it in a drawer.
@@ -57,6 +59,13 @@ class ListsSidebar extends ConsumerWidget {
           title: const Text('New folder'),
           onTap: () => _newFolder(context, ref),
         ),
+        if (kDevTools)
+          ListTile(
+            key: const Key('importTickTick'),
+            leading: const Icon(Icons.download_outlined),
+            title: const Text('Import from TickTick (dev)'),
+            onTap: () => showTickTickImportDialog(context),
+          ),
       ],
     );
   }
@@ -69,6 +78,7 @@ const _smartIcons = {
   SmartList.tomorrow: Icons.event_outlined,
   SmartList.next7Days: Icons.date_range_outlined,
   SmartList.all: Icons.all_inbox_outlined,
+  SmartList.noDate: Icons.event_busy_outlined,
   SmartList.completed: Icons.check_circle_outline,
   SmartList.wontDo: Icons.block_outlined,
   SmartList.trash: Icons.delete_outline,
@@ -106,6 +116,15 @@ class _ListTile extends ConsumerWidget {
     final inSmart = ref.watch(selectedSmartListProvider) != null;
     final activeId = inSmart ? null : ref.watch(activeListProvider).value?.id;
     final scheme = Theme.of(context).colorScheme;
+    // A task dropped on a list goes to the end of it, outside any section.
+    return TaskDropTarget(
+      accepts: (dragged) => dragged.listId != list.id && !list.archived,
+      onDrop: (dragged) => moveTaskTo(ref, dragged, listId: list.id, label: 'Moved to ${list.name}'),
+      child: _tile(context, ref, scheme, activeId),
+    );
+  }
+
+  Widget _tile(BuildContext context, WidgetRef ref, ColorScheme scheme, String? activeId) {
     return ListTile(
       key: Key('list-${list.id}'),
       contentPadding: EdgeInsets.only(left: indented ? 32 : 16, right: list.isInbox ? 16 : 0),

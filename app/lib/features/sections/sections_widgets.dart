@@ -7,6 +7,7 @@ import '../../core/sync/sync_controller.dart';
 import '../common/local_edit.dart';
 import '../common/name_dialog.dart';
 import '../common/pick_dialog.dart';
+import '../tasks/task_drag.dart';
 import 'sections_providers.dart';
 
 /// Adds a section to the list on screen.
@@ -45,14 +46,29 @@ Future<void> _newSection(BuildContext context, WidgetRef ref, String listId) asy
 /// A section's heading in its list. Tapping it folds the section; its menu renames it. [count] is the number of
 /// tasks in it.
 class SectionHeader extends ConsumerWidget {
-  const SectionHeader({super.key, required this.section, required this.count});
+  const SectionHeader({super.key, required this.section, required this.count, this.firstTaskId});
 
   final Section section;
   final int count;
 
+  /// The first top-level task of the section, or null when it has none. A task dropped on the heading goes before it,
+  /// to the top of the section.
+  final String? firstTaskId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return TaskDropTarget(
+      accepts: (_) => true,
+      onDrop: (dragged) {
+        final listId = section.listId;
+        if (listId != null) moveTaskTo(ref, dragged, listId: listId, sectionId: section.id, beforeId: firstTaskId);
+      },
+      child: _tile(context, ref, muted),
+    );
+  }
+
+  Widget _tile(BuildContext context, WidgetRef ref, Color muted) {
     return ListTile(
       key: Key('section-${section.id}'),
       dense: true,
@@ -105,5 +121,5 @@ Future<void> moveTaskToSection(BuildContext context, WidgetRef ref, Task task) a
     ),
   );
   if (picked == null) return;
-  await updateRow(ref, 'tasks', task.id, {'section_id': picked.isEmpty ? null : picked});
+  await updateRow(ref, 'tasks', task.id, {'section_id': picked.isEmpty ? null : picked}, undo: 'Task moved');
 }
