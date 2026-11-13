@@ -1,12 +1,18 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/providers.dart';
 import 'core/reminders/platform_reminders.dart';
+import 'core/sync/background_sync_entry.dart';
 import 'features/reminders/reminders_providers.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Android only: sync every 15 minutes while the app is closed.
+  unawaited(registerBackgroundSync());
   runApp(
     ProviderScope(
       overrides: [

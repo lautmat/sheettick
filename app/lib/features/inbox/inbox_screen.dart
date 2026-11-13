@@ -5,6 +5,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/db/database.dart';
 import '../../core/parse/quick_add.dart';
 import '../../core/providers.dart';
+import '../../core/sync/background_sync.dart' show describeBackgroundSync;
 import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/priority.dart';
 import '../../core/tasks/quick_add_create.dart';
@@ -21,6 +22,7 @@ import '../common/local_edit.dart';
 import '../common/theme.dart';
 import '../common/undo.dart';
 import '../lists/lists_providers.dart';
+import 'background_sync_status.dart';
 import '../lists/lists_sidebar.dart';
 import '../lists/sort_group_dialog.dart';
 import '../search/search_screen.dart';
@@ -148,6 +150,17 @@ class _AccountMenu extends ConsumerWidget {
       icon: const Icon(Icons.account_circle_outlined),
       itemBuilder: (_) => [
         if (session.email != null) PopupMenuItem<void>(enabled: false, child: Text(session.email!)),
+        if (ref.read(backgroundSyncVisibleProvider))
+          PopupMenuItem<void>(
+            enabled: false,
+            child: Consumer(
+              builder: (context, ref, _) => Text(
+                describeBackgroundSync(ref.watch(backgroundSyncRecordProvider).value, DateTime.now()),
+                key: const Key('backgroundSyncStatus'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
         PopupMenuItem<void>(
           key: const Key('signOut'),
           onTap: () => ref.read(authControllerProvider.notifier).signOut(),

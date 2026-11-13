@@ -13,6 +13,8 @@ import 'package:sheettick/core/providers.dart';
 import 'package:sheettick/core/sheets/sheets_backend.dart';
 import 'package:sheettick/core/sync/local_store.dart';
 import 'package:sheettick/core/sync/local_writer.dart';
+import 'package:sheettick/core/time.dart';
+import 'package:sheettick/features/inbox/background_sync_status.dart';
 
 import '../support/fake_auth_service.dart';
 import '../support/fake_sheets_backend.dart';
@@ -345,6 +347,41 @@ void main() {
     expect(auth.signInCalls, 1);
     // Local use is unaffected.
     expect(find.byKey(const Key('addTaskField')), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('the account menu says how the background sync went (Android)', (tester) async {
+    await seedInbox(tester);
+    await tester.runAsync(
+      () => db.setDeviceState(DeviceStateKeys.lastBackgroundSync, '${formatUtc(DateTime.now())}|synced'),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          deviceIdProvider.overrideWith((ref) => 'win-test'),
+          authServiceProvider.overrideWithValue(FakeAuthService(restored: FakeAuthService.session())),
+          backendFactoryProvider.overrideWithValue((_) => FakeSheetsBackend()),
+          backgroundSyncVisibleProvider.overrideWithValue(true),
+        ],
+        child: const SheetTickApp(),
+      ),
+    );
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('accountMenu')));
+    await tester.pumpAndSettle();
+    await settle(tester);
+    expect(find.text('Background sync: synced, just now'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('without a background sync (Windows) the account menu has no such line', (tester) async {
+    await seedInbox(tester);
+    await tester.pumpWidget(app(backend: FakeSheetsBackend()));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('accountMenu')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('backgroundSyncStatus')), findsNothing);
     await unmount(tester);
   });
 

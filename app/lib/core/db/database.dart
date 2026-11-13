@@ -22,6 +22,10 @@ abstract final class DeviceStateKeys {
   /// `core/reminders/snooze.dart`). Not synced.
   static const reminderSnoozePrefix = 'reminder_snooze:';
 
+  /// When the Android background sync last ran and how it went: `<UTC time>|<outcome name>` (see
+  /// `core/sync/background_sync.dart`). Not synced. The app shows it so a silent job can be checked.
+  static const lastBackgroundSync = 'last_background_sync';
+
   /// The theme picked on this device: `system`, `light` or `dark` (see `core/theme/theme_choice.dart`). Not synced.
   static const themeChoice = 'theme_choice';
 }
