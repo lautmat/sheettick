@@ -102,4 +102,13 @@ void main() {
     expect(row.fields['parent_id'], importedId('parent'));
     expect(row.dirty, true);
   });
+
+  test('checklist items without ids or titles get distinct rows', () {
+    final p = plan([task('a', extra: {'items': [{'status': 0}, {'status': 0}]})]);
+    expect(p.rows.where((r) => r.tab == 'checklist').map((r) => r.id).toSet(), hasLength(2));
+  });
+
+  test('an object without a task list is a clear error', () {
+    expect(() => planTickTickImport('{"foo": 1}', listId: inbox), throwsArgumentError);
+  });
 }

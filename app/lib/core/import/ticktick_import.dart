@@ -58,7 +58,9 @@ class ImportPlan {
 /// the list [listId] (the Inbox). Open tasks only; others are skipped with a warning.
 ImportPlan planTickTickImport(String json, {required String listId}) {
   final decoded = jsonDecode(json);
-  final tasks = ((decoded is Map ? decoded['tasks'] : decoded) as List).cast<Map<String, dynamic>>();
+  final raw = decoded is Map ? decoded['tasks'] : decoded;
+  if (raw is! List) throw ArgumentError('Expected a list of tasks, or an object with a "tasks" list.');
+  final tasks = raw.cast<Map<String, dynamic>>();
   final warnings = <String>[];
   final repeating = <String>[];
   final taskRows = <PlannedRow>[];
@@ -100,8 +102,10 @@ ImportPlan planTickTickImport(String json, {required String listId}) {
     }
     taskRows.add(PlannedRow('tasks', importedId(tid), fields));
 
-    for (final item in (t['items'] as List?)?.cast<Map<String, dynamic>>() ?? const []) {
-      final iid = (item['id'] as String?) ?? '$tid:${item['title']}';
+    final items = (t['items'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final iid = (item['id'] as String?) ?? '$tid:$i';
       checkRows.add(PlannedRow('checklist', importedId(iid), {
         'task_id': importedId(tid),
         'title': item['title'],
