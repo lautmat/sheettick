@@ -13,6 +13,7 @@ import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_order.dart';
+import '../../core/tasks/task_skip.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
@@ -26,6 +27,7 @@ import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
 import '../smart/smart_providers.dart';
 import '../tasks/date_labels.dart';
+import '../tasks/skip_action.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_drag.dart';
@@ -546,6 +548,8 @@ class _TaskTile extends ConsumerWidget {
         await _setParent(ref, above);
       case 'outdent':
         await _setParent(ref, null);
+      case 'skip':
+        await skipTaskOccurrence(context, ref, task);
     }
   }
 
@@ -600,6 +604,7 @@ class _TaskTile extends ConsumerWidget {
               tooltip: 'Task options',
               onSelected: (value) => _onMenu(context, ref, value),
               itemBuilder: (_) => [
+                if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
                 // A subtask is filed under its parent's section, so only a top-level task moves on its own.
                 if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
                 if (depth == 0) const PopupMenuItem(value: 'list', child: Text('Move to list')),

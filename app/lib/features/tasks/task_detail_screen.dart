@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/tasks/task_completion.dart';
+import '../../core/tasks/task_skip.dart';
 import '../../core/tasks/task_status.dart';
 import '../common/local_edit.dart';
 import '../common/undo.dart';
 import 'checklist_section.dart';
+import 'skip_action.dart';
 import 'task_attributes.dart';
 import 'task_providers.dart';
 
@@ -85,6 +87,14 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     );
   }
 
+  /// Saves the edits first, then moves a repeating task to its next occurrence.
+  Future<void> _skip() async {
+    await _saveEdits();
+    final task = ref.read(taskProvider(_id)).value ?? widget.task;
+    if (!mounted) return;
+    await skipTaskOccurrence(context, ref, task);
+  }
+
   Future<void> _delete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -129,9 +139,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               onSelected: (value) => switch (value) {
                 'wontDo' => _setStatus(TaskStatus.wontDo),
                 'reopen' => _setStatus(TaskStatus.open),
+                'skip' => _skip(),
                 _ => _delete(),
               },
               itemBuilder: (_) => [
+                if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
                 if (wontDo)
                   const PopupMenuItem(value: 'reopen', child: Text('Reopen'))
                 else
