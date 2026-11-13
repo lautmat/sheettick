@@ -1,0 +1,126 @@
+name: Build apps
+
+# Manual only: builds the Android APK and the Windows app on GitHub's runners and attaches them to the run.
+# Secrets it reads (all optional; without them the apps build but cannot sign in to Google). See docs/dev-setup.md.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which app to build
+        type: choice
+        options: [both, android, windows]
+        default: both
+      dev_tools:
+        description: Include the dev-only tools (TickTick import)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    if: inputs.platform == 'both' || inputs.platform == 'android'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    env:
+      DART_DEFINES_ANDROID_JSON: ${{ secrets.DART_DEFINES_ANDROID_JSON }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (tag resolved 2026-10-19)
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2 (tag resolved 2026-10-19)
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      # The runner image ships JDK 17, which is what the Android build here targets.
+      - name: Use JDK 17
+        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+
+      - name: Write the secret files
+        run: |
+          mkdir -p secrets
+          printf '%s' "${DART_DEFINES_ANDROID_JSON:-{\}}" > secrets/dart_defines_android.json
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/ci.keystore
+            {
+              echo "storeFile=ci.keystore"
+              echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+              echo "keyAlias=$ANDROID_KEY_ALIAS"
+              echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            } > android/key.properties
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set: the APK is signed with a throwaway debug key, so Google sign-in will not work."
+          fi
+          if [ -z "$DART_DEFINES_ANDROID_JSON" ]; then
+            echo "::warning::DART_DEFINES_ANDROID_JSON is not set: the app will say the OAuth client is not configured."
+          fi
+
+      - run: flutter pub get
+
+      - name: Build the APK
+        run: |
+          flutter build apk --release --dart-define-from-file=secrets/dart_defines_android.json \
+            ${{ inputs.dev_tools && '--dart-define=DEV_TOOLS=true' || '' }}
+
+      # actions/upload-artifact v4.6.2. The SHA is from memory (this session cannot read other repositories to resolve
+      # the tag); if it is wrong the run fails loudly at this step. Check it against the tag when pinning is reviewed.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sheettick-android-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
+          if-no-files-found: error
+
+  windows:
+    if: inputs.platform == 'both' || inputs.platform == 'windows'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    env:
+      DART_DEFINES_JSON: ${{ secrets.DART_DEFINES_JSON }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (tag resolved 2026-10-19)
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2 (tag resolved 2026-10-19)
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - name: Write the secret file
+        run: |
+          mkdir -p secrets
+          printf '%s' "${DART_DEFINES_JSON:-{\}}" > secrets/dart_defines.json
+          if [ -z "$DART_DEFINES_JSON" ]; then
+            echo "::warning::DART_DEFINES_JSON is not set: the app will say the OAuth client is not configured."
+          fi
+
+      - run: flutter pub get
+
+      - name: Build the Windows app
+        run: |
+          flutter build windows --release --dart-define-from-file=secrets/dart_defines.json \
+            ${{ inputs.dev_tools && '--dart-define=DEV_TOOLS=true' || '' }}
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sheettick-windows
+          path: app/build/windows/x64/runner/Release
+          retention-days: 7
+          if-no-files-found: error

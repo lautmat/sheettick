@@ -33,3 +33,24 @@ Android Studio and the Android emulator are intentionally not installed. Android
 ## Running on a phone
 Enable Developer options and USB debugging on the phone, connect it, accept the RSA prompt, then `adb devices` should list it
 and `flutter run -d <id>` installs the debug build.
+
+## Building in GitHub Actions
+
+The **Build apps** workflow (Actions tab, Run workflow) builds the Android APK and the Windows app on GitHub's runners, so
+neither needs this laptop. It is manual only. Pick the platform, and tick "dev tools" to include the TickTick import
+dialog. The finished files are attached to the run as artifacts (kept 7 days; the repository is private).
+
+Repository secrets it reads (Settings, Secrets and variables, Actions). Without them the apps still build, but cannot
+sign in to Google:
+
+| Secret | What to put in it |
+| --- | --- |
+| `DART_DEFINES_ANDROID_JSON` | The whole content of `app/secrets/dart_defines_android.json`. |
+| `DART_DEFINES_JSON` | The whole content of `app/secrets/dart_defines.json` (holds the desktop client secret). |
+| `ANDROID_KEYSTORE_BASE64` | The keystore the phone app is signed with, base64 on one line. Google Sign-In ties the app to the SHA-1 of this key, so it must be the same key as before, which today is the debug keystore (`%USERPROFILE%\.android\debug.keystore`). `certutil -encodehex -f debug.keystore out.txt 0x40000001` or `base64 -w0 debug.keystore`. |
+| `ANDROID_KEYSTORE_PASSWORD` | `android` for the debug keystore. |
+| `ANDROID_KEY_ALIAS` | `androiddebugkey` for the debug keystore. |
+| `ANDROID_KEY_PASSWORD` | `android` for the debug keystore. |
+
+The Android build reads `android/key.properties` when it exists (the workflow writes it from the secrets) and otherwise
+signs with the debug key, so local builds are unchanged.
