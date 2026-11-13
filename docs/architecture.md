@@ -40,5 +40,13 @@ flowchart LR
 
 ## Platform notes
 - **Windows**: app keeps running in the tray so reminders fire; starts with Windows; global hotkey opens quick add.
+  Built in `core/desktop` over `window_manager`, `tray_manager` and `hotkey_manager` (the releases from before the
+  `nativeapi` rewrite, so no native code is built for Android):
+  - Closing the window hides it; the tray menu has Open, Sync now and Quit, and a click on the icon opens the window.
+  - The hotkey is set in `core/desktop/hotkey_config.dart` (Ctrl+Alt+N). It shows the window, closes any page open on
+    top of the list, goes back to the list the add bar belongs to (a smart list has none) and focuses the add bar.
+  - "Start with Windows" (the Windows button in the app bar) writes a per-user `Run` registry value with `reg.exe`
+    (`core/desktop/startup_entry.dart`), no package. Windows then starts the app with `--minimized`, so it stays in
+    the tray.
 - **Android**: `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` + `POST_NOTIFICATIONS`; ask to ignore battery optimization;
   home-screen widgets via `home_widget`; share target and `PROCESS_TEXT` intent filter.

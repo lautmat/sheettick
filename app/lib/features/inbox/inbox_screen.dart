@@ -21,6 +21,8 @@ import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
 import '../common/theme.dart';
 import '../common/undo.dart';
+import '../desktop/desktop_menu.dart';
+import '../desktop/desktop_providers.dart';
 import '../lists/lists_providers.dart';
 import 'background_sync_status.dart';
 import '../lists/lists_sidebar.dart';
@@ -73,6 +75,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
           ),
           const _SyncButton(),
+          const DesktopMenu(),
           const ThemeMenu(),
           const _AccountMenu(),
         ],
@@ -688,18 +691,27 @@ class _AddBar extends ConsumerStatefulWidget {
 
 class _AddBarState extends ConsumerState<_AddBar> {
   final _controller = TextEditingController();
+  final _focus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     // The preview under the field follows what is typed.
     _controller.addListener(() => setState(() {}));
+    // A hotkey request that brought this bar on screen is answered once it is there.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _answerFocusRequest());
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
+  }
+
+  /// The quick-add hotkey asks for the keyboard focus (see `openQuickAdd`).
+  void _answerFocusRequest() {
+    if (mounted && ref.read(quickAddRequestProvider.notifier).take()) _focus.requestFocus();
   }
 
   QuickAddResult _parse(String text, String? zone) =>
@@ -755,6 +767,7 @@ class _AddBarState extends ConsumerState<_AddBar> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(quickAddRequestProvider, (_, _) => WidgetsBinding.instance.addPostFrameCallback((_) => _answerFocusRequest()));
     final zone = ref.watch(deviceZoneProvider).value;
     final preview = _previewText(zone);
     return SafeArea(
@@ -779,6 +792,7 @@ class _AddBarState extends ConsumerState<_AddBar> {
                   child: TextField(
                     key: const Key('addTaskField'),
                     controller: _controller,
+                    focusNode: _focus,
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(
                       hintText: 'Add a task: "call Sam fri 3pm #work !high"',
