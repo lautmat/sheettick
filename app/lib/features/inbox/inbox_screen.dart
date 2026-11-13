@@ -13,6 +13,7 @@ import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_order.dart';
+import '../../core/tasks/task_postpone.dart';
 import '../../core/tasks/task_skip.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
@@ -27,6 +28,7 @@ import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
 import '../smart/smart_providers.dart';
 import '../tasks/date_labels.dart';
+import '../tasks/postpone_action.dart';
 import '../tasks/skip_action.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
@@ -336,6 +338,7 @@ class _SmartBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rows = ref.watch(smartListRowsProvider(smart));
+    final zone = ref.watch(deviceZoneProvider).value;
     return RefreshIndicator(
       onRefresh: () => ref.read(syncControllerProvider.notifier).sync(),
       child: rows.when(
@@ -352,6 +355,7 @@ class _SmartBody extends ConsumerWidget {
             : ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
+                  if (smart == SmartList.today) _OverdueBar(tasks: [for (final t in items) if (isOverdueTask(t, now: DateTime.now(), zone: zone)) t]),
                   for (final t in items)
                     smart == SmartList.trash
                         ? _TrashTile(key: ValueKey(t.id), task: t)
@@ -360,6 +364,39 @@ class _SmartBody extends ConsumerWidget {
               ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Could not read tasks: $e')),
+      ),
+    );
+  }
+}
+
+/// The line at the top of Today that counts the overdue tasks and postpones them all at once. Nothing when none is overdue.
+class _OverdueBar extends ConsumerWidget {
+  const _OverdueBar({required this.tasks});
+
+  final List<Task> tasks;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (tasks.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return ListTile(
+      key: const Key('overdueBar'),
+      dense: true,
+      leading: Icon(Icons.schedule, color: theme.colorScheme.error),
+      title: Text('${tasks.length} overdue', style: TextStyle(color: theme.colorScheme.error)),
+      trailing: PopupMenuButton<PostponeTarget>(
+        key: const Key('postponeOverdue'),
+        tooltip: 'Postpone all overdue',
+        onSelected: (target) => postponeWithUndo(ref, tasks, target),
+        itemBuilder: (_) => [
+          const PopupMenuItem(enabled: false, height: 32, child: Text('Postpone all to')),
+          for (final t in [PostponeTarget.today, PostponeTarget.tomorrow, PostponeTarget.nextWeek])
+            PopupMenuItem(value: t, child: Text(t.label)),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Text('Postpone all', style: TextStyle(color: theme.colorScheme.primary)),
+        ),
       ),
     );
   }
@@ -551,6 +588,9 @@ class _TaskTile extends ConsumerWidget {
         await _setParent(ref, null);
       case 'skip':
         await skipTaskOccurrence(context, ref, task);
+      default:
+        final target = postponeTargetOf(value);
+        if (target != null) await postponeWithUndo(ref, [task], target);
     }
   }
 
@@ -560,7 +600,19 @@ class _TaskTile extends ConsumerWidget {
     // The box is drawn in the priority's colour, as in TickTick; a done task's box keeps the theme's colour.
     final flag = _done ? null : priorityColor(Priority.of(task.priority));
     final tags = parseTags(task.tags);
-    final headline = task.dates(ref.watch(deviceZoneProvider).value).headline(DateTime.now());
+    final zone = ref.watch(deviceZoneProvider).value;
+    final headline = task.dates(zone).headline(DateTime.now());
+    final menuItems = <PopupMenuEntry<String>>[
+      if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
+      if (menu) ...[
+        // A subtask is filed under its parent's section, so only a top-level task moves on its own.
+        if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
+        if (depth == 0) const PopupMenuItem(value: 'list', child: Text('Move to list')),
+        if (above != null && task.parentId != above) const PopupMenuItem(value: 'indent', child: Text('Indent')),
+        if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
+      ],
+      ...postponeMenuEntries(task, now: DateTime.now(), zone: zone),
+    ];
     // A past due is red until the task is done or dropped.
     final overdue = (headline?.overdue ?? false) && task.status == TaskStatus.open.value;
     return ListTile(
@@ -599,22 +651,14 @@ class _TaskTile extends ConsumerWidget {
               ],
             ),
       onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
-      trailing: menu
-          ? PopupMenuButton<String>(
+      trailing: menuItems.isEmpty
+          ? null
+          : PopupMenuButton<String>(
               key: Key('taskMenu-${task.id}'),
               tooltip: 'Task options',
               onSelected: (value) => _onMenu(context, ref, value),
-              itemBuilder: (_) => [
-                if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
-                // A subtask is filed under its parent's section, so only a top-level task moves on its own.
-                if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
-                if (depth == 0) const PopupMenuItem(value: 'list', child: Text('Move to list')),
-                if (above != null && task.parentId != above)
-                  const PopupMenuItem(value: 'indent', child: Text('Indent')),
-                if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
-              ],
-            )
-          : null,
+              itemBuilder: (_) => menuItems,
+            ),
     );
   }
 }
