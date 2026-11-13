@@ -19,7 +19,7 @@ Estimates assume one developer, part-time, working with Claude Code. Each phase 
 
 ## P1 — Daily driver (weeks 2–5)
 Lists, folders, sections, tasks, subtasks, checklists, tags, priority · dates, reminders, snooze, RRULE recurrence ·
-smart date parsing in quick add · smart lists (Today, Tomorrow, Next 7 Days, All, Completed, Won't Do, Trash) ·
+smart date parsing in quick add · smart lists (Today, Tomorrow, Next 7 Days, All, No Date, Completed, Won't Do, Trash) ·
 search, sort/group, undo, drag and drop · light/dark mode · one-time TickTick import.
 
 **Exit:** TickTick no longer needed for everyday tasks.

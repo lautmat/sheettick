@@ -78,6 +78,7 @@ const _smartIcons = {
   SmartList.tomorrow: Icons.event_outlined,
   SmartList.next7Days: Icons.date_range_outlined,
   SmartList.all: Icons.all_inbox_outlined,
+  SmartList.noDate: Icons.event_busy_outlined,
   SmartList.completed: Icons.check_circle_outline,
   SmartList.wontDo: Icons.block_outlined,
   SmartList.trash: Icons.delete_outline,
