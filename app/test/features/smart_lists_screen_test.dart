@@ -82,6 +82,7 @@ void main() {
       await task('Due in five days', {'due_at': day(5), 'all_day': true});
       await task('Due next month', {'due_at': day(30), 'all_day': true});
       await task('No date', {});
+      await task('No date in Work', {}, list: work);
       await task('Finished', {'status': 2, 'completed_at': '2026-01-01T08:00:00Z'});
       await task('Dropped', {'status': -1});
       await task('Binned', {'due_at': day(0), 'all_day': true}, trash: true);
@@ -102,6 +103,7 @@ void main() {
     'Due in five days',
     'Due next month',
     'No date',
+    'No date in Work',
     'Finished',
     'Dropped',
     'Binned',
@@ -129,7 +131,10 @@ void main() {
       'Due in five days',
       'Due next month',
       'No date',
+      'No date in Work',
     });
+    await open(tester, 'noDate');
+    expect(shown(tester, everything), {'No date', 'No date in Work'});
     await open(tester, 'completed');
     expect(shown(tester, everything), {'Finished'});
     await open(tester, 'wontDo');

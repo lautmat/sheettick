@@ -34,8 +34,38 @@ void main() {
       if (smartListHas(l, t, now: at ?? now, zone: zone)) l,
   };
 
-  test('a task with no date is only in All', () async {
-    expect(await listsOf(await add('Plain')), {SmartList.all});
+  test('a task with no date is in All and No Date, and in no date list', () async {
+    expect(await listsOf(await add('Plain')), {SmartList.all, SmartList.noDate});
+  });
+
+  test('No Date holds open tasks with neither a start nor a due, from every list', () async {
+    expect(await listsOf(await add('in a list', fields: {'list_id': 'some-list'})), contains(SmartList.noDate));
+    expect(await listsOf(await add('due', fields: {'due_at': '2026-12-01', 'all_day': true})), isNot(contains(SmartList.noDate)));
+    expect(await listsOf(await add('start', fields: {'start_at': '2026-12-01', 'all_day': true})), isNot(contains(SmartList.noDate)));
+    expect(
+      await listsOf(await add('timed', fields: {'due_at': '2026-12-01T09:00:00+01:00', 'tz': paris})),
+      isNot(contains(SmartList.noDate)),
+    );
+  });
+
+  test('No Date leaves out done, dropped and trashed tasks', () async {
+    expect(await listsOf(await add('done', fields: {'status': 2})), isNot(contains(SmartList.noDate)));
+    expect(await listsOf(await add('dropped', fields: {'status': -1})), isNot(contains(SmartList.noDate)));
+    expect(await listsOf(await add('gone', trashed: true)), isNot(contains(SmartList.noDate)));
+  });
+
+  test('text that is not a date reads as no date, so the task is in No Date where it can be fixed', () async {
+    final t = await add('odd', fields: {'due_at': 'next friday'});
+    expect(await listsOf(t), {SmartList.all, SmartList.noDate});
+  });
+
+  test('No Date shows its rows in the order given, dated and closed tasks left out', () async {
+    final first = await add('first');
+    final dated = await add('dated', fields: {'due_at': '2026-11-11', 'all_day': true});
+    final done = await add('done', fields: {'status': 2});
+    final second = await add('second');
+    final rows = smartListRows(SmartList.noDate, [first, dated, done, second], now: now, zone: paris);
+    expect(rows.map((t) => t.title), ['first', 'second']);
   });
 
   test('the date lists go by the due day: overdue and today are Today, tomorrow is Tomorrow', () async {

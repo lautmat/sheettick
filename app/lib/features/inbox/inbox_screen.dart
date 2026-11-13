@@ -321,6 +321,7 @@ const _smartEmpty = {
   SmartList.tomorrow: 'Nothing due tomorrow.',
   SmartList.next7Days: 'Nothing due in the next 7 days.',
   SmartList.all: 'No open tasks.',
+  SmartList.noDate: 'Every open task has a date.',
   SmartList.completed: 'No completed tasks yet.',
   SmartList.wontDo: "No tasks marked Won't Do.",
   SmartList.trash: 'The Trash is empty.',
