@@ -137,4 +137,23 @@ void main() {
       expect((await reload(task)).version, 1);
     }
   });
+
+  test('it is one transaction: if something later in the same transaction fails, nothing of the skip is kept', () async {
+    final task = await add({'due_at': '2026-12-01', 'all_day': true, 'rrule': 'RRULE:FREQ=DAILY', 'kind': 'CHECKLIST'});
+    final item = await writer.insert('checklist', {'task_id': task.id, 'title': 'a', 'status': 2, 'completed_at': '2026-11-30T10:00:00Z'});
+    await expectLater(
+      writer.store.transaction(() async {
+        expect(await skipOccurrence(writer, task, zone: paris), SkipOutcome.skipped);
+        throw StateError('boom');
+      }),
+      throwsStateError,
+    );
+    final after = await reload(task);
+    expect(after.dueAt, '2026-12-01');
+    expect(after.exDates, isNull);
+    expect(after.version, 1);
+    final row = await (db.select(db.checklist)..where((c) => c.id.equals(item))).getSingle();
+    expect(row.status, 2);
+    expect(row.version, 1);
+  });
 }
