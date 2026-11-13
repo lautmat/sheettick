@@ -65,6 +65,20 @@ void main() {
       );
     });
 
+    test('the reason is read from stdout when reg says nothing on stderr', () async {
+      answers['add'] = (_) => ProcessResult(0, 1, 'ERROR: Access is denied.\r\n', '');
+      await expectLater(
+        entry().setEnabled(true),
+        throwsA(isA<StateError>().having((e) => e.message, 'message', 'Could not turn on Start with Windows: ERROR: Access is denied.')),
+      );
+      answers['query'] = (_) => ok(listed('"$exe" --minimized'));
+      answers['delete'] = (_) => ProcessResult(0, 1, 'ERROR: The system cannot find the file specified.', '  ');
+      await expectLater(
+        entry().setEnabled(false),
+        throwsA(isA<StateError>().having((e) => e.message, 'message', contains('cannot find the file'))),
+      );
+    });
+
     test('off: removes the value when it is there', () async {
       answers['query'] = (_) => ok(listed('"$exe" --minimized'));
       await entry().setEnabled(false);
