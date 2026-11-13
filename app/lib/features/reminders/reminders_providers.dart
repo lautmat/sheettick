@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/reminders/reminder_planner.dart';
+import '../../core/reminders/replan.dart';
 import '../../core/reminders/snooze.dart';
 
 /// Every task row. Reminders are planned from the local database, so a task changed by this device, by a sync or by
@@ -24,10 +25,6 @@ class PlanRevision extends Notifier<int> {
 }
 
 final planRevisionProvider = NotifierProvider<PlanRevision, int>(PlanRevision.new);
-
-/// How far back a reminder still counts when the app was closed or asleep, and how far ahead it is planned.
-const _lookBack = Duration(hours: 24);
-const _lookAhead = Duration(days: 90);
 
 /// How often the plan is made again with no change, so a reminder that came into the look-ahead window is planned.
 const _refresh = Duration(hours: 1);
@@ -51,8 +48,8 @@ final remindersBindingProvider = Provider<void>((ref) {
     final now = DateTime.now();
     final plan = planReminders(
       tasks,
-      after: now.subtract(_lookBack),
-      until: now.add(_lookAhead),
+      after: now.subtract(kReminderLookBack),
+      until: now.add(kReminderLookAhead),
       deviceZone: zone.value,
       snoozes: snoozes,
     );

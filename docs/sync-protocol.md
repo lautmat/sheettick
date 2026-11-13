@@ -16,6 +16,21 @@ Per device: `last_drive_modified_time`, `last_compaction_epoch`, `device_id`.
 App start, window/app regains focus, 3 s after the last local edit (debounced), every 2 min while open,
 every 15 min in background on Android (WorkManager), manual "Sync now".
 
+## Background sync (Android)
+A periodic WorkManager job (`sheettick-background-sync`, every 15 minutes, network required, exponential backoff from
+5 minutes) runs one ordinary cycle of the same `SyncEngine` in its own isolate, with no UI (`core/sync/background_sync.dart`).
+It never asks the user for anything:
+- It needs a token Google can give without interaction (the `drive.file` scope the account already granted in the app).
+  If it cannot get one, or the device was never set up by the app, the run is skipped and counted as done.
+- A network or Google error is a failed run: rows stay dirty (they are only marked synced once the Sheet has them) and
+  WorkManager tries again with backoff. A deleted spreadsheet or a layout this version does not understand also skips the
+  run without retrying; the app says what is wrong when it is opened.
+- When the cycle changed local rows, the reminders are planned again from the database (step 6 below).
+- Each run records its time and outcome in `device_state` (`last_background_sync`, not synced). The account menu shows it
+  on Android ("Background sync: synced, 12 min ago"), so a job that silently skips can be seen.
+- The app and the job open the same SQLite file from different isolates. A cycle that meets a busy database fails and
+  is retried; nothing is lost.
+
 ## One cycle
 1. **Change check.** Drive API `files.get(fields: modifiedTime)` on the spreadsheet.
    If unchanged since `last_drive_modified_time` and no local row is dirty, stop.
