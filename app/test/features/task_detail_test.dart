@@ -91,6 +91,11 @@ void main() {
 
     await openTask(tester, 'draft');
     await tester.enterText(find.byKey(const Key('taskTitleField')), 'final report');
+    // Notes that already have text are shown rendered; tapping them opens the raw text for editing.
+    expect(find.byKey(const Key('taskNotesField')), findsNothing);
+    await tester.tap(find.byKey(const Key('taskNotesRendered')));
+    await tester.pump();
+    await tester.pump();
     await tester.enterText(find.byKey(const Key('taskNotesField')), '# Summary\n- one');
     await goBack(tester);
 
