@@ -9,8 +9,8 @@ We are in the middle of **phase 1 (Daily driver)** of SheetTick: a personal Tick
 Android (Flutter), local SQLite on each device synced to my own Google Sheet. Work from `main`.
 
 **Read first:** `CLAUDE.md`, `docs/roadmap.md` (P1), `docs/architecture.md`, `docs/sheet-schema.md`,
-`docs/sync-protocol.md`, `docs/dev-setup.md`. Then run `gh`-free checks with the GitHub tools: open issues in the
-milestone "P1 Daily driver" and open pull requests.
+`docs/sync-protocol.md`, `docs/dev-setup.md`. Then use the GitHub tools to list the open issues in the milestone
+"P1 Daily driver" and the open pull requests.
 
 ## Where things stand
 Done and merged: lists, folders, sections, subtasks, checklists, tags, priority, dates, reminders and snooze, recurrence
@@ -46,7 +46,7 @@ phone"). Collect them for me when I ask.
 - Do not run `dart format` on lib files: this project uses wide lines and it rewrites whole files.
 - Never print, commit or paste anything from `app/secrets/`.
 - The automated reviewer (Amazon Q) comments on every pull request. Verify each finding against the code: fix what is real
-  and small, and answer on the thread (with the footer) why you decline the rest. It is wrong about as often as it is right.
+  and small, and answer on the thread (with the footer) why you decline the rest. Not every finding is correct.
 - Several branches touch `pubspec.yaml`, `pubspec.lock` and `main.dart`. Merge `main` into the branch before merging it,
   keep both sides, let `flutter pub get` rebuild the lock file, rerun the tests.
 
