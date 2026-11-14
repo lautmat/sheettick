@@ -8,6 +8,7 @@ enum SmartList {
   tomorrow('Tomorrow'),
   next7Days('Next 7 Days'),
   all('All'),
+  noDate('No Date'),
   completed('Completed'),
   wontDo("Won't Do"),
   trash('Trash');
@@ -24,7 +25,9 @@ enum SmartList {
 /// - Completed holds the done tasks (`status` 2) and Won't Do the dropped ones (`status` -1).
 /// - The other lists hold open tasks only. Today, Tomorrow and Next 7 Days go by the due day, or by the start day when
 ///   there is no due: Today is that day being today or already past (what is overdue is still to do), Tomorrow is
-///   tomorrow, and Next 7 Days is today and the six days after it. A task with no date is only in All.
+///   tomorrow, and Next 7 Days is today and the six days after it. A task with no date is not in those; it is in All and
+///   in No Date, which holds the open tasks with neither a start nor a due. Text in a date cell that is not a real date
+///   reads as no date (see `TaskDates`), so such a task is in No Date, where it can be seen and fixed.
 bool smartListHas(SmartList list, Task task, {required DateTime now, String? zone}) {
   // Every list but Trash leaves out the tombstones; the Trash arm below is the only place that takes them in.
   if (task.deleted && list != SmartList.trash) return false;
@@ -35,6 +38,8 @@ bool smartListHas(SmartList list, Task task, {required DateTime now, String? zon
       return task.status == TaskStatus.wontDo.value;
     case SmartList.all:
       return task.status == TaskStatus.open.value;
+    case SmartList.noDate:
+      return task.status == TaskStatus.open.value && smartListDate(task, zone) == null;
     case SmartList.today:
     case SmartList.tomorrow:
     case SmartList.next7Days:
@@ -74,7 +79,7 @@ DateTime? smartListDate(Task task, String? zone) {
 }
 
 /// [tasks] as [list] shows them: only its members, in its order. The date lists run from the earliest date; Completed
-/// and Trash start with the most recent change; All keeps the order given.
+/// and Trash start with the most recent change; All and No Date keep the order given.
 List<Task> smartListRows(SmartList list, Iterable<Task> tasks, {required DateTime now, String? zone}) {
   final rows = [for (final t in tasks) if (smartListHas(list, t, now: now, zone: zone)) t];
   switch (list) {
@@ -92,6 +97,7 @@ List<Task> smartListRows(SmartList list, Iterable<Task> tasks, {required DateTim
     case SmartList.trash:
       rows.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     case SmartList.all:
+    case SmartList.noDate:
       break;
   }
   return rows;

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/tasks/recurrence.dart';
+import '../../core/tasks/repeat_spec.dart';
 import '../common/local_edit.dart';
+import 'custom_repeat_dialog.dart';
 import 'date_labels.dart';
 
 /// A way to repeat that the picker offers.
@@ -37,13 +39,14 @@ List<RepeatPreset> repeatPresets(DateTime anchor) {
 
 String _plain(String rrule) => rrule.trim().replaceFirst(RegExp('^RRULE:', caseSensitive: false), '');
 
-/// The words for [rrule]: a preset's label, else the rule itself without its `RRULE:` label.
+/// The words for [rrule]: a preset's label, else the rule put into words, else the rule itself without its `RRULE:`
+/// label.
 String repeatLabel(String? rrule, List<RepeatPreset> presets) {
   if (rrule == null || rrule.trim().isEmpty) return 'Repeat';
   for (final p in presets) {
     if (_plain(p.rrule).toUpperCase() == _plain(rrule).toUpperCase()) return p.label;
   }
-  return _plain(rrule);
+  return describeRepeat(rrule) ?? _plain(rrule);
 }
 
 /// The chip on a task's page that shows how it repeats and opens [showRepeatDialog]. A change is written at once. A task
@@ -56,7 +59,7 @@ class TaskRepeatChip extends ConsumerWidget {
   Future<void> _edit(BuildContext context, WidgetRef ref, DateTime anchor) async {
     final presets = repeatPresets(anchor);
     final current = (rrule: task.rrule, from: RepeatFrom.parse(task.repeatFrom));
-    final chosen = await showRepeatDialog(context, presets: presets, current: current);
+    final chosen = await showRepeatDialog(context, presets: presets, current: current, anchor: anchor);
     if (chosen == null) return;
     if (_plain(chosen.rrule ?? '') == _plain(current.rrule ?? '') && chosen.from == current.from) return;
     // The page may have gone while the dialog was open; a disposed widget's ref must not be used.
@@ -85,29 +88,26 @@ class TaskRepeatChip extends ConsumerWidget {
 }
 
 /// Asks how a task repeats. Returns the rule (null for "does not repeat") and what it counts from, or null when the user
-/// cancels. A rule the task already has that the picker does not offer (from the Sheet) is listed too.
+/// cancels. A rule the task already has that the picker does not offer (from the Sheet) is listed too, in words, and kept
+/// as it is unless the user picks something else. [anchor] is the task's date, for the Custom editor.
 Future<({String? rrule, RepeatFrom from})?> showRepeatDialog(
   BuildContext context, {
   required List<RepeatPreset> presets,
   required ({String? rrule, RepeatFrom from}) current,
+  required DateTime anchor,
 }) {
-  final existing = current.rrule?.trim() ?? '';
-  final isPreset = presets.any((p) => _plain(p.rrule).toUpperCase() == _plain(existing).toUpperCase());
-  final options = [
-    ...presets,
-    if (existing.isNotEmpty && !isPreset) RepeatPreset(_plain(existing), existing),
-  ];
   return showDialog<({String? rrule, RepeatFrom from})>(
     context: context,
-    builder: (_) => _RepeatDialog(options: options, current: current),
+    builder: (_) => _RepeatDialog(presets: presets, current: current, anchor: anchor),
   );
 }
 
 class _RepeatDialog extends StatefulWidget {
-  const _RepeatDialog({required this.options, required this.current});
+  const _RepeatDialog({required this.presets, required this.current, required this.anchor});
 
-  final List<RepeatPreset> options;
+  final List<RepeatPreset> presets;
   final ({String? rrule, RepeatFrom from}) current;
+  final DateTime anchor;
 
   @override
   State<_RepeatDialog> createState() => _RepeatDialogState();
@@ -116,6 +116,23 @@ class _RepeatDialog extends StatefulWidget {
 class _RepeatDialogState extends State<_RepeatDialog> {
   late String? _rrule = (widget.current.rrule ?? '').trim().isEmpty ? null : widget.current.rrule!.trim();
   late RepeatFrom _from = widget.current.from;
+
+  /// Rules listed after the presets: the one the task already has, and any made with Custom in this dialog.
+  late final List<String> _extras = [
+    if ((widget.current.rrule ?? '').trim().isNotEmpty && !_isPreset(widget.current.rrule!)) widget.current.rrule!.trim(),
+  ];
+
+  bool _isPreset(String rrule) => widget.presets.any((p) => _plain(p.rrule).toUpperCase() == _plain(rrule).toUpperCase());
+
+  Future<void> _custom() async {
+    final spec = RepeatSpec.parse(_rrule);
+    final rule = await showCustomRepeatDialog(context, initial: spec, anchor: widget.anchor);
+    if (rule == null || !mounted) return;
+    setState(() {
+      _rrule = rule;
+      if (!_isPreset(rule) && !_extras.any((e) => _plain(e).toUpperCase() == _plain(rule).toUpperCase())) _extras.add(rule);
+    });
+  }
 
   bool _selected(String? rrule) =>
       rrule == null ? _rrule == null : _rrule != null && _plain(_rrule!).toUpperCase() == _plain(rrule).toUpperCase();
@@ -144,7 +161,16 @@ class _RepeatDialogState extends State<_RepeatDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _option(const Key('repeat:none'), 'Does not repeat', null),
-              for (final o in widget.options) _option(Key('repeat:${_plain(o.rrule)}'), o.label, o.rrule),
+              for (final o in widget.presets) _option(Key('repeat:${_plain(o.rrule)}'), o.label, o.rrule),
+              for (final e in _extras) _option(Key('repeat:${_plain(e)}'), repeatLabel(e, const []), e),
+              ListTile(
+                key: const Key('repeat:custom'),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.tune),
+                title: const Text('Custom…'),
+                onTap: _custom,
+              ),
               if (_rrule != null) ...[
                 const SizedBox(height: 12),
                 Text('Repeat from', style: Theme.of(context).textTheme.labelLarge),

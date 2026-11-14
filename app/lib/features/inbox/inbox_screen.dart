@@ -5,6 +5,7 @@ import '../../core/auth/auth_controller.dart';
 import '../../core/db/database.dart';
 import '../../core/parse/quick_add.dart';
 import '../../core/providers.dart';
+import '../../core/sync/background_sync.dart' show describeBackgroundSync;
 import '../../core/sync/sync_controller.dart';
 import '../../core/tasks/priority.dart';
 import '../../core/tasks/quick_add_create.dart';
@@ -13,12 +14,17 @@ import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_order.dart';
+import '../../core/tasks/task_postpone.dart';
+import '../../core/tasks/task_skip.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
 import '../common/local_edit.dart';
 import '../common/theme.dart';
 import '../common/undo.dart';
+import '../desktop/desktop_menu.dart';
+import '../desktop/desktop_providers.dart';
 import '../lists/lists_providers.dart';
+import 'background_sync_status.dart';
 import '../lists/lists_sidebar.dart';
 import '../lists/sort_group_dialog.dart';
 import '../search/search_screen.dart';
@@ -26,6 +32,8 @@ import '../sections/sections_providers.dart';
 import '../sections/sections_widgets.dart';
 import '../smart/smart_providers.dart';
 import '../tasks/date_labels.dart';
+import '../tasks/postpone_action.dart';
+import '../tasks/skip_action.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_drag.dart';
@@ -67,6 +75,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
           ),
           const _SyncButton(),
+          const DesktopMenu(),
           const ThemeMenu(),
           const _AccountMenu(),
         ],
@@ -144,6 +153,17 @@ class _AccountMenu extends ConsumerWidget {
       icon: const Icon(Icons.account_circle_outlined),
       itemBuilder: (_) => [
         if (session.email != null) PopupMenuItem<void>(enabled: false, child: Text(session.email!)),
+        if (ref.read(backgroundSyncVisibleProvider))
+          PopupMenuItem<void>(
+            enabled: false,
+            child: Consumer(
+              builder: (context, ref, _) => Text(
+                describeBackgroundSync(ref.watch(backgroundSyncRecordProvider).value, DateTime.now()),
+                key: const Key('backgroundSyncStatus'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ),
         PopupMenuItem<void>(
           key: const Key('signOut'),
           onTap: () => ref.read(authControllerProvider.notifier).signOut(),
@@ -319,6 +339,7 @@ const _smartEmpty = {
   SmartList.tomorrow: 'Nothing due tomorrow.',
   SmartList.next7Days: 'Nothing due in the next 7 days.',
   SmartList.all: 'No open tasks.',
+  SmartList.noDate: 'Every open task has a date.',
   SmartList.completed: 'No completed tasks yet.',
   SmartList.wontDo: "No tasks marked Won't Do.",
   SmartList.trash: 'The Trash is empty.',
@@ -333,6 +354,7 @@ class _SmartBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rows = ref.watch(smartListRowsProvider(smart));
+    final zone = ref.watch(deviceZoneProvider).value;
     return RefreshIndicator(
       onRefresh: () => ref.read(syncControllerProvider.notifier).sync(),
       child: rows.when(
@@ -349,6 +371,7 @@ class _SmartBody extends ConsumerWidget {
             : ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
+                  if (smart == SmartList.today) _OverdueBar(tasks: [for (final t in items) if (isOverdueTask(t, now: DateTime.now(), zone: zone)) t]),
                   for (final t in items)
                     smart == SmartList.trash
                         ? _TrashTile(key: ValueKey(t.id), task: t)
@@ -357,6 +380,39 @@ class _SmartBody extends ConsumerWidget {
               ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Could not read tasks: $e')),
+      ),
+    );
+  }
+}
+
+/// The line at the top of Today that counts the overdue tasks and postpones them all at once. Nothing when none is overdue.
+class _OverdueBar extends ConsumerWidget {
+  const _OverdueBar({required this.tasks});
+
+  final List<Task> tasks;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (tasks.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return ListTile(
+      key: const Key('overdueBar'),
+      dense: true,
+      leading: Icon(Icons.schedule, color: theme.colorScheme.error),
+      title: Text('${tasks.length} overdue', style: TextStyle(color: theme.colorScheme.error)),
+      trailing: PopupMenuButton<PostponeTarget>(
+        key: const Key('postponeOverdue'),
+        tooltip: 'Postpone all overdue',
+        onSelected: (target) => postponeWithUndo(ref, tasks, target),
+        itemBuilder: (_) => [
+          const PopupMenuItem(enabled: false, height: 32, child: Text('Postpone all to')),
+          for (final t in [PostponeTarget.today, PostponeTarget.tomorrow, PostponeTarget.nextWeek])
+            PopupMenuItem(value: t, child: Text(t.label)),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Text('Postpone all', style: TextStyle(color: theme.colorScheme.primary)),
+        ),
       ),
     );
   }
@@ -546,6 +602,11 @@ class _TaskTile extends ConsumerWidget {
         await _setParent(ref, above);
       case 'outdent':
         await _setParent(ref, null);
+      case 'skip':
+        await skipTaskOccurrence(context, ref, task);
+      default:
+        final target = postponeTargetOf(value);
+        if (target != null) await postponeWithUndo(ref, [task], target);
     }
   }
 
@@ -555,7 +616,19 @@ class _TaskTile extends ConsumerWidget {
     // The box is drawn in the priority's colour, as in TickTick; a done task's box keeps the theme's colour.
     final flag = _done ? null : priorityColor(Priority.of(task.priority));
     final tags = parseTags(task.tags);
-    final headline = task.dates(ref.watch(deviceZoneProvider).value).headline(DateTime.now());
+    final zone = ref.watch(deviceZoneProvider).value;
+    final headline = task.dates(zone).headline(DateTime.now());
+    final menuItems = <PopupMenuEntry<String>>[
+      if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
+      if (menu) ...[
+        // A subtask is filed under its parent's section, so only a top-level task moves on its own.
+        if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
+        if (depth == 0) const PopupMenuItem(value: 'list', child: Text('Move to list')),
+        if (above != null && task.parentId != above) const PopupMenuItem(value: 'indent', child: Text('Indent')),
+        if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
+      ],
+      ...postponeMenuEntries(task, now: DateTime.now(), zone: zone),
+    ];
     // A past due is red until the task is done or dropped.
     final overdue = (headline?.overdue ?? false) && task.status == TaskStatus.open.value;
     return ListTile(
@@ -594,21 +667,14 @@ class _TaskTile extends ConsumerWidget {
               ],
             ),
       onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
-      trailing: menu
-          ? PopupMenuButton<String>(
+      trailing: menuItems.isEmpty
+          ? null
+          : PopupMenuButton<String>(
               key: Key('taskMenu-${task.id}'),
               tooltip: 'Task options',
               onSelected: (value) => _onMenu(context, ref, value),
-              itemBuilder: (_) => [
-                // A subtask is filed under its parent's section, so only a top-level task moves on its own.
-                if (depth == 0) const PopupMenuItem(value: 'section', child: Text('Move to section')),
-                if (depth == 0) const PopupMenuItem(value: 'list', child: Text('Move to list')),
-                if (above != null && task.parentId != above)
-                  const PopupMenuItem(value: 'indent', child: Text('Indent')),
-                if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
-              ],
-            )
-          : null,
+              itemBuilder: (_) => menuItems,
+            ),
     );
   }
 }
@@ -625,18 +691,27 @@ class _AddBar extends ConsumerStatefulWidget {
 
 class _AddBarState extends ConsumerState<_AddBar> {
   final _controller = TextEditingController();
+  final _focus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     // The preview under the field follows what is typed.
     _controller.addListener(() => setState(() {}));
+    // A hotkey request that brought this bar on screen is answered once it is there.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _answerFocusRequest());
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
+  }
+
+  /// The quick-add hotkey asks for the keyboard focus (see `openQuickAdd`).
+  void _answerFocusRequest() {
+    if (mounted && ref.read(quickAddRequestProvider.notifier).take()) _focus.requestFocus();
   }
 
   QuickAddResult _parse(String text, String? zone) =>
@@ -692,6 +767,7 @@ class _AddBarState extends ConsumerState<_AddBar> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(quickAddRequestProvider, (_, _) => WidgetsBinding.instance.addPostFrameCallback((_) => _answerFocusRequest()));
     final zone = ref.watch(deviceZoneProvider).value;
     final preview = _previewText(zone);
     return SafeArea(
@@ -716,6 +792,7 @@ class _AddBarState extends ConsumerState<_AddBar> {
                   child: TextField(
                     key: const Key('addTaskField'),
                     controller: _controller,
+                    focusNode: _focus,
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(
                       hintText: 'Add a task: "call Sam fri 3pm #work !high"',
