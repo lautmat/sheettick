@@ -1,0 +1,150 @@
+name: Build apps
+
+# Manual only: builds the Android APK and the Windows app on GitHub's runners. With the signing key (Android) or the
+# OAuth defines (Windows) set as secrets, each build is published as a GitHub release (tags android-N and windows-N), which
+# is what the Obtainium app on the phone watches. Without them it only checks that both apps compile.
+# Secrets it reads: see docs/dev-setup.md. It uses no third-party action beyond the ones the CI already pins.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which app to build
+        type: choice
+        options: [both, android, windows]
+        default: both
+      dev_tools:
+        description: Include the dev-only tools (TickTick import)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    if: inputs.platform == 'both' || inputs.platform == 'android'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # to publish the release
+    defaults:
+      run:
+        working-directory: app
+    env:
+      DART_DEFINES_ANDROID_JSON: ${{ secrets.DART_DEFINES_ANDROID_JSON }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (tag resolved 2026-10-19)
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2 (tag resolved 2026-10-19)
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      # The runner image ships JDK 17, which is what the Android build here targets.
+      - name: Use JDK 17
+        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+
+      - name: Write the secret files
+        run: |
+          mkdir -p secrets
+          printf '%s' "${DART_DEFINES_ANDROID_JSON:-{\}}" > secrets/dart_defines_android.json
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/ci.keystore
+            {
+              echo "storeFile=ci.keystore"
+              echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+              echo "keyAlias=$ANDROID_KEY_ALIAS"
+              echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            } > android/key.properties
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set: the APK is signed with a throwaway debug key, so Google sign-in will not work."
+          fi
+          if [ -z "$DART_DEFINES_ANDROID_JSON" ]; then
+            echo "::warning::DART_DEFINES_ANDROID_JSON is not set: the app will say the OAuth client is not configured."
+          fi
+
+      - run: flutter pub get
+
+      - name: Build the APK
+        run: |
+          # The build number rises with every run, so Android accepts each APK as an update of the one before.
+          flutter build apk --release --build-number=${{ github.run_number }} \
+            --dart-define-from-file=secrets/dart_defines_android.json \
+            ${{ inputs.dev_tools && '--dart-define=DEV_TOOLS=true' || '' }}
+          ls -l build/app/outputs/flutter-apk/app-release.apk
+
+      # Only a build signed with the phone app's own key can update the installed app, so nothing is published without it.
+      - name: Publish the APK as a release
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk="sheettick-android-${{ github.run_number }}.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "$apk"
+          gh release create "android-${{ github.run_number }}" "$apk" --repo "$GITHUB_REPOSITORY" \
+            --target "${{ github.sha }}" --title "android-${{ github.run_number }}" \
+            --notes "Android build ${{ github.run_number }} of ${{ github.sha }}. Dev tools: ${{ inputs.dev_tools }}."
+
+      - name: Not published
+        if: env.ANDROID_KEYSTORE_BASE64 == ''
+        run: echo "::warning::The build compiled, but ANDROID_KEYSTORE_BASE64 is not set, so no release was published."
+
+  windows:
+    if: inputs.platform == 'both' || inputs.platform == 'windows'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # to publish the release
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    env:
+      DART_DEFINES_JSON: ${{ secrets.DART_DEFINES_JSON }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (tag resolved 2026-10-19)
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2 (tag resolved 2026-10-19)
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - name: Write the secret file
+        run: |
+          mkdir -p secrets
+          printf '%s' "${DART_DEFINES_JSON:-{\}}" > secrets/dart_defines.json
+          if [ -z "$DART_DEFINES_JSON" ]; then
+            echo "::warning::DART_DEFINES_JSON is not set: the app will say the OAuth client is not configured."
+          fi
+
+      - run: flutter pub get
+
+      - name: Build the Windows app
+        run: |
+          flutter build windows --release --dart-define-from-file=secrets/dart_defines.json \
+            ${{ inputs.dev_tools && '--dart-define=DEV_TOOLS=true' || '' }}
+
+      - name: Publish the app as a release
+        if: env.DART_DEFINES_JSON != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip="sheettick-windows-${{ github.run_number }}.zip"
+          powershell -NoProfile -Command "Compress-Archive -Path 'build/windows/x64/runner/Release/*' -DestinationPath '$zip'"
+          gh release create "windows-${{ github.run_number }}" "$zip" --repo "$GITHUB_REPOSITORY" --latest=false \
+            --target "${{ github.sha }}" --title "windows-${{ github.run_number }}" \
+            --notes "Windows build ${{ github.run_number }} of ${{ github.sha }}. Dev tools: ${{ inputs.dev_tools }}."
+
+      - name: Not published
+        if: env.DART_DEFINES_JSON == ''
+        run: echo "::warning::The build compiled, but DART_DEFINES_JSON is not set, so no release was published."
