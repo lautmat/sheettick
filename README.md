@@ -8,8 +8,8 @@ No server to run: each device keeps a local SQLite copy and syncs with the Sheet
 
 ## Status
 
-**Phase 0 (foundations)** is done. **Phase 1 (daily driver)** is under way: lists, tasks, dates, reminders,
-recurrence, quick add, smart lists, search and sorting are merged. See [docs/roadmap.md](docs/roadmap.md).
+**Phase 0 (foundations)** is done. The code for **phase 1 (daily driver)** is merged, and its last three issues wait
+for checks on real devices. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Repository layout
 

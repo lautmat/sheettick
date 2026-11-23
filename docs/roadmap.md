@@ -23,9 +23,9 @@ Re-scoped on 2026-11-11 after an audit against the code, the GitHub issues and t
 
 ## P1 — Daily driver (weeks 2–5)
 
-**Status on 2026-11-13: 27 issues merged, 4 to do.**
+**Status on 2026-11-23: 28 of 31 issues closed. The code for the other 3 is merged and waits for checks on real devices.**
 
-Merged:
+Closed:
 - [x] Sync for folders, sections, checklist and tags (#19)
 - [x] Folders and lists (#20), sections (#21)
 - [x] Task detail (#22), subtasks (#23), checklist items (#24), priority and tags (#25)
@@ -33,15 +33,16 @@ Merged:
 - [x] Quick-add parser in English and French (#30), quick-add bar (#31)
 - [x] Smart lists Today to Trash (#32), No Date smart list (#65), search (#33), sort and group (#34)
 - [x] Undo (#35), drag and drop (#36), light and dark theme (#37)
-- [x] Nightly snapshot of the spreadsheet (#63), one-time TickTick import (#38)
+- [x] Nightly snapshot of the spreadsheet (#63)
 - [x] Travel tests: all-day dates and repeats across time zones (#64)
 - [x] Custom repeat rule editor (#61), skip one occurrence (#62)
+- [x] Postpone in one step (#66), Markdown in notes (#60)
+- [x] Custom reminder times (#97), new tasks default to today (#98)
 
-To do:
-- [ ] Postpone in one step (#66)
-- [ ] Render Markdown in notes (#60)
-- [ ] Background sync on Android with WorkManager (#42)
-- [ ] Windows tray, start with Windows and global quick-add hotkey (#43)
+Merged, waiting for a check on a device:
+- [ ] One-time TickTick import (#38): the owner confirms the Inbox matches TickTick
+- [ ] Background sync on Android with WorkManager (#42): check on the phone
+- [ ] Windows tray, start with Windows and global quick-add hotkey (#43): finish the Windows check
 
 **Exit:** TickTick no longer needed for everyday tasks.
 
