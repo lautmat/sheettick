@@ -727,7 +727,12 @@ class _AddBarState extends ConsumerState<_AddBar> {
     try {
       final zone = await ref.read(deviceZoneProvider.future);
       final writer = await ref.read(localWriterProvider.future);
-      final created = await createQuickAddTask(writer, _parse(text, zone), fallbackListId: widget.listId);
+      final created = await createQuickAddTask(
+        writer,
+        _parse(text, zone),
+        fallbackListId: widget.listId,
+        defaultDay: TaskDates(zone: zone).wallOf(DateTime.now()),
+      );
       missingList = created.missingList;
     } catch (e) {
       if (!mounted) return;
