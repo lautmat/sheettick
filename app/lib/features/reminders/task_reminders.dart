@@ -30,7 +30,7 @@ class TaskRemindersChip extends ConsumerWidget {
     if (!allowed && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Reminder saved. Notifications are off for SheetTick, so it will not show until you allow them.'),
+          content: Text('Reminder saved. Notifications are off, so it will not show until you turn them on in your device settings.'),
         ),
       );
     }

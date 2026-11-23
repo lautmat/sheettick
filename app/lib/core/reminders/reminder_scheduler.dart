@@ -46,6 +46,7 @@ class PollingReminderScheduler implements ReminderScheduler {
     required this.clock,
     required this.loadLastLook,
     required this.saveLastLook,
+    this.notificationsEnabled,
     this.interval = const Duration(seconds: 15),
     this.catchUp = const Duration(hours: 24),
   });
@@ -54,6 +55,9 @@ class PollingReminderScheduler implements ReminderScheduler {
   final DateTime Function() clock;
   final Future<DateTime?> Function() loadLastLook;
   final Future<void> Function(DateTime time) saveLastLook;
+
+  /// Whether the system will show what [show] sends. It cannot be asked for, only read. Null: assumed yes.
+  final Future<bool> Function()? notificationsEnabled;
   final Duration interval;
   final Duration catchUp;
 
@@ -65,7 +69,14 @@ class PollingReminderScheduler implements ReminderScheduler {
   Future<void>? _looking;
 
   @override
-  Future<bool> requestPermission() async => true;
+  Future<bool> requestPermission() async {
+    try {
+      return await notificationsEnabled?.call() ?? true;
+    } catch (e) {
+      debugPrint('Could not read the notification setting: $e');
+      return true;
+    }
+  }
 
   @override
   Future<void> replaceAll(List<PlannedReminder> plan, DateTime now) async {
