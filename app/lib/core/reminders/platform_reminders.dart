@@ -12,8 +12,10 @@ import 'alarm_reminder_scheduler.dart';
 import 'reminder_planner.dart';
 import 'reminder_scheduler.dart';
 import 'snooze.dart';
+import 'windows_notification_setting.dart';
 
 const _androidChannelId = 'reminders';
+const _windowsAppId = 'com.lmathieu.sheettick';
 
 const _androidSettings = InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher'));
 
@@ -48,7 +50,7 @@ class PlatformReminderScheduler implements ReminderScheduler {
           settings: const InitializationSettings(
             windows: WindowsInitializationSettings(
               appName: 'SheetTick',
-              appUserModelId: 'com.lmathieu.sheettick',
+              appUserModelId: _windowsAppId,
               guid: 'b3f1c7a2-5d84-4e6b-9a0c-7e2d4f8a1c35',
             ),
           ),
@@ -74,6 +76,7 @@ class PlatformReminderScheduler implements ReminderScheduler {
             return saved == null ? null : DateTime.tryParse(saved);
           },
           saveLastLook: (time) => _db.setDeviceState(DeviceStateKeys.lastReminderLook, formatUtc(time)),
+          notificationsEnabled: WindowsNotificationSetting(appId: _windowsAppId).areEnabled,
         );
       }
     } catch (e) {

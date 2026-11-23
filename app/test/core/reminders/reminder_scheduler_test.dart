@@ -175,6 +175,24 @@ void main() {
 
     tearDown(() => scheduler.dispose());
 
+    PollingReminderScheduler withSetting(Future<bool> Function()? enabled) => PollingReminderScheduler(
+      show: (r) async {},
+      clock: () => clock,
+      loadLastLook: () async => lastLook,
+      saveLastLook: (t) async => lastLook = t,
+      notificationsEnabled: enabled,
+    );
+
+    test('reports the system notification setting', () async {
+      expect(await withSetting(() async => false).requestPermission(), isFalse);
+      expect(await withSetting(() async => true).requestPermission(), isTrue);
+    });
+
+    test('assumes notifications are on when the setting is unknown', () async {
+      expect(await withSetting(null).requestPermission(), isTrue);
+      expect(await withSetting(() async => throw StateError('no registry')).requestPermission(), isTrue);
+    });
+
     test('shows a reminder once, when its time has come', () async {
       final a = reminder('a', now.add(const Duration(minutes: 10)));
       await scheduler.replaceAll([a], clock);
