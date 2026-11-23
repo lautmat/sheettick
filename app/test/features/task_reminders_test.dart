@@ -250,10 +250,83 @@ void main() {
     await openTask(tester, 'Pay rent');
 
     await openReminders(tester);
-    expect(find.descendant(of: find.byType(AlertDialog), matching: find.text('-PT2H')), findsOneWidget);
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.text('2 hours before')), findsOneWidget);
     await choose(tester, 'TRIGGER:-PT2H');
     await done(tester);
     expect((await onlyTask(tester)).reminders, isNull);
+    await unmount(tester);
+  });
+
+  testWidgets('an all-day task takes a custom reminder: any day before, at a picked time', (tester) async {
+    final inbox = await seedInbox(tester);
+    await tester.runAsync(
+      () => writer().insert('tasks', {'list_id': inbox, 'title': 'Pay rent', 'due_at': day(5), 'all_day': true}),
+    );
+    final scheduler = RecordingScheduler();
+    await tester.pumpWidget(app(scheduler));
+    await settle(tester);
+    await openTask(tester, 'Pay rent');
+    await openReminders(tester);
+
+    await tester.tap(find.byKey(const Key('reminderCustom')));
+    await animate(tester);
+    await tester.enterText(find.byKey(const Key('reminderCustomAmount')), '3');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('reminderCustomTime')));
+    await animate(tester);
+    await tester.tap(find.byIcon(Icons.keyboard_outlined));
+    await animate(tester);
+    final fields = find.descendant(of: find.byType(TimePickerDialog), matching: find.byType(TextField));
+    await tester.enterText(fields.at(0), '7');
+    await tester.enterText(fields.at(1), '30');
+    await tester.tap(find.descendant(of: find.byType(TimePickerDialog), matching: find.text('OK')));
+    await animate(tester);
+    expect(find.text('3 days before, 7:30'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('reminderCustomAdd')));
+    await animate(tester);
+    final added = tester.widget<CheckboxListTile>(find.byKey(const Key('reminder:TRIGGER:-P2DT16H30M')));
+    expect(added.value, isTrue);
+    await done(tester);
+
+    expect((await onlyTask(tester)).reminders, '["TRIGGER:-P2DT16H30M"]');
+    expect(find.descendant(of: find.byKey(const Key('taskReminders')), matching: find.text('3 days before, 7:30')), findsOneWidget);
+    expect(scheduler.permissionAsks, 1);
+    await unmount(tester);
+  });
+
+  testWidgets('a task with a time takes a custom reminder in hours; an empty number cannot be added', (tester) async {
+    final inbox = await seedInbox(tester);
+    await tester.runAsync(
+      () => writer().insert('tasks', {
+        'list_id': inbox,
+        'title': 'Call the bank',
+        'due_at': '${day(2)}T09:00:00+01:00',
+        'tz': zone,
+      }),
+    );
+    await tester.pumpWidget(app(RecordingScheduler()));
+    await settle(tester);
+    await openTask(tester, 'Call the bank');
+    await openReminders(tester);
+
+    await tester.tap(find.byKey(const Key('reminderCustom')));
+    await animate(tester);
+    await tester.enterText(find.byKey(const Key('reminderCustomAmount')), '');
+    await tester.pump();
+    expect(tester.widget<FilledButton>(find.byKey(const Key('reminderCustomAdd'))).onPressed, isNull);
+
+    await tester.enterText(find.byKey(const Key('reminderCustomAmount')), '2');
+    await tester.tap(find.byKey(const Key('reminderCustomUnit')));
+    await animate(tester);
+    await tester.tap(find.text('hours').last);
+    await animate(tester);
+    expect(find.text('2 hours before'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('reminderCustomAdd')));
+    await animate(tester);
+    await done(tester);
+
+    expect((await onlyTask(tester)).reminders, '["TRIGGER:-PT2H"]');
     await unmount(tester);
   });
 
