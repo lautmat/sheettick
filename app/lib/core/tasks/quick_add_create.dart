@@ -1,6 +1,7 @@
 import '../parse/quick_add.dart';
 import '../sync/local_writer.dart';
 import 'tags.dart';
+import 'task_dates.dart';
 
 /// A task made from quick-add text.
 class CreatedTask {
@@ -19,10 +20,14 @@ class CreatedTask {
 /// and the name is returned as [CreatedTask.missingList] so the caller can say so. Tags are added the way the task page
 /// adds them (see [ensureTag]), so a new tag also gets its row in the `tags` tab. The task is written once, with its
 /// tags, so it starts at version 1.
+///
+/// When the text names no date, the task is due all day on [defaultDay] (a wall-clock reading; only its day is used), so
+/// a new task shows in Today. Without [defaultDay] it has no date.
 Future<CreatedTask> createQuickAddTask(
   LocalWriter writer,
   QuickAddResult parsed, {
   required String fallbackListId,
+  DateTime? defaultDay,
 }) {
   return writer.store.transaction(() async {
     var listId = fallbackListId;
@@ -48,7 +53,10 @@ Future<CreatedTask> createQuickAddTask(
       'list_id': listId,
       'title': parsed.title,
       if (parsed.priority != null) 'priority': parsed.priority,
-      if (!parsed.dates.isEmpty) ...parsed.dates.toFields(),
+      if (!parsed.dates.isEmpty)
+        ...parsed.dates.toFields()
+      else if (defaultDay != null)
+        ...TaskDates(due: DateTime.utc(defaultDay.year, defaultDay.month, defaultDay.day), allDay: true).toFields(),
       if (parsed.rrule != null) 'rrule': parsed.rrule,
       if (tags.isNotEmpty) 'tags': formatTags(tags),
     });

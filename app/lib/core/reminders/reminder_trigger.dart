@@ -120,3 +120,62 @@ const allDayReminderPresets = [
   ReminderPreset('1 day before, 9:00', ReminderTrigger(seconds: -15 * 3600)),
   ReminderPreset('2 days before, 9:00', ReminderTrigger(days: -1, seconds: -15 * 3600)),
 ];
+
+/// The unit of a custom reminder on a task with a time.
+enum ReminderUnit {
+  minutes('minutes'),
+  hours('hours'),
+  days('days');
+
+  const ReminderUnit(this.label);
+
+  final String label;
+}
+
+/// A reminder [amount] [unit] before a timed task's moment. Days count on the calendar; minutes and hours are exact.
+ReminderTrigger timedReminderBefore(int amount, ReminderUnit unit) => switch (unit) {
+  ReminderUnit.minutes => ReminderTrigger(seconds: -amount * 60),
+  ReminderUnit.hours => ReminderTrigger(seconds: -amount * 3600),
+  ReminderUnit.days => ReminderTrigger(days: -amount),
+};
+
+/// A reminder at [hour]:[minute] on an all-day task's day, or [daysBefore] days earlier, written the way TickTick writes
+/// it (see [allDayReminderPresets]): 9:00 the day before is `-PT15H`, 9:00 two days before is `-P1DT15H`.
+ReminderTrigger allDayReminderAt({required int daysBefore, required int hour, required int minute}) {
+  final timeOfDay = hour * 3600 + minute * 60;
+  if (daysBefore == 0) return ReminderTrigger(seconds: timeOfDay);
+  if (timeOfDay == 0) return ReminderTrigger(days: -daysBefore);
+  return ReminderTrigger(days: 1 - daysBefore, seconds: timeOfDay - 86400);
+}
+
+/// [trigger] in words, for a task that is [allDay] or has a time: "2 hours before", "3 days before, 7:30".
+String describeReminder(ReminderTrigger trigger, {required bool allDay}) =>
+    allDay ? _describeAllDay(trigger) : _describeTimed(trigger);
+
+String _describeTimed(ReminderTrigger t) {
+  if (t.days == 0 && t.seconds == 0) return 'At the time';
+  final s = t.seconds.abs();
+  final parts = [
+    if (t.days != 0) _count(t.days.abs(), 'day'),
+    if (s ~/ 3600 > 0) _count(s ~/ 3600, 'hour'),
+    if (s % 3600 ~/ 60 > 0) _count(s % 3600 ~/ 60, 'minute'),
+    if (s % 60 > 0) _count(s % 60, 'second'),
+  ];
+  return '${parts.join(' ')} ${t.days < 0 || t.seconds < 0 ? 'before' : 'after'}';
+}
+
+String _describeAllDay(ReminderTrigger t) {
+  // From midnight of the task's day: the whole days around it, and the time of day that is left.
+  final total = t.days * 86400 + t.seconds;
+  final timeOfDay = total % 86400;
+  final dayOffset = (total - timeOfDay) ~/ 86400;
+  final clock = '${timeOfDay ~/ 3600}:${(timeOfDay % 3600 ~/ 60).toString().padLeft(2, '0')}';
+  final day = switch (dayOffset) {
+    0 => 'On the day',
+    < 0 => '${_count(-dayOffset, 'day')} before',
+    _ => '${_count(dayOffset, 'day')} after',
+  };
+  return '$day, $clock';
+}
+
+String _count(int n, String unit) => '$n $unit${n == 1 ? '' : 's'}';

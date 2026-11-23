@@ -87,4 +87,45 @@ void main() {
       );
     });
   });
+
+  group('custom reminders', () {
+    test('on a timed task: minutes and hours are exact, days are calendar days', () {
+      expect(timedReminderBefore(45, ReminderUnit.minutes).format(), 'TRIGGER:-PT45M');
+      expect(timedReminderBefore(2, ReminderUnit.hours).format(), 'TRIGGER:-PT2H');
+      expect(timedReminderBefore(3, ReminderUnit.days).format(), 'TRIGGER:-P3D');
+    });
+
+    test('on an all-day task: the same triggers as the presets, in the way TickTick writes them', () {
+      for (final (days, preset) in [(0, allDayReminderPresets[0]), (1, allDayReminderPresets[1]), (2, allDayReminderPresets[2])]) {
+        expect(allDayReminderAt(daysBefore: days, hour: 9, minute: 0), preset.trigger, reason: preset.label);
+      }
+      expect(allDayReminderAt(daysBefore: 0, hour: 14, minute: 45).format(), 'TRIGGER:PT14H45M');
+      expect(allDayReminderAt(daysBefore: 3, hour: 7, minute: 30).format(), 'TRIGGER:-P2DT16H30M');
+      expect(allDayReminderAt(daysBefore: 2, hour: 0, minute: 0).format(), 'TRIGGER:-P2D');
+      expect(allDayReminderAt(daysBefore: 0, hour: 0, minute: 0).format(), 'TRIGGER:PT0S');
+    });
+
+    test('every preset is described by its own label', () {
+      for (final p in timedReminderPresets) {
+        expect(describeReminder(p.trigger, allDay: false), p.label);
+      }
+      for (final p in allDayReminderPresets) {
+        expect(describeReminder(p.trigger, allDay: true), p.label);
+      }
+    });
+
+    test('other triggers are put into words', () {
+      String timed(String text) => describeReminder(ReminderTrigger.parse(text)!, allDay: false);
+      String allDay(String text) => describeReminder(ReminderTrigger.parse(text)!, allDay: true);
+      expect(timed('-PT2H'), '2 hours before');
+      expect(timed('-PT1H30M'), '1 hour 30 minutes before');
+      expect(timed('-P2DT1H'), '2 days 1 hour before');
+      expect(timed('-PT24H'), '24 hours before');
+      expect(timed('PT10M'), '10 minutes after');
+      expect(allDay('PT14H45M'), 'On the day, 14:45');
+      expect(allDay('-P2DT16H30M'), '3 days before, 7:30');
+      expect(allDay('-P2D'), '2 days before, 0:00');
+      expect(allDay('P1DT9H'), '1 day after, 9:00');
+    });
+  });
 }

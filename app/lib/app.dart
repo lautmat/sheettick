@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/sync/sync_controller.dart';
 import 'features/common/theme.dart';
 import 'features/common/undo.dart';
+import 'features/desktop/desktop_providers.dart';
 import 'features/inbox/inbox_screen.dart';
 import 'features/reminders/reminders_providers.dart';
 
@@ -41,7 +42,10 @@ class _SheetTickAppState extends ConsumerState<SheetTickApp> with WidgetsBinding
   Widget build(BuildContext context) {
     // Keeps the platform's reminders in step with the tasks for as long as the app runs.
     ref.watch(remindersBindingProvider);
+    // The tray, the hotkey and hide-to-tray, on Windows.
+    ref.watch(desktopBindingProvider);
     return MaterialApp(
+      navigatorKey: ref.watch(navigatorKeyProvider),
       title: 'SheetTick',
       theme: appTheme(Brightness.light),
       darkTheme: appTheme(Brightness.dark),

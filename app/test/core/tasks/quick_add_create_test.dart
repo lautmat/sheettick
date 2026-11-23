@@ -44,6 +44,34 @@ void main() {
     expect(created.missingList, isNull);
   });
 
+  group('the default day', () {
+    Future<Task> createWithDefault(String text) async {
+      final created = await createQuickAddTask(
+        writer,
+        parseQuickAdd(text, now: now, zone: paris),
+        fallbackListId: inbox,
+        defaultDay: now,
+      );
+      return task(created.id);
+    }
+
+    test('a task with no date in its text is due that day, all day', () async {
+      final t = await createWithDefault('Buy milk');
+      expect(t.dueAt, '2026-11-11');
+      expect(t.allDay, isTrue);
+      expect(t.tz, isNull);
+      expect(t.startAt, isNull);
+    });
+
+    test('a date, a time or a repeat in the text wins', () async {
+      expect((await createWithDefault('Pay rent friday')).dueAt, '2026-11-13');
+      final timed = await createWithDefault('Call Sam tomorrow 3pm');
+      expect(timed.dueAt, '2026-11-12T15:00:00+01:00');
+      expect(timed.allDay, isFalse);
+      expect((await createWithDefault('Water the plants every monday')).dueAt, '2026-11-16');
+    });
+  });
+
   test('dates, priority, tags and list are all set on the task', () async {
     final work = await writer.insert('lists', {'name': 'Work'});
     final created = await create('Send the invoice tomorrow 3pm #finance #urgent ^Work !high');

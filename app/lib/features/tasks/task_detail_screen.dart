@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/tasks/task_completion.dart';
+import '../../core/tasks/task_postpone.dart';
 import '../../core/tasks/task_skip.dart';
 import '../../core/tasks/task_status.dart';
 import '../common/local_edit.dart';
 import '../common/undo.dart';
 import 'checklist_section.dart';
+import 'notes_field.dart';
+import 'postpone_action.dart';
 import 'skip_action.dart';
 import 'task_attributes.dart';
 import 'task_providers.dart';
@@ -95,6 +98,13 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     await skipTaskOccurrence(context, ref, task);
   }
 
+  /// Saves the edits first, then postpones the task.
+  Future<void> _postpone(PostponeTarget target) async {
+    await _saveEdits();
+    final task = ref.read(taskProvider(_id)).value ?? widget.task;
+    await postponeWithUndo(ref, [task], target);
+  }
+
   Future<void> _delete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -140,6 +150,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 'wontDo' => _setStatus(TaskStatus.wontDo),
                 'reopen' => _setStatus(TaskStatus.open),
                 'skip' => _skip(),
+                _ when postponeTargetOf(value) != null => _postpone(postponeTargetOf(value)!),
                 _ => _delete(),
               },
               itemBuilder: (_) => [
@@ -149,6 +160,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 else
                   const PopupMenuItem(value: 'wontDo', child: Text("Won't do")),
                 const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                ...postponeMenuEntries(task, now: DateTime.now(), zone: ref.watch(deviceZoneProvider).value),
               ],
             ),
           ],
@@ -172,18 +184,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             TaskAttributes(task: task),
             ChecklistSection(task: task),
             const Divider(height: 32),
-            TextField(
-              key: const Key('taskNotesField'),
-              controller: _notes,
-              minLines: 6,
-              maxLines: null,
-              keyboardType: TextInputType.multiline,
-              decoration: const InputDecoration(
-                hintText: 'Notes (Markdown)',
-                border: InputBorder.none,
-                alignLabelWithHint: true,
-              ),
-            ),
+            TaskNotesField(controller: _notes),
           ],
         ),
       ),

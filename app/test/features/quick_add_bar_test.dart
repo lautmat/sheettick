@@ -102,6 +102,21 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('a task typed with no date is due today, all day', (tester) async {
+    await seedInbox(tester);
+    await tester.pumpWidget(app());
+    await settle(tester);
+
+    await type(tester, 'Buy milk');
+    await enter(tester);
+
+    final t = (await tasks(tester)).single;
+    expect(t.title, 'Buy milk');
+    expect(t.dueAt, day(0));
+    expect(t.allDay, isTrue);
+    await unmount(tester);
+  });
+
   testWidgets('the add button does the same as Enter', (tester) async {
     await seedInbox(tester);
     await tester.pumpWidget(app());
@@ -197,7 +212,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('plain text is a plain task, as before', (tester) async {
+  testWidgets('plain text is a plain task for today', (tester) async {
     await seedInbox(tester);
     await tester.pumpWidget(app());
     await settle(tester);
@@ -207,13 +222,13 @@ void main() {
 
     final t = (await tasks(tester)).single;
     expect(t.title, 'Buy milk and eggs');
-    expect(t.dueAt, isNull);
+    expect(t.dueAt, day(0));
     expect(t.tags, '');
     expect(t.priority, 0);
     await unmount(tester);
   });
 
-  testWidgets('text that is only a date is kept as the title', (tester) async {
+  testWidgets('text that is only a date is kept as the title, and the task is for today', (tester) async {
     await seedInbox(tester);
     await tester.pumpWidget(app());
     await settle(tester);
@@ -223,7 +238,7 @@ void main() {
 
     final t = (await tasks(tester)).single;
     expect(t.title, 'tomorrow');
-    expect(t.dueAt, isNull);
+    expect(t.dueAt, day(0));
     await unmount(tester);
   });
 

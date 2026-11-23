@@ -204,11 +204,12 @@ void main() {
       await tester.tap(find.byKey(const Key('customInterval:up')));
       await tester.pump();
     }
-    await tester.tap(find.byKey(const Key('customMonthDay')));
-    await animate(tester);
-    await tester.scrollUntilVisible(find.text('day 27'), 60, scrollable: find.byType(Scrollable).last);
-    await tester.tap(find.text('day 27').last);
-    await animate(tester);
+    // The dropdown menu opens scrolled to the task's own day (tomorrow, so it changes with the date), which made tapping
+    // "day 27" depend on today's date. Choose the value the way the menu would, without the menu.
+    final onChanged = tester.widget<DropdownButton<int>>(find.byKey(const Key('customMonthDay'))).onChanged;
+    expect(onChanged, isNotNull, reason: 'the month-day dropdown must be enabled before the day is set');
+    onChanged!(27);
+    await tester.pump();
     await tester.tap(find.byKey(const Key('customEndCount')));
     await tester.pump();
     for (var i = 0; i < 6; i++) {
