@@ -41,6 +41,8 @@ function parseDateCell(value) {
   return { wall: wall, offset: offsetMinutes_(m[7]), dateOnly: false };
 }
 
+// The seconds are checked but not kept, on purpose: the app holds a moment to the minute (_wallOrNull in
+// core/tasks/task_dates.dart), and the watch must order tasks exactly as the app's Today list does.
 function realWall_(y, mo, d, h, mi, s) {
   var year = +y, month = +mo, day = +d, hour = +h, minute = +mi, second = +s;
   if (hour > 23 || minute > 59 || second > 59) return null;
