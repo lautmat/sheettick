@@ -37,6 +37,8 @@ import '../tasks/skip_action.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_drag.dart';
+import '../tasks/task_pane_providers.dart';
+import '../tasks/task_providers.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -58,9 +60,21 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   Widget build(BuildContext context) {
     final active = ref.watch(activeListProvider);
     final smart = ref.watch(selectedSmartListProvider);
-    final wide = MediaQuery.sizeOf(context).width >= kSidebarBreakpoint;
+    final width = MediaQuery.sizeOf(context).width;
+    final wide = width >= kSidebarBreakpoint;
+    final collapsed = ref.watch(sidebarCollapsedProvider);
+    final selectedId = width >= kSplitBreakpoint ? ref.watch(selectedTaskIdProvider) : null;
+    final selectedTask = selectedId == null ? null : ref.watch(taskProvider(selectedId)).value;
     final screen = Scaffold(
       appBar: AppBar(
+        leading: wide
+            ? IconButton(
+                key: const Key('toggleSidebar'),
+                tooltip: collapsed ? 'Show lists' : 'Hide lists',
+                icon: const Icon(Icons.menu_open),
+                onPressed: () => ref.read(sidebarCollapsedProvider.notifier).toggle(),
+              )
+            : null,
         title: Text(smart?.label ?? _titleOf(active.value)),
         actions: [
           if (smart == null && active.value != null) ...[
@@ -99,15 +113,25 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     if (!wide) return screen;
     return Row(
       children: [
-        SizedBox(
-          width: kSidebarWidth,
-          child: Material(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            child: const SafeArea(right: false, child: ListsSidebar()),
+        if (!collapsed) ...[
+          SizedBox(
+            width: kSidebarWidth,
+            child: Material(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              child: const SafeArea(right: false, child: ListsSidebar()),
+            ),
           ),
-        ),
-        const VerticalDivider(width: 1),
+          const VerticalDivider(width: 1),
+        ],
         Expanded(child: screen),
+        if (selectedTask != null && !selectedTask.deleted) ...[
+          const VerticalDivider(width: 1),
+          SizedBox(
+            key: const Key('taskPane'),
+            width: kTaskPaneWidth,
+            child: TaskDetailScreen(key: ValueKey(selectedTask.id), task: selectedTask, embedded: true),
+          ),
+        ],
       ],
     );
   }
@@ -666,7 +690,8 @@ class _TaskTile extends ConsumerWidget {
                   ),
               ],
             ),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
+      selected: ref.watch(selectedTaskIdProvider) == task.id,
+      onTap: () => openTask(context, ref, task),
       trailing: menuItems.isEmpty
           ? null
           : PopupMenuButton<String>(
