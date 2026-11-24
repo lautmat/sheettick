@@ -28,6 +28,10 @@ abstract final class DeviceStateKeys {
 
   /// The theme picked on this device: `system`, `light` or `dark` (see `core/theme/theme_choice.dart`). Not synced.
   static const themeChoice = 'theme_choice';
+
+  /// Whether the Completed tasks at the foot of a list are folded away: `true` or `false` (see
+  /// `features/inbox/inbox_providers.dart`). Not synced.
+  static const completedCollapsed = 'completed_collapsed';
 }
 
 /// Local SQLite database. The UI reads and writes only this; the sync engine reconciles it with the Sheet.
