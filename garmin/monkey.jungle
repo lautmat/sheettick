@@ -1,0 +1,4 @@
+project.manifest = manifest.xml
+
+# secrets/ holds Secrets.mc (the web app URL and token), written by tools/watch_secrets.mjs and git-ignored.
+base.sourcePath = source;secrets
