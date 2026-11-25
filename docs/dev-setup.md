@@ -37,7 +37,7 @@ and `flutter run -d <id>` installs the debug build.
 ## Building in GitHub Actions
 
 The **Build apps** workflow (Actions tab, Run workflow) builds the Android APK and the Windows app on GitHub's runners, so
-neither needs the laptop. It is manual only. Pick the platform, and tick "dev tools" to include the TickTick import dialog.
+neither needs the laptop. It also runs by itself for Android on every push to `main` that touches `app/`, so each merged change is released. Otherwise pick the platform, and tick "dev tools" to include the TickTick import dialog.
 
 With the secrets below set, each build is **published as a GitHub release** (`android-N` with the APK, `windows-N` with a
 zip). Without them the workflow still builds both apps, as a compile check, and publishes nothing (it says so in a
