@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
+import '../../core/tasks/task_bulk.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_postpone.dart';
 import '../../core/tasks/task_skip.dart';
@@ -105,11 +106,15 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     await postponeWithUndo(ref, [task], target);
   }
 
+  /// Moves the task to the Trash, and its subtasks with it: left behind they would show up as tasks of their own.
   Future<void> _delete() async {
+    final writer = await ref.read(localWriterProvider.future);
+    final ids = await withSubtasks(writer, [_id]);
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Move this task to Trash?'),
+        title: Text(ids.length > 1 ? 'Move this task and its subtasks to Trash?' : 'Move this task to Trash?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Move to Trash')),
@@ -117,7 +122,12 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       ),
     );
     if (confirmed != true) return;
-    await changeWithUndo<void>(ref, 'Task moved to Trash', [(tab: 'tasks', id: _id)], (writer) => writer.delete('tasks', _id));
+    await changeWithUndo<int>(
+      ref,
+      'Task moved to Trash',
+      [for (final id in ids) (tab: 'tasks', id: id)],
+      (writer) => trashTasks(writer, [_id]),
+    );
     await _close(save: false);
   }
 

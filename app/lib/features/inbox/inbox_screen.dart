@@ -33,10 +33,12 @@ import '../sections/sections_widgets.dart';
 import '../smart/smart_providers.dart';
 import '../tasks/date_labels.dart';
 import '../tasks/postpone_action.dart';
+import '../tasks/selection_bar.dart';
 import '../tasks/skip_action.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_drag.dart';
+import '../tasks/task_selection.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -54,46 +56,65 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     Future.microtask(() => ref.read(syncControllerProvider.notifier).sync());
   }
 
+  /// Does [action] to the tasks picked. From here, not from the bar, so it can finish after the bar has gone.
+  Future<void> _runBulk(BulkAction action) =>
+      runBulkAction(context, ref, ref.read(selectedTasksProvider), action);
+
   @override
   Widget build(BuildContext context) {
     final active = ref.watch(activeListProvider);
     final smart = ref.watch(selectedSmartListProvider);
+    final selecting = ref.watch(selectingProvider);
     final wide = MediaQuery.sizeOf(context).width >= kSidebarBreakpoint;
-    final screen = Scaffold(
-      appBar: AppBar(
-        title: Text(smart?.label ?? _titleOf(active.value)),
-        actions: [
-          if (smart == null && active.value != null) ...[
-            SortGroupButton(list: active.value!),
-            NewSectionButton(listId: active.value!.id),
-          ],
-          IconButton(
-            key: const Key('searchButton'),
-            tooltip: 'Search',
-            icon: const Icon(Icons.search),
-            onPressed: () =>
-                Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
-          ),
-          const _SyncButton(),
-          const DesktopMenu(),
-          const ThemeMenu(),
-          const _AccountMenu(),
-        ],
-      ),
-      drawer: wide ? null : const Drawer(child: SafeArea(child: ListsSidebar())),
-      body: Column(
-        children: [
-          const _SyncBanner(),
-          Expanded(
-            child: smart != null
-                ? _SmartBody(smart: smart)
-                : active.when(
-                    data: (list) => list == null ? const _NoInbox() : _InboxBody(list: list),
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Center(child: Text('Could not read the local database: $e')),
+    // Every picked task left the screen (done, moved, synced away): nothing is left to act on.
+    ref.listen(selectedTasksProvider, (_, picked) {
+      if (picked.isEmpty) ref.read(taskSelectionProvider.notifier).clear();
+    });
+    final screen = PopScope(
+      // Back ends a selection before it leaves the app.
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) ref.read(taskSelectionProvider.notifier).clear();
+      },
+      child: Scaffold(
+        appBar: selecting
+            ? const SelectionAppBar()
+            : AppBar(
+                title: Text(smart?.label ?? _titleOf(active.value)),
+                actions: [
+                  if (smart == null && active.value != null) ...[
+                    SortGroupButton(list: active.value!),
+                    NewSectionButton(listId: active.value!.id),
+                  ],
+                  IconButton(
+                    key: const Key('searchButton'),
+                    tooltip: 'Search',
+                    icon: const Icon(Icons.search),
+                    onPressed: () =>
+                        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
                   ),
-          ),
-        ],
+                  const _SyncButton(),
+                  const DesktopMenu(),
+                  const ThemeMenu(),
+                  const _AccountMenu(),
+                ],
+              ),
+        drawer: wide ? null : const Drawer(child: SafeArea(child: ListsSidebar())),
+        body: Column(
+          children: [
+            const _SyncBanner(),
+            Expanded(
+              child: smart != null
+                  ? _SmartBody(smart: smart)
+                  : active.when(
+                      data: (list) => list == null ? const _NoInbox() : _InboxBody(list: list),
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Center(child: Text('Could not read the local database: $e')),
+                    ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: selecting ? SelectionBar(onAction: _runBulk) : null,
       ),
     );
     if (!wide) return screen;
@@ -276,6 +297,7 @@ class _InboxBody extends ConsumerWidget {
     final listNames = {
       for (final l in ref.watch(sidebarListsProvider).value ?? const <TaskList>[]) l.id: l.name,
     };
+    final selecting = ref.watch(selectingProvider);
     return Column(
       children: [
         Expanded(
@@ -292,16 +314,19 @@ class _InboxBody extends ConsumerWidget {
                         ),
                       ],
                     )
-                  : ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: _rows(
-                        sortTasks(items, TaskOrder.of(list.orderBy), zone: zone),
-                        sections,
-                        listId: list.id,
-                        manual: TaskOrder.of(list.orderBy) == TaskOrder.manual,
-                        group: TaskGroup.of(list.groupBy),
-                        zone: zone,
-                        listNames: listNames,
+                  : DragAutoScroll(
+                      builder: (context, controller) => ListView(
+                        controller: controller,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: _rows(
+                          sortTasks(items, TaskOrder.of(list.orderBy), zone: zone),
+                          sections,
+                          listId: list.id,
+                          manual: TaskOrder.of(list.orderBy) == TaskOrder.manual,
+                          group: TaskGroup.of(list.groupBy),
+                          zone: zone,
+                          listNames: listNames,
+                        ),
                       ),
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -309,7 +334,8 @@ class _InboxBody extends ConsumerWidget {
             ),
           ),
         ),
-        _AddBar(listId: list.id),
+        // A batch edit has its own bar at the bottom, and the keyboard has no business there.
+        if (!selecting) _AddBar(listId: list.id),
       ],
     );
   }
@@ -534,7 +560,8 @@ List<Widget> _rows(
           listId: listId,
           section: section,
           reorder: manual,
-          child: _TaskTile(task: row.item, depth: row.depth, above: above, section: section),
+          // A top-level row's long press belongs to the drag shell on a touch screen (it drags or it selects).
+          child: _TaskTile(task: row.item, depth: row.depth, above: above, section: section, shellHoldsPress: row.depth == 0),
         ),
       );
       above = row.item.id;
@@ -554,9 +581,21 @@ List<Widget> _rows(
 }
 
 class _TaskTile extends ConsumerWidget {
-  const _TaskTile({super.key, required this.task, this.depth = 0, this.above, this.section, this.menu = true});
+  const _TaskTile({
+    super.key,
+    required this.task,
+    this.depth = 0,
+    this.above,
+    this.section,
+    this.menu = true,
+    this.shellHoldsPress = false,
+  });
 
   final Task task;
+
+  /// Whether a [TaskDragShell] around the row takes its long press on a touch screen. Then the shell starts the
+  /// selection (when the finger lifts without dragging), and the row must not compete for the press.
+  final bool shellHoldsPress;
 
   /// False in the smart lists, where a task has no section or place among its siblings to move to.
   final bool menu;
@@ -594,6 +633,8 @@ class _TaskTile extends ConsumerWidget {
 
   Future<void> _onMenu(BuildContext context, WidgetRef ref, String value) async {
     switch (value) {
+      case 'select':
+        ref.read(taskSelectionProvider.notifier).add(task.id);
       case 'section':
         await moveTaskToSection(context, ref, task);
       case 'list':
@@ -618,7 +659,10 @@ class _TaskTile extends ConsumerWidget {
     final tags = parseTags(task.tags);
     final zone = ref.watch(deviceZoneProvider).value;
     final headline = task.dates(zone).headline(DateTime.now());
-    final menuItems = <PopupMenuEntry<String>>[
+    final selecting = ref.watch(selectingProvider);
+    final picked = ref.watch(taskSelectionProvider.select((s) => s.contains(task.id)));
+    final selection = ref.read(taskSelectionProvider.notifier);
+    final actions = <PopupMenuEntry<String>>[
       if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
       if (menu) ...[
         // A subtask is filed under its parent's section, so only a top-level task moves on its own.
@@ -629,16 +673,33 @@ class _TaskTile extends ConsumerWidget {
       ],
       ...postponeMenuEntries(task, now: DateTime.now(), zone: zone),
     ];
+    // A row with nothing to offer has no menu (a done task in the Completed list); a long press still picks it.
+    final menuItems = actions.isEmpty
+        ? actions
+        : <PopupMenuEntry<String>>[const PopupMenuItem(value: 'select', child: Text('Select')), ...actions];
     // A past due is red until the task is done or dropped.
     final overdue = (headline?.overdue ?? false) && task.status == TaskStatus.open.value;
+    final primary = Theme.of(context).colorScheme.primary;
     return ListTile(
       contentPadding: EdgeInsetsDirectional.only(start: 16 + 32.0 * depth, end: 16),
-      leading: Checkbox(
-        key: Key('taskCheck-${task.id}'),
-        value: _done,
-        side: flag == null ? null : BorderSide(color: flag, width: 2),
-        onChanged: (v) => _toggle(ref, v ?? false),
-      ),
+      selected: picked,
+      selectedTileColor: primary.withValues(alpha: 0.12),
+      // While a selection is under way the check box gives way to a tick that says whether the row is picked.
+      leading: selecting
+          ? Padding(
+              padding: const EdgeInsets.all(12),
+              child: Icon(
+                picked ? Icons.check_circle : Icons.radio_button_unchecked,
+                key: Key('taskPick-${task.id}'),
+                color: picked ? primary : muted,
+              ),
+            )
+          : Checkbox(
+              key: Key('taskCheck-${task.id}'),
+              value: _done,
+              side: flag == null ? null : BorderSide(color: flag, width: 2),
+              onChanged: (v) => _toggle(ref, v ?? false),
+            ),
       title: Text(
         task.title.isEmpty ? '(untitled)' : task.title,
         style: _done ? TextStyle(decoration: TextDecoration.lineThrough, color: muted) : null,
@@ -666,8 +727,12 @@ class _TaskTile extends ConsumerWidget {
                   ),
               ],
             ),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
-      trailing: menuItems.isEmpty
+      onTap: selecting
+          ? () => selection.toggle(task.id)
+          : () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
+      // A long press picks the row. Where a drag shell holds the press on a touch screen, it does the picking.
+      onLongPress: selecting || (shellHoldsPress && isTouchPlatform(context)) ? null : () => selection.add(task.id),
+      trailing: selecting || menuItems.isEmpty
           ? null
           : PopupMenuButton<String>(
               key: Key('taskMenu-${task.id}'),

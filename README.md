@@ -27,6 +27,7 @@ for checks on real devices. See [docs/roadmap.md](docs/roadmap.md).
 - [docs/sheet-schema.md](docs/sheet-schema.md): **canonical** Google Sheet layout
 - [docs/sync-protocol.md](docs/sync-protocol.md): sync algorithm and conflict rules
 - [docs/roadmap.md](docs/roadmap.md): phases P0–P3 with exit criteria
+- [docs/ticktick-gap-analysis.md](docs/ticktick-gap-analysis.md): what TickTick has that SheetTick lacks, and what to do next
 - [docs/research/rea-findings.md](docs/research/rea-findings.md): what reverse engineering TickTick revealed
 - [docs/decisions/](docs/decisions/): architecture decision records
 

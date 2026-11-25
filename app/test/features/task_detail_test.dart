@@ -216,4 +216,43 @@ void main() {
     expect(find.text('draft'), findsNothing);
     await unmount(tester);
   });
+
+  testWidgets('deleting a task takes its subtasks to the Trash too, and Undo brings them all back', (tester) async {
+    final inbox = await seedInbox(tester);
+    late String parent, child, grandchild, other;
+    await tester.runAsync(() async {
+      parent = await writer().insert('tasks', {'list_id': inbox, 'title': 'parent'});
+      child = await writer().insert('tasks', {'list_id': inbox, 'title': 'child', 'parent_id': parent});
+      grandchild = await writer().insert('tasks', {'list_id': inbox, 'title': 'grandchild', 'parent_id': child});
+      other = await writer().insert('tasks', {'list_id': inbox, 'title': 'other'});
+    });
+    Future<Task> row(String id) async =>
+        (await tester.runAsync(() => (db.select(db.tasks)..where((t) => t.id.equals(id))).getSingle()))!;
+    await tester.pumpWidget(app());
+    await settle(tester);
+
+    await openTask(tester, 'parent');
+    await tester.tap(find.byKey(const Key('taskMenu')));
+    await animate(tester);
+    await tester.tap(find.text('Delete'));
+    await animate(tester);
+    expect(find.text('Move this task and its subtasks to Trash?'), findsOneWidget, reason: 'it says what goes with it');
+    await tester.tap(find.text('Move to Trash'));
+    await animate(tester);
+    await settle(tester);
+
+    expect((await row(parent)).deleted, isTrue);
+    expect((await row(child)).deleted, isTrue);
+    expect((await row(grandchild)).deleted, isTrue);
+    expect((await row(other)).deleted, isFalse);
+    expect((await row(other)).version, 1);
+    expect(find.text('child'), findsNothing, reason: 'no orphan is left on the list');
+
+    await tester.tap(find.text('Undo'));
+    await settle(tester);
+    expect((await row(parent)).deleted, isFalse);
+    expect((await row(child)).deleted, isFalse);
+    expect((await row(grandchild)).deleted, isFalse);
+    await unmount(tester);
+  });
 }
