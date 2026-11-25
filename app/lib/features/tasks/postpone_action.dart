@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/database.dart';
 import '../../core/providers.dart';
+import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_postpone.dart';
 import '../common/undo.dart';
 
@@ -35,18 +36,40 @@ List<PopupMenuEntry<String>> postponeMenuEntries(Task task, {required DateTime n
 /// change are written and counted. Returns how many that was (0: nothing was written and there is nothing to undo).
 Future<int> postponeWithUndo(WidgetRef ref, List<Task> tasks, PostponeTarget target) async {
   final zone = await ref.read(deviceZoneProvider.future);
-  final now = DateTime.now();
-  final changing = [for (final t in tasks) if (postponeChanges(t, target, now: now, zone: zone)) t];
+  final day = postponeDay(target, TaskDates(zone: zone).wallOf(DateTime.now()));
+  return _moveWithUndo(
+    ref,
+    tasks,
+    day,
+    zone,
+    target == PostponeTarget.noDate
+        ? (n) => n == 1 ? 'Date removed' : 'Dates removed'
+        : (n) => n == 1 ? 'Task postponed' : '$n tasks postponed',
+  );
+}
+
+/// Moves [tasks] onto the calendar [day] (a UTC midnight) in one write and offers to undo it, as [postponeWithUndo] does
+/// for a named target. Returns how many tasks changed.
+Future<int> moveToDayWithUndo(WidgetRef ref, List<Task> tasks, DateTime day) async {
+  final zone = await ref.read(deviceZoneProvider.future);
+  return _moveWithUndo(ref, tasks, day, zone, (n) => n == 1 ? 'Task rescheduled' : '$n tasks rescheduled');
+}
+
+/// Writes the move for the tasks it would change, labelled by [label] for how many that is.
+Future<int> _moveWithUndo(
+  WidgetRef ref,
+  List<Task> tasks,
+  DateTime? day,
+  String? zone,
+  String Function(int changed) label,
+) async {
+  final changing = [for (final t in tasks) if (dayChanges(t, day, zone: zone)) t];
   if (changing.isEmpty) return 0;
-  final one = changing.length == 1;
-  final label = target == PostponeTarget.noDate
-      ? (one ? 'Date removed' : 'Dates removed')
-      : (one ? 'Task postponed' : '${changing.length} tasks postponed');
   await changeWithUndo<int>(
     ref,
-    label,
+    label(changing.length),
     [for (final t in changing) (tab: 'tasks', id: t.id)],
-    (writer) => postponeTasks(writer, changing, target, now: now, zone: zone),
+    (writer) => moveTasksToDay(writer, changing, day, zone: zone),
   );
   return changing.length;
 }

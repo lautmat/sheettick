@@ -5,10 +5,13 @@ import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/tasks/priority.dart';
 import '../../core/tasks/task_bulk.dart';
+import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
+import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_postpone.dart';
 import '../../core/tasks/task_status.dart';
 import '../common/undo.dart';
+import 'bulk_tag_dialog.dart';
 import 'postpone_action.dart';
 import 'task_attributes.dart';
 import 'task_drag.dart';
@@ -21,6 +24,12 @@ enum BulkAction {
   tomorrow,
   nextWeek,
   noDate,
+
+  /// Asks for a day and moves every picked task onto it.
+  pickDate,
+
+  /// Asks for a tag and adds it to every picked task.
+  addTag,
   move,
   priorityHigh(Priority.high),
   priorityMedium(Priority.medium),
@@ -116,6 +125,7 @@ class SelectionBar extends StatelessWidget {
                     const PopupMenuItem<BulkAction>(enabled: false, height: 32, child: Text('Postpone to')),
                     const PopupMenuItem(value: BulkAction.nextWeek, child: Text('Next week')),
                     const PopupMenuItem(value: BulkAction.noDate, child: Text('No date')),
+                    const PopupMenuItem(value: BulkAction.pickDate, child: Text('Pick a date…')),
                     const PopupMenuDivider(),
                     const PopupMenuItem<BulkAction>(enabled: false, height: 32, child: Text('Priority')),
                     for (final p in const [
@@ -138,6 +148,7 @@ class SelectionBar extends StatelessWidget {
                         ),
                       ),
                     const PopupMenuDivider(),
+                    const PopupMenuItem(value: BulkAction.addTag, child: Text('Add tag…')),
                     const PopupMenuItem(value: BulkAction.trash, child: Text('Move to Trash')),
                   ],
                   child: const _BarFace(icon: Icons.more_horiz, label: 'More'),
@@ -240,6 +251,42 @@ Future<void> runBulkAction(BuildContext context, WidgetRef ref, List<Task> tasks
           return next;
         },
         created: (next) => [for (final id in next) (tab: 'tasks', id: id)],
+      );
+    case BulkAction.pickDate:
+      final zone = await ref.read(deviceZoneProvider.future);
+      final today = TaskDates(zone: zone).wallOf(DateTime.now());
+      if (!context.mounted) return;
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime(today.year, today.month, today.day),
+        firstDate: DateTime(today.year - 1),
+        lastDate: DateTime(today.year + 5),
+        helpText: tasks.length == 1 ? 'Due date' : 'Due date for ${tasks.length} tasks',
+      );
+      if (picked == null) return;
+      if (await moveToDayWithUndo(ref, tasks, dayOf(picked)) > 0) {
+        selection.clear();
+      } else if (context.mounted) {
+        _say(context, 'Nothing to change: they are already there.');
+      }
+    case BulkAction.addTag:
+      final known = await readTagNames(ref.read(appDatabaseProvider));
+      if (!context.mounted) return;
+      final name = cleanTagName(await askTagName(context, count: tasks.length, known: known) ?? '');
+      if (name == null) return;
+      final lacking = [for (final t in tasks) if (indexOfTag(parseTags(t.tags), name) < 0) t];
+      if (lacking.isEmpty) {
+        if (context.mounted) _say(context, tasks.length == 1 ? 'It already has #$name.' : 'They all have #$name.');
+        return;
+      }
+      selection.clear();
+      // A tag that is new to the `tags` tab is made with the change, so undoing it takes the tag away too.
+      await changeWithUndo<String?>(
+        ref,
+        lacking.length == 1 ? 'Tag added' : 'Tag added to ${lacking.length} tasks',
+        [for (final t in lacking) (tab: 'tasks', id: t.id)],
+        (writer) async => (await addTagToTasks(writer, [for (final t in lacking) t.id], name))?.createdId,
+        created: (tagId) => [if (tagId != null) (tab: 'tags', id: tagId)],
       );
     case BulkAction.move:
       if (await moveTasksToList(context, ref, tasks)) selection.clear();

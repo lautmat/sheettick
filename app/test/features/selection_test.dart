@@ -482,6 +482,139 @@ void main() {
       await unmount(tester);
     }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
+    testWidgets('More > Pick a date sets the due day of every picked task, keeping times, and Undo puts the dates back', (tester) async {
+      phone(tester);
+      await boot(tester);
+      // The offset is a guess in summer, so the test compares wall-clock times in the device zone, as the app reads them.
+      final seeded = '${day(-2)}T09:30:00+01:00';
+      final timed = await seedTask(tester, 'Timed', {'due_at': seeded, 'tz': zone});
+      String ymd(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      DateTime wall(String? at) => TaskDates.fromRow(dueAt: at, tz: zone, deviceZone: zone).due!;
+      final undated = await seedTask(tester, 'Undated');
+      await start(tester);
+      // The 15th, or the 16th when today is the 15th: a day of this month that is not today, whatever the month.
+      final today = const TaskDates(zone: zone).wallOf(DateTime.now());
+      final pick = today.day == 15 ? 16 : 15;
+
+      await holdAndLift(tester, timed);
+      await tapTask(tester, undated);
+      await more(tester, 'Pick a date…');
+      expect(find.text('Due date for 2 tasks'), findsOneWidget);
+      await tester.tap(find.text('$pick'));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await settle(tester);
+
+      final picked = day(pick - today.day);
+      final moved = wall((await row(tester, timed)).dueAt);
+      expect(ymd(moved), picked);
+      expect((moved.hour, moved.minute), (wall(seeded).hour, wall(seeded).minute), reason: 'the time of day is kept');
+      expect((await row(tester, undated)).dueAt, picked);
+      expect((await row(tester, undated)).allDay, isTrue);
+      expect(find.text('2 tasks rescheduled'), findsOneWidget);
+      expect(find.byKey(const Key('selectionCount')), findsNothing, reason: 'the selection is over');
+
+      await tester.tap(find.text('Undo'));
+      await settle(tester);
+      expect((await row(tester, timed)).dueAt, seeded);
+      expect((await row(tester, undated)).dueAt, isNull);
+
+      await unmount(tester);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+    testWidgets('closing the date picker keeps the selection and writes nothing', (tester) async {
+      phone(tester);
+      await boot(tester);
+      final a = await seedTask(tester, 'A');
+      await start(tester);
+
+      await holdAndLift(tester, a);
+      await more(tester, 'Pick a date…');
+      await tester.tap(find.text('Cancel'));
+      await settle(tester);
+
+      expect(count('1 selected'), findsOneWidget);
+      expect((await row(tester, a)).dueAt, isNull);
+      expect((await row(tester, a)).version, 1);
+
+      await unmount(tester);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+    testWidgets('More > Add tag adds a new tag to every picked task, makes the tag, and Undo takes both back', (tester) async {
+      phone(tester);
+      await boot(tester);
+      final a = await seedTask(tester, 'A', {'tags': 'home'});
+      final b = await seedTask(tester, 'B');
+      final has = await seedTask(tester, 'Has it', {'tags': 'Errands'});
+      await start(tester);
+
+      await holdAndLift(tester, a);
+      await tapTask(tester, b);
+      await tapTask(tester, has);
+      await more(tester, 'Add tag…');
+      expect(find.text('Add a tag to 3 tasks'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('bulkTagField')), '#errands');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('confirmBulkTag')));
+      await settle(tester);
+
+      expect((await row(tester, a)).tags, 'home,errands');
+      expect((await row(tester, b)).tags, 'errands');
+      expect((await row(tester, has)).tags, 'Errands');
+      expect((await row(tester, has)).version, 1, reason: 'it had the tag already: not rewritten');
+      expect(find.text('Tag added to 2 tasks'), findsOneWidget);
+      expect(find.byKey(const Key('selectionCount')), findsNothing, reason: 'the selection is over');
+      Future<List<String>> liveTags() async => (await tester.runAsync(() => db.select(db.tags).get()))!
+          .where((t) => !t.deleted)
+          .map((t) => t.name)
+          .toList();
+      expect(await liveTags(), ['errands']);
+
+      await tester.tap(find.text('Undo'));
+      await settle(tester);
+      expect((await row(tester, a)).tags, 'home');
+      expect((await row(tester, b)).tags, anyOf(isNull, ''));
+      expect(await liveTags(), isEmpty, reason: 'the tag was made by the change, so undoing it removes the tag');
+
+      await unmount(tester);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+    testWidgets('Add tag offers the tags that exist as chips, and a tag every picked task has says so', (tester) async {
+      phone(tester);
+      await boot(tester);
+      await tester.runAsync(() => writer().insert('tags', {'name': 'Finance', 'sort_order': 1.0}));
+      final a = await seedTask(tester, 'A');
+      final b = await seedTask(tester, 'B', {'tags': 'Finance'});
+      await start(tester);
+
+      await holdAndLift(tester, a);
+      await more(tester, 'Add tag…');
+      await tester.tap(find.byKey(const Key('bulkTagOption-Finance')));
+      await settle(tester);
+      expect((await row(tester, a)).tags, 'Finance');
+      expect(find.text('Tag added'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
+      await settle(tester);
+      expect((await row(tester, a)).tags, anyOf(isNull, ''));
+      expect(
+        (await tester.runAsync(() => db.select(db.tags).get()))!.where((t) => !t.deleted).single.name,
+        'Finance',
+        reason: 'the tag existed before, so undoing keeps it',
+      );
+
+      await holdAndLift(tester, b);
+      await more(tester, 'Add tag…');
+      await tester.enterText(find.byKey(const Key('bulkTagField')), 'finance');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('confirmBulkTag')));
+      await settle(tester);
+      expect(find.text('It already has #finance.'), findsOneWidget);
+      expect(count('1 selected'), findsOneWidget, reason: 'nothing changed, so the selection stays');
+      expect((await row(tester, b)).version, 1);
+
+      await unmount(tester);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
     testWidgets('Move to Trash asks first, takes the subtasks along, and Undo brings them back', (tester) async {
       phone(tester);
       await boot(tester);

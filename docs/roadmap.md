@@ -52,8 +52,9 @@ Issues exist for the items with a number. The rest are broken into issues when t
 
 - Views: Eisenhower matrix, Kanban, calendar (day/week/month), custom filters, notes.
 - Batch edit (done early, 2026-11-24): hold a task to select, tap to add more; Complete, Today, Tomorrow, Next week,
-  No date, Move to list, Priority and Move to Trash on all of them, with one Undo. Dragging on a touch screen now scrolls
-  the list at its edges. Still missing: pick any date, add a tag (#110; see `docs/ticktick-gap-analysis.md`).
+  No date, Pick a date, Move to list, Priority, Add tag and Move to Trash on all of them, with one Undo (Pick a date and
+  Add tag: #110). Dragging on a touch screen now scrolls the list at its edges. Still missing: bulk pin and duplicate
+  (see `docs/ticktick-gap-analysis.md`).
 - Swipe actions (#69, PR #117), done: right completes or reopens a row, left offers dates, Move and Trash.
 - Everyday: daily alert (#67), task defaults (#70), duplicate (#71), pin (#74), parent progress and collapse (#72),
   streak and history on repeating tasks (#73).

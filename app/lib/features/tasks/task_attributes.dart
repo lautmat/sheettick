@@ -16,12 +16,17 @@ import 'task_repeat.dart';
 
 /// The names in the `tags` tab that are not deleted, in their order, each name once whatever its case.
 final tagNamesProvider = StreamProvider<List<String>>((ref) {
-  final db = ref.watch(appDatabaseProvider);
-  final query = db.select(db.tags)
-    ..where((t) => t.deleted.equals(false))
-    ..orderBy([(t) => OrderingTerm.asc(t.sortOrder), (t) => OrderingTerm.asc(t.name)]);
-  return query.watch().map((rows) => parseTags(formatTags(rows.map((r) => r.name))));
+  return _liveTags(ref.watch(appDatabaseProvider)).watch().map(_names);
 });
+
+/// [tagNamesProvider] once, for a question that needs the names now and not as they change.
+Future<List<String>> readTagNames(AppDatabase db) async => _names(await _liveTags(db).get());
+
+SimpleSelectStatement<$TagsTable, Tag> _liveTags(AppDatabase db) => db.select(db.tags)
+  ..where((t) => t.deleted.equals(false))
+  ..orderBy([(t) => OrderingTerm.asc(t.sortOrder), (t) => OrderingTerm.asc(t.name)]);
+
+List<String> _names(List<Tag> rows) => parseTags(formatTags(rows.map((r) => r.name)));
 
 /// The colour that marks [priority]: red for high, orange for medium, blue for low, as in TickTick. Null for none.
 Color? priorityColor(Priority priority) => switch (priority) {

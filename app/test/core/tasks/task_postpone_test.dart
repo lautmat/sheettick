@@ -167,6 +167,46 @@ void main() {
     });
   });
 
+  group('moving onto any day', () {
+    Future<Task> moveTo(Task t, DateTime? day) async {
+      await moveTasksToDay(writer, [t], day, zone: paris);
+      return reload(t);
+    }
+
+    test('a picked day works the way a named target does: time of day, zone and the start-to-due gap are kept', () async {
+      final timed = await add({'start_at': '2026-11-02T08:00:00+01:00', 'due_at': '2026-11-04T17:00:00+01:00', 'tz': paris});
+      final after = await moveTo(timed, DateTime.utc(2026, 12, 24));
+      expect(after.dueAt, '2026-12-24T17:00:00+01:00');
+      expect(after.startAt, '2026-12-22T08:00:00+01:00');
+      expect(after.tz, paris);
+    });
+
+    test('a day in the past is allowed, and an undated task gets it all day', () async {
+      final dated = await add({'due_at': '2026-11-20', 'all_day': true});
+      expect((await moveTo(dated, DateTime.utc(2026, 11, 1))).dueAt, '2026-11-01');
+      final undated = await add({});
+      final after = await moveTo(undated, DateTime.utc(2027, 3, 9));
+      expect(after.dueAt, '2027-03-09');
+      expect(after.allDay, isTrue);
+    });
+
+    test('a task already on the day is not rewritten, and a closed task is not moved', () async {
+      final onDay = await add({'due_at': '2026-11-12', 'all_day': true});
+      expect((await moveTo(onDay, DateTime.utc(2026, 11, 12))).version, 1);
+      final done = await add({'due_at': '2026-11-05', 'all_day': true, 'status': 2});
+      expect((await moveTo(done, DateTime.utc(2026, 11, 12))).dueAt, '2026-11-05');
+    });
+
+    test('dayChanges and the count agree', () async {
+      final a = await add({'due_at': '2026-11-05', 'all_day': true});
+      final b = await add({'due_at': '2026-12-01', 'all_day': true});
+      final day = DateTime.utc(2026, 12, 1);
+      expect(dayChanges(a, day, zone: paris), isTrue);
+      expect(dayChanges(b, day, zone: paris), isFalse);
+      expect(await moveTasksToDay(writer, [a, b], day, zone: paris), 1);
+    });
+  });
+
   group('overdue', () {
     test('an open task whose due day or time has gone by', () async {
       final yesterday = await add({'due_at': '2026-11-11', 'all_day': true});
