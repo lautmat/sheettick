@@ -31,17 +31,22 @@ List<PopupMenuEntry<String>> postponeMenuEntries(Task task, {required DateTime n
   ];
 }
 
-/// Postpones [tasks] to [target] in one write through the local writer and offers to undo it.
-Future<void> postponeWithUndo(WidgetRef ref, List<Task> tasks, PostponeTarget target) async {
+/// Postpones [tasks] to [target] in one write through the local writer and offers to undo it. Only the tasks it would
+/// change are written and counted. Returns how many that was (0: nothing was written and there is nothing to undo).
+Future<int> postponeWithUndo(WidgetRef ref, List<Task> tasks, PostponeTarget target) async {
   final zone = await ref.read(deviceZoneProvider.future);
-  final one = tasks.length == 1;
+  final now = DateTime.now();
+  final changing = [for (final t in tasks) if (postponeChanges(t, target, now: now, zone: zone)) t];
+  if (changing.isEmpty) return 0;
+  final one = changing.length == 1;
   final label = target == PostponeTarget.noDate
       ? (one ? 'Date removed' : 'Dates removed')
-      : (one ? 'Task postponed' : '${tasks.length} tasks postponed');
+      : (one ? 'Task postponed' : '${changing.length} tasks postponed');
   await changeWithUndo<int>(
     ref,
     label,
-    [for (final t in tasks) (tab: 'tasks', id: t.id)],
-    (writer) => postponeTasks(writer, tasks, target, now: DateTime.now(), zone: zone),
+    [for (final t in changing) (tab: 'tasks', id: t.id)],
+    (writer) => postponeTasks(writer, changing, target, now: now, zone: zone),
   );
+  return changing.length;
 }

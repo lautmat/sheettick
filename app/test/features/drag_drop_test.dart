@@ -12,6 +12,7 @@ import 'package:sheettick/core/db/database.dart';
 import 'package:sheettick/core/providers.dart';
 import 'package:sheettick/core/sync/local_store.dart';
 import 'package:sheettick/core/sync/local_writer.dart';
+import 'package:sheettick/features/tasks/task_drag.dart' show DragAutoScroll;
 
 import '../support/fake_auth_service.dart';
 
@@ -139,6 +140,83 @@ void main() {
     expect(top(tester, a), lessThan(top(tester, b)));
     expect((await row(tester, a)).version, 1);
     expect(find.text('Task reordered'), findsNothing);
+
+    await unmount(tester);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+  testWidgets('holding a dragged task near the bottom edge scrolls the list, so it can be dropped further down',
+      (tester) async {
+    // A phone: tall rows, a short screen, and a list that does not fit.
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await seedInbox(tester);
+    final ids = [
+      for (var i = 0; i < 30; i++) await seedTask(tester, 'Task ${i.toString().padLeft(2, '0')}', {'sort_order': i + 1}),
+    ];
+    await boot(tester);
+    expect(find.byKey(ValueKey(ids[25])), findsNothing, reason: 'it is far below the first screenful');
+    final list = tester.getRect(find.byType(DragAutoScroll));
+    ScrollPosition position() =>
+        tester.state<ScrollableState>(find.descendant(of: find.byType(DragAutoScroll), matching: find.byType(Scrollable))).position;
+    expect(position().pixels, 0);
+
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(ValueKey(ids.first))));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await gesture.moveBy(const Offset(0, 30));
+    await tester.pump();
+    // In the middle of the list nothing scrolls, however long the finger stays.
+    await gesture.moveTo(list.center);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(position().pixels, 0, reason: 'no scrolling away from the edges');
+
+    // Near the bottom edge it scrolls by itself.
+    await gesture.moveTo(Offset(list.center.dx, list.bottom - 20));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(position().pixels, greaterThan(500), reason: 'the list followed the held finger');
+    await gesture.up();
+    await settle(tester);
+
+    expect(find.text('Task reordered'), findsOneWidget);
+    final moved = await row(tester, ids.first);
+    expect(moved.sortOrder, greaterThan((await row(tester, ids[10])).sortOrder), reason: 'it landed far down the list');
+    expect(position().pixels, lessThan(position().maxScrollExtent + 1));
+
+    await unmount(tester);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+  testWidgets('holding a dragged task near the top edge scrolls back up', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await seedInbox(tester);
+    for (var i = 0; i < 30; i++) {
+      await seedTask(tester, 'Task ${i.toString().padLeft(2, '0')}', {'sort_order': i + 1});
+    }
+    await boot(tester);
+    final list = tester.getRect(find.byType(DragAutoScroll));
+    final scrollable = tester.state<ScrollableState>(
+      find.descendant(of: find.byType(DragAutoScroll), matching: find.byType(Scrollable)),
+    );
+    scrollable.position.jumpTo(800);
+    await tester.pump();
+    final before = scrollable.position.pixels;
+
+    final gesture = await tester.startGesture(tester.getCenter(find.text('Task 15')));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await gesture.moveBy(const Offset(0, -30));
+    await tester.pump();
+    await gesture.moveTo(Offset(list.center.dx, list.top + 20));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(scrollable.position.pixels, lessThan(before - 300));
+    await gesture.up();
+    await settle(tester);
 
     await unmount(tester);
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
