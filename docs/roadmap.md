@@ -54,6 +54,7 @@ Issues exist for the items with a number. The rest are broken into issues when t
 - Batch edit (done early, 2026-11-24): hold a task to select, tap to add more; Complete, Today, Tomorrow, Next week,
   No date, Move to list, Priority and Move to Trash on all of them, with one Undo. Dragging on a touch screen now scrolls
   the list at its edges. Still missing: pick any date, add a tag (see `docs/ticktick-gap-analysis.md`).
+- Swipe actions (#69), done: right completes or reopens a row, left offers dates, Move and Trash.
 - Everyday: daily alert (#67), task defaults (#70), duplicate (#71), pin (#74), parent progress and collapse (#72),
   streak and history on repeating tasks (#73).
 - Capture: `capture` tab, so anything that can append a row creates a task (#68) · Android list and quick-add

@@ -35,6 +35,7 @@ import '../tasks/date_labels.dart';
 import '../tasks/postpone_action.dart';
 import '../tasks/selection_bar.dart';
 import '../tasks/skip_action.dart';
+import '../tasks/swipe_actions.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_drag.dart';
@@ -744,6 +745,13 @@ class _TaskTile extends ConsumerWidget {
     }
   }
 
+  /// A left swipe: asks what to do with the task, and does it.
+  Future<void> _swipeChoose(BuildContext context, WidgetRef ref, String? zone) async {
+    final choice = await showSwipeChoices(context, task, now: DateTime.now(), zone: zone, canMove: menu && depth == 0);
+    if (choice == null || !context.mounted) return;
+    await runBulkAction(context, ref, [task], choice);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -773,7 +781,7 @@ class _TaskTile extends ConsumerWidget {
     // A past due is red until the task is done or dropped.
     final overdue = (headline?.overdue ?? false) && task.status == TaskStatus.open.value;
     final primary = Theme.of(context).colorScheme.primary;
-    return ListTile(
+    final tile = ListTile(
       contentPadding: EdgeInsetsDirectional.only(start: 16 + 32.0 * depth, end: 16),
       selected: picked || ref.watch(selectedTaskIdProvider) == task.id,
       selectedTileColor: primary.withValues(alpha: 0.12),
@@ -831,6 +839,15 @@ class _TaskTile extends ConsumerWidget {
               onSelected: (value) => _onMenu(context, ref, value),
               itemBuilder: (_) => menuItems,
             ),
+    );
+    // Swipes are for a finger, on a row that is not being picked for a batch.
+    if (selecting || !isTouchPlatform(context)) return tile;
+    return TaskSwipe(
+      task: task,
+      done: _done,
+      onToggle: () => _toggle(ref, !_done),
+      onChoose: () => _swipeChoose(context, ref, zone),
+      child: tile,
     );
   }
 }
