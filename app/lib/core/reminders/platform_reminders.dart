@@ -159,17 +159,20 @@ Future<void> reminderBackgroundResponse(NotificationResponse response) async {
   DartPluginRegistrant.ensureInitialized();
   final db = AppDatabase.open();
   try {
-    final completed = await completeFromNotification(
-      actionId: response.actionId,
-      payload: response.payload,
-      db: db,
-      writer: await _writerFor(db),
-      now: DateTime.now(),
-      zone: await _deviceZone(),
-    );
-    if (completed != null) {
-      await requestBackgroundSyncSoon();
-      return;
+    // Only Done needs the device id and zone, so a snooze press does not pay for them.
+    if (response.actionId == kDoneActionId) {
+      final completed = await completeFromNotification(
+        actionId: response.actionId,
+        payload: response.payload,
+        db: db,
+        writer: await _writerFor(db),
+        now: DateTime.now(),
+        zone: await _deviceZone(),
+      );
+      if (completed != null) {
+        await requestBackgroundSyncSoon();
+        return;
+      }
     }
     final done = await snoozeFromNotification(
       actionId: response.actionId,
