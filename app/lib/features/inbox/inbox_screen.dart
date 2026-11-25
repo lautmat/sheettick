@@ -37,6 +37,8 @@ import '../tasks/skip_action.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
 import '../tasks/task_drag.dart';
+import '../tasks/task_pane_providers.dart';
+import '../tasks/task_providers.dart';
 import 'inbox_providers.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
@@ -58,9 +60,21 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   Widget build(BuildContext context) {
     final active = ref.watch(activeListProvider);
     final smart = ref.watch(selectedSmartListProvider);
-    final wide = MediaQuery.sizeOf(context).width >= kSidebarBreakpoint;
+    final width = MediaQuery.sizeOf(context).width;
+    final wide = width >= kSidebarBreakpoint;
+    final collapsed = ref.watch(sidebarCollapsedProvider);
+    final selectedId = width >= kSplitBreakpoint ? ref.watch(selectedTaskIdProvider) : null;
+    final selectedTask = selectedId == null ? null : ref.watch(taskProvider(selectedId)).value;
     final screen = Scaffold(
       appBar: AppBar(
+        leading: wide
+            ? IconButton(
+                key: const Key('toggleSidebar'),
+                tooltip: collapsed ? 'Show lists' : 'Hide lists',
+                icon: const Icon(Icons.menu_open),
+                onPressed: () => ref.read(sidebarCollapsedProvider.notifier).toggle(),
+              )
+            : null,
         title: Text(smart?.label ?? _titleOf(active.value)),
         actions: [
           if (smart == null && active.value != null) ...[
@@ -99,15 +113,25 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     if (!wide) return screen;
     return Row(
       children: [
-        SizedBox(
-          width: kSidebarWidth,
-          child: Material(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            child: const SafeArea(right: false, child: ListsSidebar()),
+        if (!collapsed) ...[
+          SizedBox(
+            width: kSidebarWidth,
+            child: Material(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              child: const SafeArea(right: false, child: ListsSidebar()),
+            ),
           ),
-        ),
-        const VerticalDivider(width: 1),
+          const VerticalDivider(width: 1),
+        ],
         Expanded(child: screen),
+        if (selectedTask != null && !selectedTask.deleted) ...[
+          const VerticalDivider(width: 1),
+          SizedBox(
+            key: const Key('taskPane'),
+            width: kTaskPaneWidth,
+            child: TaskDetailScreen(key: ValueKey(selectedTask.id), task: selectedTask, embedded: true),
+          ),
+        ],
       ],
     );
   }
@@ -276,6 +300,7 @@ class _InboxBody extends ConsumerWidget {
     final listNames = {
       for (final l in ref.watch(sidebarListsProvider).value ?? const <TaskList>[]) l.id: l.name,
     };
+    final completedCollapsed = ref.watch(completedCollapsedProvider).value ?? false;
     return Column(
       children: [
         Expanded(
@@ -302,6 +327,7 @@ class _InboxBody extends ConsumerWidget {
                         group: TaskGroup.of(list.groupBy),
                         zone: zone,
                         listNames: listNames,
+                        completedCollapsed: completedCollapsed,
                       ),
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -451,11 +477,28 @@ List<Widget> _rows(
   TaskGroup group = TaskGroup.none,
   String? zone,
   Map<String, String> listNames = const {},
+  bool completedCollapsed = false,
 }) {
+  final known = {for (final s in sections) s.id};
+  // Each block is a top-level task followed by the subtasks under it.
+  final blocks = <List<({Task item, int depth})>>[];
+  for (final row in arrangeTree(items, idOf: (t) => t.id, parentOf: (t) => t.parentId)) {
+    if (row.depth == 0) {
+      blocks.add([row]);
+    } else {
+      blocks.last.add(row);
+    }
+  }
+  // A block whose top-level task is completed, subtasks and all, is shown under "Completed" at the foot of the list.
+  // A subtask still open under an open task stays with it, checked or not.
+  bool isDone(List<({Task item, int depth})> block) => block.first.item.status == TaskStatus.completed.value;
+  final open = [for (final b in blocks) if (!isDone(b)) b];
+  final done = [for (final b in blocks) if (isDone(b)) b];
+
   if (group != TaskGroup.none) {
     // Grouped, the list is shown by group instead of by section, and a task has no place to be moved or indented to.
     final groups = groupRows(
-      arrangeTree(items, idOf: (t) => t.id, parentOf: (t) => t.parentId),
+      [for (final b in open) ...b],
       group,
       now: DateTime.now(),
       zone: zone,
@@ -467,28 +510,19 @@ List<Widget> _rows(
         for (final row in g.rows)
           _TaskTile(key: ValueKey('${g.label}/${row.item.id}'), task: row.item, depth: row.depth, menu: false),
       ],
+      ..._completedRows(done, known: known, collapsed: completedCollapsed, menu: false),
     ];
-  }
-  final known = {for (final s in sections) s.id};
-  // Each block is a top-level task followed by the subtasks under it.
-  final blocks = <List<({Task item, int depth})>>[];
-  for (final row in arrangeTree(items, idOf: (t) => t.id, parentOf: (t) => t.parentId)) {
-    if (row.depth == 0) {
-      blocks.add([row]);
-    } else {
-      blocks.last.add(row);
-    }
   }
   bool inSection(List<({Task item, int depth})> block, String id) => block.first.item.sectionId == id;
 
   final shown = <Object>[
-    for (final b in blocks)
+    for (final b in open)
       if (!known.contains(b.first.item.sectionId)) ...b,
   ];
   for (final s in sections) {
     shown.add(s);
     if (!s.collapsed) {
-      for (final b in blocks.where((b) => inSection(b, s.id))) {
+      for (final b in open.where((b) => inSection(b, s.id))) {
         shown.addAll(b);
       }
     }
@@ -522,7 +556,7 @@ List<Widget> _rows(
     if (entry is Section) {
       above = null;
       section = entry.id;
-      final count = blocks.where((b) => inSection(b, entry.id)).fold(0, (n, b) => n + b.length);
+      final count = open.where((b) => inSection(b, entry.id)).fold(0, (n, b) => n + b.length);
       widgets.add(SectionHeader(section: entry, count: count, firstTaskId: firstIn(entry.id)));
     } else {
       final row = entry as ({Task item, int depth});
@@ -550,7 +584,66 @@ List<Widget> _rows(
           moveTaskTo(ref, dragged, listId: listId, sectionId: sections.isEmpty ? null : sections.last.id),
     ),
   );
+  widgets.addAll(_completedRows(done, known: known, collapsed: completedCollapsed));
   return widgets;
+}
+
+/// The "Completed" heading at the foot of a list, and under it the completed tasks unless it is folded. A completed task
+/// is not dragged: it has no place among the open tasks, so it is brought back by unticking it.
+///
+/// A task keeps its top-level task's section, so Indent and Outdent in its menu leave it where it was.
+List<Widget> _completedRows(
+  List<List<({Task item, int depth})>> done, {
+  required Set<String> known,
+  required bool collapsed,
+  bool menu = true,
+}) {
+  if (done.isEmpty) return const [];
+  final widgets = <Widget>[_CompletedHeader(count: done.length, collapsed: collapsed)];
+  if (collapsed) return widgets;
+  // What a subtask can be indented under is the row above it. The heading breaks the chain.
+  String? above;
+  for (final block in done) {
+    final sectionId = block.first.item.sectionId;
+    final section = known.contains(sectionId) ? sectionId : null;
+    for (final row in block) {
+      widgets.add(
+        _TaskTile(
+          key: ValueKey('completed/${row.item.id}'),
+          task: row.item,
+          depth: row.depth,
+          above: above,
+          section: section,
+          menu: menu,
+        ),
+      );
+      above = row.item.id;
+    }
+  }
+  return widgets;
+}
+
+/// The heading at the foot of a list over its completed tasks, with how many there are. Tapping it folds or unfolds them,
+/// as TickTick does; the choice is kept on this device.
+class _CompletedHeader extends ConsumerWidget {
+  const _CompletedHeader({required this.count, required this.collapsed});
+
+  /// The number of completed top-level tasks.
+  final int count;
+  final bool collapsed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return ListTile(
+      key: const Key('completedHeader'),
+      dense: true,
+      leading: Icon(collapsed ? Icons.chevron_right : Icons.expand_more),
+      title: Text('Completed', style: Theme.of(context).textTheme.titleSmall),
+      trailing: Text('$count', key: const Key('completedCount'), style: TextStyle(color: muted)),
+      onTap: () => ref.read(completedCollapsedProvider.notifier).toggle(),
+    );
+  }
 }
 
 class _TaskTile extends ConsumerWidget {
@@ -666,7 +759,8 @@ class _TaskTile extends ConsumerWidget {
                   ),
               ],
             ),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(task: task))),
+      selected: ref.watch(selectedTaskIdProvider) == task.id,
+      onTap: () => openTask(context, ref, task),
       trailing: menuItems.isEmpty
           ? null
           : PopupMenuButton<String>(
