@@ -28,7 +28,7 @@ Column order in the Sheet follows this document; the app locates columns by head
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last change, set by the writing device. |
 | `version` | integer | Incremented on every change. Higher wins on pull. |
-| `device` | text | Short ID of the device that wrote the row (`win-xxxx`, `and-xxxx`). |
+| `device` | text | Short ID of the device that wrote the row (`win-xxxx`, `and-xxxx`; `gmn-xxxx` for a task completed on the Garmin watch, written by the Apps Script watch endpoint). |
 | `deleted` | boolean | Tombstone. Rows are never removed by the app. |
 
 ## Tabs

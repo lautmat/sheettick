@@ -13,6 +13,10 @@ Files expected here (created in phase 0, from the Google Cloud console):
 | `dart_defines_android.json` | Hand-made, one key: `{ "WEB_CLIENT_ID": "<the id in web_client.txt>" }`. Use it for Android builds so the Windows client secret is not compiled into the APK. |
 | `test_sheet_id.txt` | Spreadsheet ID of the throwaway test Sheet used by integration tests. |
 
+Two secrets live outside this folder, because their own tools need them where they are. Both are git-ignored and both
+are written by `node tools/watch_secrets.mjs`: `apps-script/WatchSecret.js` (clasp pushes it) and
+`garmin/secrets/Secrets.mc` (the watch build reads it). See `garmin/README.md`.
+
 ## Running with sign-in
 
 The app reads the client IDs at build time, so pass the generated file to Flutter:

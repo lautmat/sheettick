@@ -69,7 +69,7 @@ Issues exist for the items with a number. The rest are broken into issues when t
 ## P3 — Polish (weeks 10–12)
 Timeline, year heatmap, templates · Drive attachments · desktop sticky widgets, more Android widgets ·
 constant reminder and full-screen reminders · themes, app lock ·
-Apps Script nightly archive/compaction · MSIX installer and signed APK.
+Apps Script nightly archive/compaction · MSIX installer and signed APK · Garmin watch glance (#107).
 
 **Exit:** installable builds kept for good.
 

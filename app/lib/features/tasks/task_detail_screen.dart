@@ -15,6 +15,7 @@ import 'notes_field.dart';
 import 'postpone_action.dart';
 import 'skip_action.dart';
 import 'task_attributes.dart';
+import 'task_pane_providers.dart';
 import 'task_providers.dart';
 
 /// One task on its own page: its title and Markdown notes, its priority and tags, its status, and Delete.
@@ -23,10 +24,13 @@ import 'task_providers.dart';
 /// tags are saved as they change. A field the user did
 /// not change is never written, so a change that came from the Sheet while the page was open is not overwritten.
 class TaskDetailScreen extends ConsumerStatefulWidget {
-  const TaskDetailScreen({super.key, required this.task});
+  const TaskDetailScreen({super.key, required this.task, this.embedded = false});
 
   /// The task as the page opened. Its title and notes are the first saved baseline.
   final Task task;
+
+  /// True when shown in the pane beside the list: closing clears the selection instead of popping a route.
+  final bool embedded;
 
   @override
   ConsumerState<TaskDetailScreen> createState() => _TaskDetailScreenState();
@@ -42,8 +46,23 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   String get _id => widget.task.id;
 
+  late final Future<void> Function() _flushHook = _saveEdits;
+  TaskPaneFlush? _flush;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.embedded) {
+      final flush = ref.read(taskPaneFlushProvider);
+      flush.run = _flushHook;
+      _flush = flush;
+    }
+  }
+
   @override
   void dispose() {
+    // The pane that replaces this one has registered itself by now; only clear our own hook.
+    if (_flush != null && identical(_flush!.run, _flushHook)) _flush!.run = null;
     _title.dispose();
     _notes.dispose();
     super.dispose();
@@ -69,7 +88,12 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   /// Saves the edits, then leaves the page. Pass [save] false to drop them, as after a delete.
   Future<void> _close({bool save = true}) async {
     if (save) await _saveEdits();
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    if (widget.embedded) {
+      ref.read(selectedTaskIdProvider.notifier).select(null);
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   /// Saves the edits first, so none are lost, then sets the status. The page stays open to show the change.
@@ -140,13 +164,21 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     final wontDo = task.status == TaskStatus.wontDo.value;
 
     return PopScope(
-      canPop: false,
+      canPop: widget.embedded,
       onPopInvokedWithResult: (didPop, _) async {
         if (!didPop) await _close();
       },
       child: Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: !widget.embedded,
           actions: [
+            if (widget.embedded)
+              IconButton(
+                key: const Key('taskPaneClose'),
+                tooltip: 'Close',
+                icon: const Icon(Icons.close),
+                onPressed: _close,
+              ),
             IconButton(
               key: const Key('taskCompleteToggle'),
               tooltip: done ? 'Reopen' : 'Complete',
