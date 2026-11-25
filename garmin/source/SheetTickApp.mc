@@ -18,7 +18,7 @@ class SheetTickApp extends Application.AppBase {
     //! fetches.
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
         TodayApi.keepFetching();
-        var menu = new TodayMenu();
+        var menu = new TodayMenu(0, null);
         _menu = menu;
         menu.refresh();
         return [menu, new TodayMenuDelegate(menu)];

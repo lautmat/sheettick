@@ -25,6 +25,11 @@ module TodayApi {
         call({"a" => "today", "tzo" => System.getClockTime().timeZoneOffset}, callback);
     }
 
+    //! Fetches one task's list, notes and checklist for the details screen.
+    function fetchTask(id as String, callback as Reply) as Void {
+        call({"a" => "task", "id" => id}, callback);
+    }
+
     //! Completes the task [id], which the watch saw at [version].
     function markDone(id as String, version as Number, callback as Reply) as Void {
         call({"a" => "done", "id" => id, "ver" => version, "dev" => deviceTag()}, callback);
@@ -56,6 +61,20 @@ module TodayApi {
 
     function isOk(code as Number, data as Dictionary or String or Null) as Boolean {
         return code == 200 && data instanceof Dictionary && data["ok"] == true;
+    }
+
+    //! True when a call to mark a task done may work if tried again: no reply, or the server was busy. A clear answer
+    //! (done, already done, changed elsewhere, gone, repeats) is final.
+    function retryable(code as Number, data as Dictionary or String or Null) as Boolean {
+        if (code != 200 || !(data instanceof Dictionary)) {
+            return true;
+        }
+        if (data["ok"] == true) {
+            return false;
+        }
+        var err = data["err"];
+        return !("changed".equals(err) || "missing".equals(err) || "deleted".equals(err) || "not open".equals(err)
+            || "repeats".equals(err));
     }
 
     //! A few words on why a call failed.
@@ -92,5 +111,39 @@ module TodayApi {
             return "0000";
         }
         return id.substring(0, 4) as String;
+    }
+}
+
+//! Sends the completions kept while the phone was out of reach (Today.pending), one at a time, then calls [then]. It
+//! stops at the first one that gets no clear answer and leaves the rest for next time. One that is refused (changed
+//! elsewhere, gone) is dropped, so the task shows again on the list.
+(:background)
+class Outbox {
+    private var _then as Method() as Void;
+    private var _id as String? = null;
+
+    function initialize(then as Method() as Void) {
+        _then = then;
+    }
+
+    function start() as Void {
+        var q = Today.pending();
+        if (q.size() == 0) {
+            _then.invoke();
+            return;
+        }
+        var id = q[0]["id"] as String;
+        _id = id;
+        TodayApi.markDone(id, q[0]["v"] as Number, method(:onSent));
+    }
+
+    function onSent(code as Number, data as Dictionary or String or Null) as Void {
+        var id = _id;
+        if (id == null || TodayApi.retryable(code, data)) {
+            _then.invoke();
+            return;
+        }
+        Today.unqueue(id);
+        start();
     }
 }

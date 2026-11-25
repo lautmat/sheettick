@@ -4,6 +4,7 @@
 //
 //   ?k=<token>&a=today&tzo=<watch UTC offset in seconds>        today's tasks (see watchToday in Today.js)
 //   ?k=<token>&a=done&id=<task id>&ver=<version seen>&dev=<4 hex> complete a task (see planDone in Today.js)
+//   ?k=<token>&a=task&id=<task id>                                one task's notes and checklist (watchDetail)
 //
 // The token lives in WatchSecret.js, which is git-ignored and pushed by clasp (tools/watch_secrets.mjs writes it).
 // Both actions are GET: Apps Script answers through a redirect, and a GET is what every client follows. `done` is
@@ -17,6 +18,7 @@ function doGet(e) {
   if (!tokenOk(p.k, expected)) return json_({ ok: false, err: 'auth' });
   try {
     if (p.a === 'done') return json_(completeFromWatch_(p));
+    if (p.a === 'task') return json_(taskForWatch_(p));
     return json_(watchToday(readTasks_().rows, Date.now(), Number(p.tzo) || 0));
   } catch (err) {
     console.error(err && err.stack ? err.stack : err);
@@ -58,9 +60,27 @@ function completeFromWatch_(p) {
   }
 }
 
+function taskForWatch_(p) {
+  var find = function (rows, id) {
+    for (var i = 0; i < rows.length; i++) if (String(rows[i].id) === String(id)) return rows[i];
+    return null;
+  };
+  var task = find(readTasks_().rows, p.id);
+  if (!task) return watchDetail(null, null, []);
+  return watchDetail(task, find(readTab_('lists', true).rows, task.list_id), readTab_('checklist', true).rows);
+}
+
 function readTasks_() {
-  var sheet = SpreadsheetApp.getActive().getSheetByName(TASKS_TAB);
-  if (!sheet) throw new Error('No ' + TASKS_TAB + ' tab');
+  return readTab_(TASKS_TAB, false);
+}
+
+/** A tab's rows keyed by header. A missing tab throws, or reads as empty when `optional`. */
+function readTab_(name, optional) {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(name);
+  if (!sheet) {
+    if (optional) return { sheet: null, header: [], rows: [] };
+    throw new Error('No ' + name + ' tab');
+  }
   var values = sheet.getDataRange().getValues();
   return {
     sheet: sheet,

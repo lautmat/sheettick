@@ -34,8 +34,17 @@ class TodayGlance extends WatchUi.GlanceView {
                 if (lateCount > 0) {
                     late = " · " + lateCount + " late";
                 }
-                line = tasks[0]["ti"] as String;
+                var next = Today.next(tasks) as Dictionary;
+                line = next["ti"] as String;
+                if (next["dd"] == 0 && (next["t"] as Number) >= 0) {
+                    line = Today.clockText(next["t"] as Number) + " " + line;
+                }
             }
+        }
+        var stale = "";
+        var seconds = Today.ageSeconds();
+        if (seconds != null && seconds >= 3600) {
+            stale = Today.age() + " · ";
         }
 
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
@@ -44,8 +53,14 @@ class TodayGlance extends WatchUi.GlanceView {
             dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
             dc.drawText(dc.getTextWidthInPixels(heading, font), top, font, late, justify);
         }
+        var x = 0;
+        if (!stale.equals("")) {
+            dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(0, bottom, font, stale, justify);
+            x = dc.getTextWidthInPixels(stale, font);
+        }
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(0, bottom, font, fit(dc, line, font, width), justify);
+        dc.drawText(x, bottom, font, fit(dc, line, font, width - x), justify);
     }
 
     //! [text] cut with "..." to fit in [width] pixels.
