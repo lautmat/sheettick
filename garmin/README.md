@@ -23,7 +23,9 @@ A Connect IQ watch app for the Forerunner 255 (all four variants: `fr255`, `fr25
 
 Reminders are not part of this app. The Android app's reminder notifications already reach the watch through Garmin
 Connect's smart notifications. Turn on SheetTick under Garmin Connect → device → Notifications & Alerts → App
-Notifications, and Smart Notifications on the watch.
+Notifications, and Smart Notifications on the watch. A reminder's buttons show on the watch too: **Done** completes the
+task on the phone (a repeating task moves on to its next round, as in the app), and **Snooze 10 min** / **Snooze 1
+hour** snooze it.
 
 ## How it works
 

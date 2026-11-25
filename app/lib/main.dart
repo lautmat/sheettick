@@ -10,6 +10,7 @@ import 'core/desktop/platform_desktop_shell.dart';
 import 'core/providers.dart';
 import 'core/reminders/platform_reminders.dart';
 import 'core/sync/background_sync_entry.dart';
+import 'core/sync/sync_controller.dart';
 import 'features/desktop/desktop_providers.dart';
 import 'features/reminders/reminders_providers.dart';
 
@@ -33,6 +34,7 @@ Future<void> main(List<String> args) async {
           final scheduler = PlatformReminderScheduler(
             ref.watch(appDatabaseProvider),
             onSnoozed: () => ref.read(planRevisionProvider.notifier).bump(),
+            onCompleted: () => ref.read(syncControllerProvider.notifier).requestSoon(),
           );
           ref.onDispose(scheduler.dispose);
           return scheduler;
