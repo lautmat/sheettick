@@ -1,3 +1,7 @@
 <drawables>
     <bitmap id="LauncherIcon" filename="launcher_icon.png"/>
+    <bitmap id="PrioHigh" filename="prio_high.png" dithering="none"/>
+    <bitmap id="PrioMedium" filename="prio_medium.png" dithering="none"/>
+    <bitmap id="PrioLow" filename="prio_low.png" dithering="none"/>
+    <bitmap id="PrioNone" filename="prio_none.png" dithering="none"/>
 </drawables>

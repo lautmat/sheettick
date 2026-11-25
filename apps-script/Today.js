@@ -78,11 +78,65 @@ function watchMoment(row, tzoSec) {
   return { wall: p.wall - p.offset * 60000 + tzoSec * 1000, timed: true };
 }
 
-/** The title as the watch shows it: one line, at most WATCH_TITLE_MAX characters. */
-function watchTitle(value) {
+/** The title as the watch shows it: one line, at most `max` characters (WATCH_TITLE_MAX by default). */
+function watchTitle(value, max) {
+  var limit = max || WATCH_TITLE_MAX;
   var title = String(value === null || value === undefined ? '' : value).replace(/\s+/g, ' ').trim();
   if (!title) return '(untitled)';
-  return title.length > WATCH_TITLE_MAX ? title.slice(0, WATCH_TITLE_MAX - 3).trimEnd() + '...' : title;
+  return title.length > limit ? title.slice(0, limit - 3).trimEnd() + '...' : title;
+}
+
+var WATCH_DETAIL_TITLE_MAX = 120;
+var WATCH_NOTES_MAX = 1200;
+var WATCH_CHECKLIST_MAX = 25;
+
+/**
+ * Markdown notes as plain text for the watch: links and images keep their text, headings, quotes, emphasis and code
+ * marks go, bullets read `- ` and task items `[ ] ` / `[x] `. Cut at WATCH_NOTES_MAX characters.
+ */
+function plainNotes(value) {
+  var s = cellText(value).replace(/\r\n?/g, '\n');
+  s = s.replace(/^\s*```[^\n]*$/gm, '');
+  s = s.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');
+  s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+  s = s.replace(/^\s{0,3}#{1,6}\s+/gm, '');
+  s = s.replace(/^\s{0,3}>\s?/gm, '');
+  s = s.replace(/^(\s*)[-*+]\s+\[([ xX])\]\s+/gm, function (m, indent, mark) {
+    return indent + (mark === ' ' ? '[ ] ' : '[x] ');
+  });
+  s = s.replace(/^(\s*)[*+]\s+/gm, '$1- ');
+  s = s.replace(/(\*\*|__)(\S(?:.*?\S)?)\1/g, '$2');
+  s = s.replace(/(^|[\s(])[*_](\S(?:[^*_\n]*?\S)?)[*_](?=[\s).,!?:;]|$)/gm, '$1$2');
+  s = s.replace(/~~(.+?)~~/g, '$1');
+  s = s.replace(/`([^`\n]+)`/g, '$1');
+  s = s.replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n').trim();
+  return s.length > WATCH_NOTES_MAX ? s.slice(0, WATCH_NOTES_MAX - 3).trimEnd() + '...' : s;
+}
+
+/**
+ * One task for the watch's details screen: {ok, id, ti, ls, c, cl, ncl, p, r, v}. `ls` is its list's name, `c` its
+ * notes as plain text, `cl` its checklist (each {ti, s}, `s` 1 when ticked) in order, cut at WATCH_CHECKLIST_MAX, and
+ * `ncl` how many items it has in all. {ok: false, err: 'missing'} when the task is gone.
+ */
+function watchDetail(task, list, checklistRows) {
+  if (!task || isTrue(task.deleted)) return { ok: false, err: 'missing' };
+  var items = (checklistRows || [])
+    .filter(function (r) { return r && String(r.task_id) === String(task.id) && !isTrue(r.deleted); })
+    .sort(function (a, b) { return (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0); });
+  return {
+    ok: true,
+    id: String(task.id),
+    ti: watchTitle(task.title, WATCH_DETAIL_TITLE_MAX),
+    ls: list && !isTrue(list.deleted) ? watchTitle(list.name) : '',
+    c: plainNotes(task.content),
+    cl: items.slice(0, WATCH_CHECKLIST_MAX).map(function (r) {
+      return { ti: watchTitle(r.title, 60), s: Number(r.status) === 2 ? 1 : 0 };
+    }),
+    ncl: items.length,
+    p: Number(task.priority) || 0,
+    r: cellText(task.rrule).trim() ? 1 : 0,
+    v: Number(task.version) || 0,
+  };
 }
 
 /**
@@ -186,6 +240,6 @@ function tokenOk(given, expected) {
 if (typeof module !== 'undefined') {
   module.exports = {
     WATCH_MAX_TASKS, WATCH_TITLE_MAX, cellText, isTrue, parseDateCell, watchMoment, watchTitle, watchToday, formatUtc,
-    watchDevice, planDone, rowsFromValues, tokenOk,
+    watchDevice, planDone, rowsFromValues, tokenOk, plainNotes, watchDetail, WATCH_NOTES_MAX, WATCH_CHECKLIST_MAX,
   };
 }

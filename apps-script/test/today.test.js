@@ -142,3 +142,71 @@ test('rows by header, device ids and tokens', () => {
   assert.equal(tokenOk('short', 'short'), false); // a token that short is never accepted
   assert.equal(tokenOk('', ''), false);
 });
+
+const { plainNotes, watchDetail, WATCH_NOTES_MAX, WATCH_CHECKLIST_MAX } = require('../Today.js');
+
+test('notes lose their Markdown but keep their text', () => {
+  const md = [
+    '# Plan',
+    '',
+    'Call **Dr Lee** at _9am_, see [the site](https://example.com) and `ref 12`.',
+    '> quoted',
+    '* one',
+    '+ two',
+    '- [ ] open item',
+    '- [x] done item',
+    '```js',
+    'code_here()',
+    '```',
+    'snake_case_name stays',
+    '',
+    '',
+    '',
+    'end',
+  ].join('\r\n');
+  assert.equal(plainNotes(md), [
+    'Plan',
+    '',
+    'Call Dr Lee at 9am, see the site and ref 12.',
+    'quoted',
+    '- one',
+    '- two',
+    '[ ] open item',
+    '[x] done item',
+    '',
+    'code_here()',
+    '',
+    'snake_case_name stays',
+    '',
+    'end',
+  ].join('\n'));
+  assert.equal(plainNotes(''), '');
+  assert.equal(plainNotes(null), '');
+  const long = plainNotes('word '.repeat(1000));
+  assert.equal(long.length, WATCH_NOTES_MAX);
+  assert.ok(long.endsWith('...'));
+});
+
+test('a task for the details screen: list name, notes, checklist in order', () => {
+  const t = task({ title: 'Pay rent', list_id: 'L1', content: '**Before** Friday', priority: 5, version: 3 });
+  const list = { id: 'L1', name: 'Home' };
+  const items = [
+    { id: 'c2', task_id: 'Pay rent', title: 'Transfer', status: 0, sort_order: 2 },
+    { id: 'c1', task_id: 'Pay rent', title: 'Check amount', status: 2, sort_order: 1 },
+    { id: 'c3', task_id: 'Pay rent', title: 'Gone', status: 0, sort_order: 3, deleted: true },
+    { id: 'c4', task_id: 'other', title: 'Not mine', status: 0, sort_order: 0 },
+  ];
+  assert.deepEqual(watchDetail(t, list, items), {
+    ok: true, id: 'Pay rent', ti: 'Pay rent', ls: 'Home', c: 'Before Friday',
+    cl: [{ ti: 'Check amount', s: 1 }, { ti: 'Transfer', s: 0 }], ncl: 2, p: 5, r: 0, v: 3,
+  });
+  assert.equal(watchDetail(task({ title: 'x', rrule: 'RRULE:FREQ=DAILY' }), null, []).r, 1);
+  assert.equal(watchDetail(task({ title: 'x' }), null, []).ls, '');
+  assert.deepEqual(watchDetail(null, null, []), { ok: false, err: 'missing' });
+  assert.deepEqual(watchDetail(task({ title: 'x', deleted: true }), null, []), { ok: false, err: 'missing' });
+  const many = Array.from({ length: WATCH_CHECKLIST_MAX + 5 }, (_, i) => ({ task_id: 'x', title: 'i' + i, sort_order: i }));
+  const d = watchDetail(task({ title: 'x' }), null, many);
+  assert.equal(d.cl.length, WATCH_CHECKLIST_MAX);
+  assert.equal(d.ncl, WATCH_CHECKLIST_MAX + 5);
+  assert.equal(watchDetail(task({ title: 'y'.repeat(200) }), null, []).ti.length, 120);
+});

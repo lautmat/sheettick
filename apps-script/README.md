@@ -43,7 +43,8 @@ takes the first snapshot at once.
 ## Watch endpoint (#107)
 
 `doGet` in `WebApp.js` serves the SheetTick app on a Garmin watch (`garmin/README.md`): today's tasks
-(`?a=today&tzo=<offset>`) and completing one (`?a=done&id=…&ver=…&dev=…`). Every call needs `k=<token>`, compared with
+(`?a=today&tzo=<offset>`), one task's notes and checklist for the details screen (`?a=task&id=…`), and completing
+a task (`?a=done&id=…&ver=…&dev=…`). Every call needs `k=<token>`, compared with
 `WATCH_TOKEN` in `WatchSecret.js`. That file is git-ignored, but clasp pushes it. `node tools/watch_secrets.mjs` writes
 it, and the same token goes into the watch app. The logic is in `Today.js` with no Apps Script calls, tested from Node
 like `Retention.js`.
