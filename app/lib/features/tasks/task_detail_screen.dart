@@ -146,10 +146,13 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       ),
     );
     if (confirmed != true) return;
+    // Read again: the subtasks may have changed (a sync, the other pane) while the question was open, and Undo must
+    // cover exactly the rows the delete takes.
+    final rows = [for (final id in await withSubtasks(writer, [_id])) (tab: 'tasks', id: id)];
     await changeWithUndo<int>(
       ref,
       'Task moved to Trash',
-      [for (final id in ids) (tab: 'tasks', id: id)],
+      rows,
       (writer) => trashTasks(writer, [_id]),
     );
     await _close(save: false);
