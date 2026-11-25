@@ -53,17 +53,20 @@ Issues exist for the items with a number. The rest are broken into issues when t
 - Views: Eisenhower matrix, Kanban, calendar (day/week/month), custom filters, notes.
 - Batch edit (done early, 2026-11-24): hold a task to select, tap to add more; Complete, Today, Tomorrow, Next week,
   No date, Move to list, Priority and Move to Trash on all of them, with one Undo. Dragging on a touch screen now scrolls
-  the list at its edges. Still missing: pick any date, add a tag (see `docs/ticktick-gap-analysis.md`).
-- Swipe actions (#69), done: right completes or reopens a row, left offers dates, Move and Trash.
+  the list at its edges. Still missing: pick any date, add a tag (#110; see `docs/ticktick-gap-analysis.md`).
+- Swipe actions (#69, PR #117), done: right completes or reopens a row, left offers dates, Move and Trash.
 - Everyday: daily alert (#67), task defaults (#70), duplicate (#71), pin (#74), parent progress and collapse (#72),
   streak and history on repeating tasks (#73).
 - Capture: `capture` tab, so anything that can append a row creates a task (#68) · Android list and quick-add
-  widgets, QS tiles, share target and select-text action, voice input, swipe actions (#69).
-- Windows: keyboard shortcuts.
+  widgets, QS tiles and voice input (#121) · share target and select-text action (#120).
+- Windows: keyboard shortcuts (#126).
 - Search over checklist items, with filters (#75) · sort by modified date and tag (#76).
 - Low priority: tag sidebar, colour, rename and nesting (#77) · duration and time zone for timed tasks (#78).
 - In the Sheet: `Stats` tab built from formulas (#79), instead of in-app statistics.
 - Research: targeted REA pass on Android settings and recurrence code (#80).
+- Gap-analysis follow-ups: quick-add chips (#111), task-row details (#112), notification actions (#113), lazy rows
+  (#114), Sheet compaction pulled forward (#115), screen-reader reordering (#116), sync log and crash reporter (#122),
+  French interface (#123), gesture integration test (#124), drag onto Today/Tomorrow (#125).
 
 **Exit:** every weekly-used TickTick feature has an equivalent.
 
