@@ -1,10 +1,14 @@
 name: Build apps
 
-# Manual only: builds the Android APK and the Windows app on GitHub's runners. With the signing key (Android) or the
+# Runs by hand, and automatically for Android on every push to main that touches the app, so each merged change
+# becomes a new release the phone can update to. Builds the Android APK and the Windows app on GitHub's runners. With the signing key (Android) or the
 # OAuth defines (Windows) set as secrets, each build is published as a GitHub release (tags android-N and windows-N), which
 # is what the Obtainium app on the phone watches. Without them it only checks that both apps compile.
 # Secrets it reads: see docs/dev-setup.md. It uses no third-party action beyond the ones the CI already pins.
 on:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/build.yml']
   workflow_dispatch:
     inputs:
       platform:
@@ -22,11 +26,12 @@ permissions:
 
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
   android:
-    if: inputs.platform == 'both' || inputs.platform == 'android'
+    # A push to main has no inputs: it builds Android only.
+    if: github.event_name == 'push' || inputs.platform == 'both' || inputs.platform == 'android'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
