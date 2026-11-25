@@ -95,7 +95,7 @@ countdowns, focus sessions or connected calendars.
 | Drag onto a list in the sidebar | Done on wide screens | On a phone the sidebar is a drawer: use Move |
 | Drag onto Today or Tomorrow in the sidebar | **Not planned** | One line of work on the desktop, since lists already take drops |
 | Drag in smart lists | Not applicable | They are sorted by date, so there is no manual order |
-| Swipe a row to complete or postpone | Planned | #69 |
+| Swipe a row to complete, postpone, move or trash | **Done (#69)** | Right completes or reopens; left offers dates, Move and Trash. Touch screens only |
 
 ## 6. Android
 
@@ -138,8 +138,8 @@ Ordered by the benefit to the owner's actual use, not by how long the work takes
    undated, bulk dating is the most common job. The selection bar already has the structure: a new `BulkAction`.
 3. **Make adding a task possible without typing the date.** A row of chips under the field (Today, Tomorrow, Priority,
    List) that edit the same text the parser reads. The parser stays the single source of truth.
-4. **Swipe actions (#69).** Swipe right to complete, left to postpone to Tomorrow. They need the same helpers the bar
-   uses (`postponeWithUndo`, `setTaskStatus`).
+4. ~~**Swipe actions (#69).**~~ Done: right completes, left offers dates, Move and Trash, through the same helpers as
+   the bar.
 5. **Show more of a task in its row.** Today a row shows the date and tags only. TickTick also shows checklist progress
    (2/5), the subtask count, and small icons for a reminder, a repeat and a note; in smart lists it shows the list
    name. This is what makes a long list scannable on a phone. It pairs with #72.
