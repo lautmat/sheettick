@@ -141,6 +141,7 @@ void main() {
     await start(tester);
 
     await swipe(tester, a, right: false);
+    await animate(tester);
     expect(find.byKey(const Key('swipe-trash')), findsNothing, reason: 'nothing to offer for a done task');
 
     await swipe(tester, a, right: true);
