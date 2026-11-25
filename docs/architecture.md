@@ -18,7 +18,11 @@ flowchart LR
   AS -.-> DR
   G --- AT["Drive folder: attachments"]
   G -.- GS["Optional Apps Script jobs"]
+  GW["Garmin watch app (Connect IQ)"] -.->|"via Garmin Connect, HTTPS"| GS
 ```
+
+The Garmin watch app (`garmin/`) is not a sync client. It reads today's tasks and completes simple ones through the
+Apps Script watch endpoint, which writes the Sheet under the same row rules (see `garmin/README.md`).
 
 ## Components
 | Component | Responsibility |

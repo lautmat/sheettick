@@ -10,6 +10,13 @@ token*.json
 *.jks
 key.properties
 .clasprc.json
+apps-script/WatchSecret.js
+garmin/secrets/*
+!garmin/secrets/README.md
+
+# Garmin Connect IQ build output
+garmin/bin/
+garmin/gen/
 
 # Flutter / Dart
 .dart_tool/

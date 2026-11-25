@@ -13,6 +13,7 @@ Read `docs/architecture.md`, `docs/sheet-schema.md` and `docs/sync-protocol.md` 
 - Recurrence: RFC 5545 RRULE strings (`rrule` package). Dates: ISO 8601 text in the Sheet.
 - Notifications: `flutter_local_notifications` (both platforms). Background sync on Android: WorkManager.
 - Keep business logic (sync, parsing, recurrence) in pure Dart under `app/lib/core/` with unit tests; UI under `app/lib/features/<feature>/`.
+- Garmin watch companion: Connect IQ (Monkey C) in `garmin/`, served by the Apps Script web app in `apps-script/WebApp.js` (logic in `Today.js`, node tests). See `garmin/README.md`.
 
 ## Rules
 - `docs/sheet-schema.md` is canonical. Any column change updates that doc, the drift schema, the sheet bootstrap code and `meta.schema_version` together.

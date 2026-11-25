@@ -24,9 +24,9 @@ clasp push -f                      # -f: the manifest in this folder is the one 
 clasp create-version "<message>"
 ```
 
-The trigger runs the saved code (HEAD), so a push is enough to change what runs; the version is a record. There is no
-web app, hence no deployment to update. `.clasp.json` (script id and the spreadsheet it is bound to) is committed;
-`~/.clasprc.json` is not and never goes in git.
+The trigger runs the saved code (HEAD), so a push is enough to change what runs; the version is a record. The watch
+endpoint below is a web app, which runs a fixed version: see there. `.clasp.json` (script id and the spreadsheet it is
+bound to) is committed; `~/.clasprc.json` is not and never goes in git.
 
 Gotchas, learned the first time:
 - `clasp create --type sheets --parentId <id>` ignores the parent and makes a **new, empty** spreadsheet. To bind to an
@@ -39,6 +39,26 @@ Gotchas, learned the first time:
 A trigger can only be created by running code once with permission. Open the script from the spreadsheet
 (Extensions → Apps Script), choose `installTrigger`, click Run and grant the permissions. It sets the daily trigger and
 takes the first snapshot at once.
+
+## Watch endpoint (#107)
+
+`doGet` in `WebApp.js` serves the SheetTick app on a Garmin watch (`garmin/README.md`): today's tasks
+(`?a=today&tzo=<offset>`) and completing one (`?a=done&id=…&ver=…&dev=…`). Every call needs `k=<token>`, compared with
+`WATCH_TOKEN` in `WatchSecret.js`. That file is git-ignored, but clasp pushes it. `node tools/watch_secrets.mjs` writes
+it, and the same token goes into the watch app. The logic is in `Today.js` with no Apps Script calls, tested from Node
+like `Retention.js`.
+
+- The manifest's `webapp` block: runs as the owner, callable by anyone with the URL (the token is the lock). It needs no
+  scope beyond `spreadsheets.currentonly`, which the script already has.
+- Writes go through `LockService` and touch only the cells that change. Text cells are kept as plain text, so a
+  timestamp never becomes a date serial.
+- One deployment, described "Garmin watch endpoint" (`clasp list-deployments` shows its id). Its URL is kept out of
+  this public repo, in the two secrets files. A web app runs the version it was deployed at, not HEAD, so after a change:
+  ```
+  clasp push -f
+  clasp create-version "<message>"                  # prints version N
+  clasp update-deployment <deployment id> -V N      # same /exec URL, nothing to change on the watch
+  ```
 
 ## Planned (phase 3)
 - **Nightly archive and compaction**: move completed tasks older than a year to an archive spreadsheet,
