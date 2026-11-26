@@ -71,6 +71,11 @@ const _weekdayAbbreviations = {
   'lun': 1, 'mar': 2, 'mer': 3, 'jeu': 4, 'ven': 5, 'sam': 6, 'dim': 7,
 };
 
+/// Abbreviations that are also a name or an everyday word ("Sam", "Mar", "Sat", "Sun", "Dim", "Jeu", "Mer", "Ven").
+/// Before a time, one of these is a day only when it is typed in lower case: "sam 15h" is Saturday, while "Call Sam
+/// 3pm" keeps the name. The other abbreviations are days whatever their case.
+const _nameLikeAbbreviations = {'sam', 'dim', 'mar', 'jeu', 'ven', 'mer', 'lun', 'sat', 'sun', 'wed'};
+
 const _months = {
   'january': 1, 'jan': 1, 'janvier': 1, 'janv': 1, //
   'february': 2, 'feb': 2, 'fevrier': 2, 'fev': 2, 'fevr': 2, //
@@ -423,7 +428,8 @@ class _Parser {
   }
 
   /// A weekday name: the next such day after today. A three-letter abbreviation counts only after a preposition or
-  /// before a time, so "sat" or "mar" in a title is left alone.
+  /// before a time, so "sat" or "mar" in a title is left alone. Before a time, a name-like abbreviation (see
+  /// [_nameLikeAbbreviations]) counts only in lower case, so "Call Sam 3pm" keeps "Sam" in the title.
   DateTime? _readWeekday() {
     final prefix = r'(?:(?:on|next|this|by|le|ce|jusqu a|jusqu au|before|avant)\s+)?';
     final suffix = r'(?:\s+(?:next|prochain|prochaine))?';
@@ -434,7 +440,10 @@ class _Parser {
       word = m?.group(1);
     }
     if (m == null) {
-      m = _find(RegExp(r'\b(' '$_weekdayAbbrWords' r')\b\.?(?=\s*(?:at |a |vers )?\d{1,2}(?::\d{2}|h|\s*(?:am|pm)\b))' '$suffix'));
+      m = _find(
+        RegExp(r'\b(' '$_weekdayAbbrWords' r')\b\.?(?=\s*(?:at |a |vers )?\d{1,2}(?::\d{2}|h|\s*(?:am|pm)\b))' '$suffix'),
+        where: (hit) => !_isNameAsWritten(hit),
+      );
       word = m?.group(1);
     }
     if (m == null || word == null) return null;
@@ -442,6 +451,13 @@ class _Parser {
     var ahead = (target - _today.weekday) % 7;
     if (ahead == 0) ahead = 7;
     return _today.add(Duration(days: ahead));
+  }
+
+  /// Whether the abbreviation matched by [hit] is a name or word written with a capital ("Sam" in "Call Sam 3pm").
+  /// [hit] is a match in the folded text, which has the same positions as the original.
+  bool _isNameAsWritten(RegExpMatch hit) {
+    final first = original[hit.start];
+    return _nameLikeAbbreviations.contains(hit.group(1)) && first != first.toLowerCase();
   }
 
   /// `3pm`, `3:30 pm`, `15:00`, `15h`, `15h30`, `noon`, `midi`, `midnight`, `minuit`.
