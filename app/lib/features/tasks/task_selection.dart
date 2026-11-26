@@ -4,6 +4,7 @@ import '../../core/db/database.dart';
 import '../../core/providers.dart';
 import '../../core/tasks/task_bulk.dart';
 import '../../core/tasks/task_order.dart';
+import '../../core/tasks/task_pin.dart';
 import '../inbox/inbox_providers.dart';
 import '../lists/lists_providers.dart';
 import '../sections/sections_providers.dart';
@@ -54,17 +55,21 @@ final shownTasksProvider = Provider<List<Task>>((ref) {
   if (list == null) return const <Task>[];
   final tasks = ref.watch(listTasksProvider(list.id)).value ?? const <Task>[];
   final ordered = sortTasks(tasks, TaskOrder.of(list.orderBy), zone: ref.watch(deviceZoneProvider).value);
+  // A pinned task is at the head of the list, so folding its section does not hide it.
+  final pinned = underPinned(ordered);
+  List<Task> headed(Set<String> hidden) => [
+    for (final t in ordered)
+      if (pinned.contains(t.id)) t,
+    for (final t in ordered)
+      if (!pinned.contains(t.id) && !hidden.contains(t.id)) t,
+  ];
   // Grouped, a list ignores its sections, so nothing is folded away.
-  if (TaskGroup.of(list.groupBy) != TaskGroup.none) return ordered;
+  if (TaskGroup.of(list.groupBy) != TaskGroup.none) return headed(const {});
   final folded = {
     for (final s in ref.watch(sectionsProvider(list.id)).value ?? const <Section>[])
       if (s.collapsed) s.id,
   };
-  final hidden = hiddenByFolding(ordered, folded);
-  return [
-    for (final t in ordered)
-      if (!hidden.contains(t.id)) t,
-  ];
+  return headed(hiddenByFolding(ordered, folded));
 });
 
 /// The picked tasks that are still on screen, in the order they are shown. A task that left (done, moved, synced away)

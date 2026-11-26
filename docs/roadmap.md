@@ -55,7 +55,7 @@ Issues exist for the items with a number. The rest are broken into issues when t
   No date, Move to list, Priority and Move to Trash on all of them, with one Undo. Dragging on a touch screen now scrolls
   the list at its edges. Still missing: pick any date, add a tag (#110; see `docs/ticktick-gap-analysis.md`).
 - Swipe actions (#69, PR #117), done: right completes or reopens a row, left offers dates, Move and Trash.
-- Everyday: daily alert (#67), task defaults (#70), duplicate (#71), pin (#74), parent progress and collapse (#72),
+- Everyday: daily alert (#67), task defaults (#70), duplicate (#71, done), pin (#74, done), parent progress and collapse (#72),
   streak and history on repeating tasks (#73).
 - Capture: `capture` tab, so anything that can append a row creates a task (#68) · Android list and quick-add
   widgets, QS tiles and voice input (#121) · share target and select-text action (#120).

@@ -229,7 +229,13 @@ void main() {
     await settle(tester);
     await tester.tap(find.byKey(const Key('smart-completed')));
     await settle(tester);
-    expect(find.byKey(Key('taskMenu-${ids['Finished']}')), findsNothing);
+    // It still has a menu (Duplicate), with nothing to postpone it to.
+    await tester.tap(find.byKey(Key('taskMenu-${ids['Finished']}')));
+    await animate(tester);
+    expect(find.text('Duplicate'), findsOneWidget);
+    expect(find.text('Postpone to'), findsNothing);
+    await tester.tapAt(const Offset(5, 5));
+    await animate(tester);
     await unmount(tester);
   });
 }
