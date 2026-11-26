@@ -21,7 +21,12 @@ class QuickAddResult {
     this.tags = const [],
     this.listName,
     this.priority,
+    this.spans = const {},
   });
+
+  /// Where in the input each recognised part was found, so a caller can replace or remove one of them without guessing
+  /// what the parser would have taken. Each list is in text order, and a part that was not found has no entry.
+  final Map<QuickAddPart, List<QuickAddSpan>> spans;
 
   /// The text left once the recognised parts are taken out.
   final String title;
@@ -44,17 +49,25 @@ class QuickAddResult {
   bool get hasFields => !dates.isEmpty || rrule != null || tags.isNotEmpty || listName != null || priority != null;
 }
 
+/// The kinds of part [parseQuickAdd] recognises. The date is split in two: the day (`fri`, `next week`, `nov 12`) and
+/// the time (`3pm`).
+enum QuickAddPart { tag, list, priority, repeat, day, time }
+
+/// The characters `[start, end)` of the input that a part was read from.
+typedef QuickAddSpan = ({int start, int end});
+
 /// Parses [text] as quick-add input.
 ///
 /// [now] is the current wall-clock reading where the dates are shown (see [TaskDates.wallOf]); [zone] is the device's
 /// IANA zone, which timed dates are set in. If nothing is left once the recognised parts are removed, the text is kept
-/// whole as the title and nothing is parsed from it.
-QuickAddResult parseQuickAdd(String input, {required DateTime now, String? zone}) {
+/// whole as the title and nothing is parsed from it, unless [allowEmptyTitle] asks for the parts anyway (the editing
+/// helpers use that, to find a token typed before the title; it is never right for making a task, which needs a title).
+QuickAddResult parseQuickAdd(String input, {required DateTime now, String? zone, bool allowEmptyTitle = false}) {
   // The mark for a taken-out part must not come from the input (pasted text can hold any character).
   final text = input.replaceAll(_gone, ' ');
   final parser = _Parser(text, now, zone);
   final result = parser.run();
-  if (result.title.isEmpty) return QuickAddResult(title: text.trim());
+  if (result.title.isEmpty && !allowEmptyTitle) return QuickAddResult(title: text.trim());
   return result;
 }
 
@@ -133,6 +146,10 @@ class _Parser {
   late List<String> _view;
   late List<bool> _taken;
 
+  /// The part being read, so [_take] can say what each taken-out stretch was.
+  var _part = QuickAddPart.tag;
+  final _spans = <QuickAddPart, List<QuickAddSpan>>{};
+
   String get _text => _view.join();
 
   DateTime get _today => DateTime.utc(now.year, now.month, now.day);
@@ -143,6 +160,7 @@ class _Parser {
       _view[i] = _gone;
       _taken[i] = true;
     }
+    (_spans[_part] ??= []).add((start: start, end: end));
   }
 
   /// The first match of [pattern]; takes it out when [take] and returns the match.
@@ -163,6 +181,7 @@ class _Parser {
     int? priority;
 
     // #tag
+    _part = QuickAddPart.tag;
     final tagPattern = RegExp(r'(?<=^|\s)#([\p{L}\p{N}_\-]+)', unicode: true);
     while (true) {
       final m = _find(tagPattern);
@@ -172,6 +191,7 @@ class _Parser {
     }
 
     // ^list or ^"a list"
+    _part = QuickAddPart.list;
     final listPattern = RegExp(r'(?<=^|\s)\^(?:"([^"]+)"|([\p{L}\p{N}_\-]+))', unicode: true);
     final lm = _find(listPattern);
     if (lm != null) {
@@ -182,7 +202,8 @@ class _Parser {
     }
 
     // !priority
-    final pm = _find(RegExp(r'(?<=^|\s)!(high|medium|med|low|none|haute|haut|moyenne|moyen|basse|bas|faible|[0-3hml])(?=\s|$)'));
+    _part = QuickAddPart.priority;
+    final pm =_find(RegExp(r'(?<=^|\s)!(high|medium|med|low|none|haute|haut|moyenne|moyen|basse|bas|faible|[0-3hml])(?=\s|$)'));
     if (pm != null) priority = _priorityOf(pm.group(1)!);
 
     final recurrence = _readRecurrence();
@@ -203,6 +224,9 @@ class _Parser {
       tags: tags,
       listName: listName,
       priority: priority,
+      spans: {
+        for (final e in _spans.entries) e.key: [...e.value]..sort((a, b) => a.start.compareTo(b.start)),
+      },
     );
   }
 
@@ -225,6 +249,7 @@ class _Parser {
   // ------------------------------------------------------------------------------------------------------ recurrence
 
   _Recurrence? _readRecurrence() {
+    _part = QuickAddPart.repeat;
     // Every weekday / en semaine / jours ouvres.
     var m = _find(RegExp(
       r'\b(?:(?:every|each|tous les|chaque)\s+(?:week\s?days?|work\s?days?|business days?|jours? ouvres?|jours? ouvrables?)|weekdays|en semaine)\b',
@@ -277,6 +302,7 @@ class _Parser {
 
   /// The date and time in the text.
   _When _readWhen(_Recurrence? recurrence) {
+    _part = QuickAddPart.day;
     DateTime? day;
     var dayWasGiven = false;
     ({int hour, int minute})? time;
@@ -351,6 +377,7 @@ class _Parser {
       }
     }
 
+    _part = QuickAddPart.time;
     if (exact == null) time ??= _readTime(followsDate: dayWasGiven);
 
     if (exact != null) {
