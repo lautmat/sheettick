@@ -183,7 +183,7 @@ void main() {
     await tester.pumpWidget(app());
     await settle(tester);
 
-    expect(find.text('#home  #money'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(Key('taskDetails-$id'))).textSpan!.toPlainText(), contains('#home  #money'));
     final box = tester.widget<Checkbox>(find.byKey(Key('taskCheck-$id')));
     expect(box.side?.color, Colors.red.shade600);
     await unmount(tester);
