@@ -104,6 +104,58 @@ void main() {
       }
     });
 
+    test('a name that is also a weekday abbreviation keeps its place in the title, before a time', () {
+      for (final name in ['Sam', 'Dim', 'Mar', 'Jeu', 'Ven', 'Mer', 'Lun', 'Sat', 'Sun', 'Wed']) {
+        final r = parse('Call $name 3pm');
+        expect(r.title, 'Call $name', reason: name);
+        expect(r.dates.due, w(2026, 11, 11, 15), reason: name);
+        expect(r.dates.allDay, isFalse, reason: name);
+      }
+      expect(parse('Call Sam at 3pm').title, 'Call Sam');
+      expect(parse('Call Sam at 3pm').dates.due, w(2026, 11, 11, 15));
+    });
+
+    test('an abbreviation before a time is a day in lower case, or capitalised when it is not a name', () {
+      expect(parse('Dentist Fri 3pm').title, 'Dentist');
+      expect(parse('Dentist Fri 3pm').dates.due, w(2026, 11, 13, 15));
+      expect(parse('Appeler sam 15h').title, 'Appeler');
+      expect(parse('Appeler sam 15h').dates.due, w(2026, 11, 14, 15));
+      expect(parse('call Sam fri 3pm').title, 'call Sam');
+      expect(parse('call Sam fri 3pm').dates.due, w(2026, 11, 13, 15));
+      expect(parse('Gym on sat').title, 'Gym');
+      expect(parse('Gym on sat').dates.due, w(2026, 11, 14));
+    });
+
+    test('after a preposition, or written in full, a name-like day still counts', () {
+      expect(parse('Dentist on Sat 10am').title, 'Dentist');
+      expect(parse('Dentist on Sat 10am').dates.due, w(2026, 11, 14, 10));
+      expect(parse('Call Sam on sat').title, 'Call Sam');
+      expect(parse('Call Sam on sat').dates.due, w(2026, 11, 14));
+      expect(parse('Dentist Saturday 10am').title, 'Dentist');
+      expect(parse('Dentist Saturday 10am').dates.due, w(2026, 11, 14, 10));
+    });
+
+    test('a name typed in lower case before a time is read as the day: the capital is what marks a name', () {
+      // A known limit: "call sam 3pm" is Saturday at 15:00. Name it with a capital, or write "saturday".
+      expect(parse('call sam 3pm').dates.due, w(2026, 11, 14, 15));
+    });
+
+    test('a name-like day that is the first word of the field is a day, whatever its case', () {
+      // A phone keyboard capitalises the first word, so "sam 15h" typed first arrives as "Sam 15h".
+      expect(parse('Sam 15h rapport').title, 'rapport');
+      expect(parse('Sam 15h rapport').dates.due, w(2026, 11, 14, 15));
+      expect(parse('  Sat 10am dentist').title, 'dentist');
+      expect(parse('  Sat 10am dentist').dates.due, w(2026, 11, 14, 10));
+      // A trade-off: a name typed first, before a time, reads as the day.
+      expect(parse('Sam 3pm call Mom').dates.due, w(2026, 11, 14, 15));
+      expect(parse('Sam 3pm call Mom').title, 'call Mom');
+    });
+
+    test('a name after the first word stays a name before a time', () {
+      expect(parse('Call Sam 15h rapport').title, 'Call Sam rapport');
+      expect(parse('Call Sam 15h rapport').dates.due, w(2026, 11, 11, 15));
+    });
+
     test('in N days, weeks, months', () {
       expect(parse('Pay in 3 days').dates.due, w(2026, 11, 14));
       expect(parse('Pay in 3 days').title, 'Pay');
