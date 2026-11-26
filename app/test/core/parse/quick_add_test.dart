@@ -140,6 +140,22 @@ void main() {
       expect(parse('call sam 3pm').dates.due, w(2026, 11, 14, 15));
     });
 
+    test('a name-like day that is the first word of the field is a day, whatever its case', () {
+      // A phone keyboard capitalises the first word, so "sam 15h" typed first arrives as "Sam 15h".
+      expect(parse('Sam 15h rapport').title, 'rapport');
+      expect(parse('Sam 15h rapport').dates.due, w(2026, 11, 14, 15));
+      expect(parse('  Sat 10am dentist').title, 'dentist');
+      expect(parse('  Sat 10am dentist').dates.due, w(2026, 11, 14, 10));
+      // A trade-off: a name typed first, before a time, reads as the day.
+      expect(parse('Sam 3pm call Mom').dates.due, w(2026, 11, 14, 15));
+      expect(parse('Sam 3pm call Mom').title, 'call Mom');
+    });
+
+    test('a name after the first word stays a name before a time', () {
+      expect(parse('Call Sam 15h rapport').title, 'Call Sam rapport');
+      expect(parse('Call Sam 15h rapport').dates.due, w(2026, 11, 11, 15));
+    });
+
     test('in N days, weeks, months', () {
       expect(parse('Pay in 3 days').dates.due, w(2026, 11, 14));
       expect(parse('Pay in 3 days').title, 'Pay');

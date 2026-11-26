@@ -72,8 +72,9 @@ const _weekdayAbbreviations = {
 };
 
 /// Abbreviations that are also a name or an everyday word ("Sam", "Mar", "Sat", "Sun", "Dim", "Jeu", "Mer", "Ven").
-/// Before a time, one of these is a day only when it is typed in lower case: "sam 15h" is Saturday, while "Call Sam
-/// 3pm" keeps the name. The other abbreviations are days whatever their case.
+/// Before a time, one of these is a day only when it is typed in lower case, or is the first word of the field (a phone
+/// keyboard capitalises that word): "sam 15h" is Saturday, while "Call Sam 3pm" keeps the name. The other abbreviations
+/// are days whatever their case.
 const _nameLikeAbbreviations = {'sam', 'dim', 'mar', 'jeu', 'ven', 'mer', 'lun', 'sat', 'sun', 'wed'};
 
 const _months = {
@@ -429,7 +430,7 @@ class _Parser {
 
   /// A weekday name: the next such day after today. A three-letter abbreviation counts only after a preposition or
   /// before a time, so "sat" or "mar" in a title is left alone. Before a time, a name-like abbreviation (see
-  /// [_nameLikeAbbreviations]) counts only in lower case, so "Call Sam 3pm" keeps "Sam" in the title.
+  /// [_nameLikeAbbreviations]) counts in lower case or as the first word of the field, so "Call Sam 3pm" keeps "Sam".
   DateTime? _readWeekday() {
     final prefix = r'(?:(?:on|next|this|by|le|ce|jusqu a|jusqu au|before|avant)\s+)?';
     final suffix = r'(?:\s+(?:next|prochain|prochaine))?';
@@ -454,10 +455,14 @@ class _Parser {
   }
 
   /// Whether the abbreviation matched by [hit] is a name or word written with a capital ("Sam" in "Call Sam 3pm").
-  /// [hit] is a match in the folded text, which has the same positions as the original.
+  /// [hit] is a match in the folded text, which has the same positions as the original. The first word of the field
+  /// is not judged by its case: a phone keyboard capitalises it, so "sam 15h" typed first arrives as "Sam 15h".
   bool _isNameAsWritten(RegExpMatch hit) {
+    if (!_nameLikeAbbreviations.contains(hit.group(1))) return false;
+    final firstWord = original.length - original.trimLeft().length;
+    if (hit.start == firstWord) return false;
     final first = original[hit.start];
-    return _nameLikeAbbreviations.contains(hit.group(1)) && first != first.toLowerCase();
+    return first != first.toLowerCase();
   }
 
   /// `3pm`, `3:30 pm`, `15:00`, `15h`, `15h30`, `noon`, `midi`, `midnight`, `minuit`.
