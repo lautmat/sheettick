@@ -4,11 +4,16 @@ import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/foundation.dart' show VoidCallback, debugPrint;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tzdb;
 
 import '../db/database.dart';
+import '../sync/background_sync_entry.dart' show requestBackgroundSyncSoon;
+import '../sync/local_store.dart';
+import '../sync/local_writer.dart';
 import '../time.dart';
 import 'alarm_reminder_scheduler.dart';
+import 'notification_done.dart';
 import 'reminder_planner.dart';
 import 'reminder_scheduler.dart';
 import 'snooze.dart';
@@ -23,12 +28,15 @@ const _androidSettings = InitializationSettings(android: AndroidInitializationSe
 /// (see [PollingReminderScheduler] for why). Set up on first use. If the platform cannot do it, reminders are simply
 /// not shown and nothing else is affected.
 ///
-/// Pressing a snooze button on a notification records the snooze and calls [onSnoozed], so the plan is made again.
+/// Each notification has a Done button and snooze buttons. Pressing a snooze button records the snooze and calls
+/// [onSnoozed], so the plan is made again. Pressing Done completes the task ([completeFromNotification]) and calls
+/// [onCompleted], so the change is synced.
 class PlatformReminderScheduler implements ReminderScheduler {
-  PlatformReminderScheduler(this._db, {this.onSnoozed});
+  PlatformReminderScheduler(this._db, {this.onSnoozed, this.onCompleted});
 
   final AppDatabase _db;
   final VoidCallback? onSnoozed;
+  final VoidCallback? onCompleted;
   Future<ReminderScheduler>? _inner;
 
   Future<ReminderScheduler> _delegate() => _inner ??= _create();
@@ -40,7 +48,7 @@ class PlatformReminderScheduler implements ReminderScheduler {
         await plugin.initialize(
           settings: _androidSettings,
           onDidReceiveNotificationResponse: _onResponse,
-          // With the app closed, a snooze button runs this in a background isolate.
+          // With the app closed, a Done or snooze button runs this in a background isolate.
           onDidReceiveBackgroundNotificationResponse: reminderBackgroundResponse,
         );
         return AlarmReminderScheduler(_PluginAlarmPort(plugin));
@@ -64,6 +72,7 @@ class PlatformReminderScheduler implements ReminderScheduler {
             notificationDetails: NotificationDetails(
               windows: WindowsNotificationDetails(
                 actions: [
+                  const WindowsAction(content: 'Done', arguments: kDoneActionId),
                   for (final a in SnoozeAction.values) WindowsAction(content: 'Snooze ${a.label}', arguments: a.id),
                 ],
               ),
@@ -95,9 +104,21 @@ class PlatformReminderScheduler implements ReminderScheduler {
           now: DateTime.now(),
           store: snoozeStoreOf(_db),
         );
-        if (done != null) onSnoozed?.call();
+        if (done != null) {
+          onSnoozed?.call();
+          return;
+        }
+        final completed = await completeFromNotification(
+          actionId: response.actionId,
+          payload: response.payload,
+          db: _db,
+          writer: await _writerFor(_db),
+          now: DateTime.now(),
+          zone: await _deviceZone(),
+        );
+        if (completed != null) onCompleted?.call();
       } catch (e) {
-        debugPrint('Could not snooze the reminder: $e');
+        debugPrint('Could not act on the reminder: $e');
       }
     }());
   }
@@ -130,13 +151,29 @@ class PlatformReminderScheduler implements ReminderScheduler {
 }
 
 /// A press on a notification button on Android, with the app closed. It runs in its own isolate, so it opens the
-/// database itself, records the snooze, and sets the alarm for the new time directly: the running app, if there is one,
-/// reads the snooze from the database the next time it plans.
+/// database itself. A snooze is recorded and its alarm set for the new time directly: the running app, if there is
+/// one, reads the snooze from the database the next time it plans. Done completes the task and asks the background
+/// sync to run soon, which sends the change to the Sheet and plans the reminders again (dropping the task's others).
 @pragma('vm:entry-point')
 Future<void> reminderBackgroundResponse(NotificationResponse response) async {
   DartPluginRegistrant.ensureInitialized();
   final db = AppDatabase.open();
   try {
+    // Only Done needs the device id and zone, so a snooze press does not pay for them.
+    if (response.actionId == kDoneActionId) {
+      final completed = await completeFromNotification(
+        actionId: response.actionId,
+        payload: response.payload,
+        db: db,
+        writer: await _writerFor(db),
+        now: DateTime.now(),
+        zone: await _deviceZone(),
+      );
+      if (completed != null) {
+        await requestBackgroundSyncSoon();
+        return;
+      }
+    }
     final done = await snoozeFromNotification(
       actionId: response.actionId,
       payload: response.payload,
@@ -156,9 +193,24 @@ Future<void> reminderBackgroundResponse(NotificationResponse response) async {
       exact: await port.canScheduleExact(),
     );
   } catch (e) {
-    debugPrint('Could not snooze the reminder: $e');
+    debugPrint('Could not act on the reminder: $e');
   } finally {
     await db.close();
+  }
+}
+
+/// A writer for this install, as the app's own (`win-xxxx` or `and-xxxx` in `device`).
+Future<LocalWriter> _writerFor(AppDatabase db) async {
+  final deviceId = await db.ensureDeviceId(Platform.isWindows ? 'win' : 'and');
+  return LocalWriter(DriftLocalStore(db), deviceId: deviceId);
+}
+
+/// The IANA name of the device's zone, or null when the platform cannot say.
+Future<String?> _deviceZone() async {
+  try {
+    return (await FlutterTimezone.getLocalTimezone()).identifier;
+  } catch (_) {
+    return null;
   }
 }
 
@@ -211,7 +263,11 @@ class _PluginAlarmPort implements AlarmPort {
           importance: Importance.high,
           priority: Priority.high,
           category: AndroidNotificationCategory.reminder,
-          actions: [for (final a in SnoozeAction.values) AndroidNotificationAction(a.id, 'Snooze ${a.label}')],
+          // Android shows three buttons at most; a paired watch shows them too.
+          actions: [
+            const AndroidNotificationAction(kDoneActionId, 'Done'),
+            for (final a in SnoozeAction.values) AndroidNotificationAction(a.id, 'Snooze ${a.label}'),
+          ],
         ),
       ),
       androidScheduleMode: exact ? AndroidScheduleMode.exactAllowWhileIdle : AndroidScheduleMode.inexactAllowWhileIdle,

@@ -79,3 +79,21 @@ Future<void> registerBackgroundSync() async {
     debugPrint('Could not schedule the background sync: $e');
   }
 }
+
+/// Asks Android to run the background sync once, as soon as there is a network, after a change made with the app
+/// closed (a task completed from its notification). Does nothing elsewhere; a failure only means the change waits for
+/// the next periodic run or the app.
+Future<void> requestBackgroundSyncSoon() async {
+  if (!Platform.isAndroid) return;
+  try {
+    await Workmanager().initialize(backgroundSyncDispatcher);
+    await Workmanager().registerOneOffTask(
+      '$kBackgroundSyncUniqueName-now',
+      kBackgroundSyncTaskName,
+      constraints: Constraints(networkType: NetworkType.connected),
+      existingWorkPolicy: ExistingWorkPolicy.replace,
+    );
+  } catch (e) {
+    debugPrint('Could not ask for a background sync: $e');
+  }
+}

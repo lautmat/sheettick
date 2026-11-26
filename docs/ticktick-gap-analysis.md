@@ -44,7 +44,7 @@ countdowns, focus sessions or connected calendars.
 | Duration and time range | Planned | #78 |
 | Reminders (several, relative, custom) | Done | #27, #97 |
 | Snooze | Done | #28 |
-| Complete or postpone **from the notification** | Planned | #113. Only Snooze is offered. See recommendation 7 |
+| Complete or postpone **from the notification** | Partly | #113. Done and Snooze buttons; no Tomorrow button yet. See recommendation 7 |
 | Daily summary / alert | Planned | #67 |
 | Persistent and full-screen reminders | Planned | P3; one open task in 87 has a reminder |
 | Location reminders | Later | |
@@ -149,10 +149,11 @@ Ordered by the benefit to the owner's actual use, not by how long the work takes
 5. ~~**Swipe actions (#69).**~~ Done (PR #117): right completes, left offers dates, Move and Trash, through the same helpers as
    the bar.
 6. **Pin (#74), Duplicate (#71), Daily alert (#67).** Small, already specified, and each removes a daily friction.
-7. **Act from the notification (#113).** Add "Complete" and "Tomorrow" buttons next to Snooze. Ship it with the daily
-   alert (#67): only one open task has a reminder, so the buttons pay off mainly once the daily alert gives the owner
-   a notification to act on. It is also the one item that needs work outside the app process: the action handler runs
-   in a background isolate that must open the local DB, write, and reschedule reminders.
+7. **Act from the notification (#113).** A Done button now sits next to Snooze (it also shows on a paired watch);
+   a "Tomorrow" button is still to do. Ship that with the daily alert (#67): only one open task has a reminder, so the
+   buttons pay off mainly once the daily alert gives the owner a notification to act on. It is also the one item that
+   needs work outside the app process: the action handler runs in a background isolate that must open the local DB,
+   write, and reschedule reminders.
 8. **Then the views:** custom filters first (they feed smart lists), then Calendar, then Kanban and Eisenhower. Do
    them in that order because the first makes the others cheaper.
 
