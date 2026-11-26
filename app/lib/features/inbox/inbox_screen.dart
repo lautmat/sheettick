@@ -11,6 +11,7 @@ import '../../core/tasks/priority.dart';
 import '../../core/tasks/quick_add_create.dart';
 import '../../core/tasks/smart_lists.dart';
 import '../../core/tasks/tags.dart';
+import '../../core/tasks/task_badges.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
 import '../../core/tasks/task_order.dart';
@@ -39,6 +40,7 @@ import '../tasks/skip_action.dart';
 import '../tasks/swipe_actions.dart';
 import '../tasks/task_attributes.dart';
 import '../tasks/task_detail_screen.dart';
+import '../tasks/task_row_details.dart';
 import '../tasks/task_drag.dart';
 import '../tasks/task_pane_providers.dart';
 import '../tasks/task_providers.dart';
@@ -429,7 +431,7 @@ class _SmartBody extends ConsumerWidget {
                   for (final t in items)
                     smart == SmartList.trash
                         ? _TrashTile(key: ValueKey(t.id), task: t)
-                        : _TaskTile(key: ValueKey(t.id), task: t, menu: false),
+                        : _TaskTile(key: ValueKey(t.id), task: t, menu: false, showList: true),
                 ],
               ),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -684,9 +686,13 @@ class _TaskTile extends ConsumerWidget {
     this.section,
     this.menu = true,
     this.shellHoldsPress = false,
+    this.showList = false,
   });
 
   final Task task;
+
+  /// Whether the row names the task's list: in the smart lists, which gather tasks from every list.
+  final bool showList;
 
   /// Whether a [TaskDragShell] around the row takes its long press on a touch screen. Then the shell starts the
   /// selection (when the finger lifts without dragging), and the row must not compete for the press.
@@ -764,6 +770,13 @@ class _TaskTile extends ConsumerWidget {
     final selecting = ref.watch(selectingProvider);
     final picked = ref.watch(taskSelectionProvider.select((s) => s.contains(task.id)));
     final selection = ref.read(taskSelectionProvider.notifier);
+    final listName = showList
+        ? ref.watch(
+            sidebarListsProvider.select((v) => v.value?.where((l) => l.id == task.listId).firstOrNull?.name),
+          )
+        : null;
+    final checklist = ref.watch(checklistProgressProvider.select((v) => v.value?[task.id]));
+    final subtasks = ref.watch(subtaskCountsProvider.select((counts) => counts[task.id] ?? 0));
     final actions = <PopupMenuEntry<String>>[
       if (canSkipOccurrence(task)) const PopupMenuItem(value: 'skip', child: Text('Skip this occurrence')),
       if (menu) ...[
@@ -782,6 +795,18 @@ class _TaskTile extends ConsumerWidget {
     // A past due is red until the task is done or dropped.
     final overdue = (headline?.overdue ?? false) && task.status == TaskStatus.open.value;
     final primary = Theme.of(context).colorScheme.primary;
+    final details = TaskRowDetails(
+      taskId: task.id,
+      date: headline == null ? null : headlineText(context, headline),
+      dateColor: overdue ? Theme.of(context).colorScheme.error : null,
+      checklist: checklist,
+      subtasks: subtasks,
+      reminder: hasReminder(task),
+      repeats: isRepeating(task),
+      note: hasNote(task),
+      listName: listName,
+      tags: tags,
+    );
     final tile = ListTile(
       contentPadding: EdgeInsetsDirectional.only(start: 16 + 32.0 * depth, end: 16),
       selected: picked || ref.watch(selectedTaskIdProvider) == task.id,
@@ -804,31 +829,12 @@ class _TaskTile extends ConsumerWidget {
             ),
       title: Text(
         task.title.isEmpty ? '(untitled)' : task.title,
+        // A row is two lines at most: the title has both only when there is nothing to say under it.
+        maxLines: details.isEmpty ? 2 : 1,
+        overflow: TextOverflow.ellipsis,
         style: _done ? TextStyle(decoration: TextDecoration.lineThrough, color: muted) : null,
       ),
-      subtitle: headline == null && tags.isEmpty
-          ? null
-          : Row(
-              children: [
-                if (headline != null)
-                  Text(
-                    headlineText(context, headline),
-                    key: Key('taskDue-${task.id}'),
-                    style: TextStyle(color: overdue ? Theme.of(context).colorScheme.error : muted),
-                  ),
-                if (headline != null && tags.isNotEmpty) const SizedBox(width: 12),
-                if (tags.isNotEmpty)
-                  Flexible(
-                    child: Text(
-                      tags.map((t) => '#$t').join('  '),
-                      key: Key('taskTags-${task.id}'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: muted),
-                    ),
-                  ),
-              ],
-            ),
+      subtitle: details.isEmpty ? null : details,
       onTap: selecting ? () => selection.toggle(task.id) : () => openTask(context, ref, task),
       // A long press picks the row. Where a drag shell holds the press on a touch screen, it does the picking.
       onLongPress: selecting || (shellHoldsPress && isTouchPlatform(context)) ? null : () => selection.add(task.id),

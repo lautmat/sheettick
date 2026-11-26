@@ -60,6 +60,8 @@ Issues exist for the items with a number. The rest are broken into issues when t
   streak and history on repeating tasks (#73).
 - Capture: `capture` tab, so anything that can append a row creates a task (#68) · Android list and quick-add
   widgets, QS tiles and voice input (#121) · share target and select-text action (#120).
+- Task rows (#112), done: checklist progress, subtask count, marks for a reminder, repeat and note, and the list name
+  in smart lists, on one line under the title.
 - Windows: keyboard shortcuts (#126).
 - Search over checklist items, with filters (#75) · sort by modified date and tag (#76).
 - Low priority: tag sidebar, colour, rename and nesting (#77) · duration and time zone for timed tasks (#78).
