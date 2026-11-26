@@ -13,11 +13,14 @@ import '../../core/tasks/smart_lists.dart';
 import '../../core/tasks/tags.dart';
 import '../../core/tasks/task_completion.dart';
 import '../../core/tasks/task_dates.dart';
+import '../../core/tasks/task_duplicate.dart';
 import '../../core/tasks/task_order.dart';
+import '../../core/tasks/task_pin.dart';
 import '../../core/tasks/task_postpone.dart';
 import '../../core/tasks/task_skip.dart';
 import '../../core/tasks/task_status.dart';
 import '../../core/tasks/task_tree.dart';
+import '../../core/undo/undo.dart';
 import '../common/local_edit.dart';
 import '../common/theme.dart';
 import '../common/undo.dart';
@@ -386,6 +389,29 @@ class _GroupHeader extends StatelessWidget {
   }
 }
 
+/// The heading over the pinned tasks at the head of a list.
+class _PinnedHeader extends StatelessWidget {
+  const _PinnedHeader({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      key: const Key('pinnedHeader'),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Row(
+        children: [
+          Icon(Icons.push_pin, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text('Pinned  $count', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
+        ],
+      ),
+    );
+  }
+}
+
 /// What each smart list says when it has no tasks.
 const _smartEmpty = {
   SmartList.today: 'Nothing due today.',
@@ -519,7 +545,22 @@ List<Widget> _rows(
   // A block whose top-level task is completed, subtasks and all, is shown under "Completed" at the foot of the list.
   // A subtask still open under an open task stays with it, checked or not.
   bool isDone(List<({Task item, int depth})> block) => block.first.item.status == TaskStatus.completed.value;
-  final open = [for (final b in blocks) if (!isDone(b)) b];
+  // Pinned tasks come first whatever the sort, the sections or the grouping, and are left out of what follows.
+  final pinned = [for (final b in blocks) if (showsPinned(b.first.item)) b];
+  final open = [for (final b in blocks) if (!isDone(b) && !showsPinned(b.first.item)) b];
+  // A pinned task is not dragged: it has no place among the others until it is unpinned.
+  final head = <Widget>[
+    if (pinned.isNotEmpty) _PinnedHeader(count: pinned.length),
+    for (final block in pinned)
+      for (final row in block)
+        _TaskTile(
+          key: ValueKey(row.item.id),
+          task: row.item,
+          depth: row.depth,
+          section: known.contains(block.first.item.sectionId) ? block.first.item.sectionId : null,
+          menu: group == TaskGroup.none,
+        ),
+  ];
   final done = [for (final b in blocks) if (isDone(b)) b];
 
   if (group != TaskGroup.none) {
@@ -532,6 +573,7 @@ List<Widget> _rows(
       listNames: listNames,
     );
     return [
+      ...head,
       for (final g in groups) ...[
         _GroupHeader(label: g.label, count: g.rows.where((r) => r.depth == 0).length),
         for (final row in g.rows)
@@ -555,7 +597,7 @@ List<Widget> _rows(
     }
   }
 
-  final widgets = <Widget>[];
+  final widgets = <Widget>[...head];
   // The task shown just above the next row: indenting a task puts it under that one. A heading breaks the chain.
   String? above;
   // The section the rows are shown in, null above the first heading.
@@ -563,6 +605,7 @@ List<Widget> _rows(
   String? firstIn(String? sectionId) {
     for (final b in blocks) {
       final task = b.first.item;
+      if (showsPinned(task)) continue;
       if ((known.contains(task.sectionId) ? task.sectionId : null) == sectionId) return task.id;
     }
     return null;
@@ -739,6 +782,23 @@ class _TaskTile extends ConsumerWidget {
         await _setParent(ref, null);
       case 'skip':
         await skipTaskOccurrence(context, ref, task);
+      case 'pin' || 'unpin':
+        await changeWithUndo<void>(
+          ref,
+          value == 'pin' ? 'Task pinned' : 'Task unpinned',
+          [(tab: 'tasks', id: task.id)],
+          (writer) => setPinned(writer, task.id, value == 'pin', now: DateTime.now()),
+        );
+      case 'duplicate':
+        final writer = await ref.read(localWriterProvider.future);
+        final rows = await duplicateRows(writer, task.id);
+        await changeWithUndo<List<RowRef>>(
+          ref,
+          'Task duplicated',
+          rows,
+          (writer) => duplicateTask(writer, task.id),
+          created: (made) => made,
+        );
       default:
         final target = postponeTargetOf(value);
         if (target != null) await postponeWithUndo(ref, [task], target);
@@ -772,12 +832,15 @@ class _TaskTile extends ConsumerWidget {
         if (above != null && task.parentId != above) const PopupMenuItem(value: 'indent', child: Text('Indent')),
         if (task.parentId != null) const PopupMenuItem(value: 'outdent', child: Text('Outdent')),
       ],
+      // Only an open top-level task can be pinned to the head of its list. A pin left on any task can be taken off.
+      if (isPinned(task))
+        const PopupMenuItem(value: 'unpin', child: Text('Unpin'))
+      else if (depth == 0 && task.status == TaskStatus.open.value)
+        const PopupMenuItem(value: 'pin', child: Text('Pin')),
+      const PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
       ...postponeMenuEntries(task, now: DateTime.now(), zone: zone),
     ];
-    // A row with nothing to offer has no menu (a done task in the Completed list); a long press still picks it.
-    final menuItems = actions.isEmpty
-        ? actions
-        : <PopupMenuEntry<String>>[const PopupMenuItem(value: 'select', child: Text('Select')), ...actions];
+    final menuItems = <PopupMenuEntry<String>>[const PopupMenuItem(value: 'select', child: Text('Select')), ...actions];
     // A past due is red until the task is done or dropped.
     final overdue = (headline?.overdue ?? false) && task.status == TaskStatus.open.value;
     final primary = Theme.of(context).colorScheme.primary;
@@ -831,7 +894,7 @@ class _TaskTile extends ConsumerWidget {
       onTap: selecting ? () => selection.toggle(task.id) : () => openTask(context, ref, task),
       // A long press picks the row. Where a drag shell holds the press on a touch screen, it does the picking.
       onLongPress: selecting || (shellHoldsPress && isTouchPlatform(context)) ? null : () => selection.add(task.id),
-      trailing: selecting || menuItems.isEmpty
+      trailing: selecting
           ? null
           : PopupMenuButton<String>(
               key: Key('taskMenu-${task.id}'),
