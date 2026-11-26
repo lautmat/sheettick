@@ -116,6 +116,41 @@ void main() {
       expect((await task()).version, before);
     });
 
+    test('a tag added to several tasks: the ones without it change, each keeps its other tags, one tags row is made', () async {
+      final a = await writer.insert('tasks', {'title': 'A', 'tags': 'home'});
+      final b = await writer.insert('tasks', {'title': 'B', 'tags': 'Work,home'});
+
+      final result = await addTagToTasks(writer, [taskId, a, b], ' #work ');
+
+      expect(result?.name, 'work');
+      expect(result?.changed, 2, reason: 'B has it already, in another case');
+      expect((await task()).tags, 'work');
+      expect((await (db.select(db.tasks)..where((t) => t.id.equals(a))).getSingle()).tags, 'home,work');
+      final bRow = await (db.select(db.tasks)..where((t) => t.id.equals(b))).getSingle();
+      expect(bRow.tags, 'Work,home');
+      expect(bRow.version, 1);
+      final rows = await tagRows();
+      expect(rows.map((r) => r.name), ['work']);
+      expect(result?.createdId, rows.single.id);
+    });
+
+    test('a tag the tags tab already has is reused with its spelling and makes no row', () async {
+      await writer.insert('tags', {'name': 'Finance', 'sort_order': 4.0});
+
+      final result = await addTagToTasks(writer, [taskId], 'finance');
+
+      expect(result?.name, 'Finance');
+      expect(result?.createdId, isNull);
+      expect((await tagRows()).length, 1);
+      expect((await task()).tags, 'Finance');
+    });
+
+    test('a blank tag is nothing', () async {
+      expect(await addTagToTasks(writer, [taskId], '  # '), isNull);
+      expect((await task()).version, 1);
+      expect(await tagRows(), isEmpty);
+    });
+
     test('removing takes the name off the task and leaves the tag in the tags tab', () async {
       await addTaskTag(writer, taskId, 'work');
       await addTaskTag(writer, taskId, 'home');

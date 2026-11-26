@@ -54,7 +54,7 @@ countdowns, focus sessions or connected calendars.
 | Lunar, legal-holiday and Ebbinghaus repeats | **Not planned** | Not needed |
 | Postpone in one step | Done | #66 |
 | **Postpone or "move to Today" for many tasks at once** | **Done (PR #109)** | Selection bar: Today, Tomorrow, Next week, No date |
-| Pick any date for many tasks at once | Planned | #110. See recommendation 2 |
+| Pick any date for many tasks at once | **Done (#110)** | More > Pick a date…; times of day are kept |
 
 ## 3. Organising
 
@@ -91,7 +91,8 @@ countdowns, focus sessions or connected calendars.
 | Long press to start selecting | **Done (PR #109)** | Hold, then lift: select. Hold, then move: drag |
 | Select all | **Done (PR #109)** | Leaves out tasks in a folded section |
 | Bulk complete, date, move to list, priority, trash | **Done (PR #109)** | One Undo for the whole batch |
-| Bulk tag, bulk pin, bulk duplicate | Planned (tag only) | Tags are the next most useful: #110, recommendation 2 |
+| Bulk tag | **Done (#110)** | More > Add tag…: type a name or tap an existing tag; one Undo, which also removes a tag the change made |
+| Bulk pin, bulk duplicate | Not planned | Pin (#74) and Duplicate (#71) come first |
 | Drag to reorder, or into a section | Done (#36) | |
 | Drag scrolls the list at the edges | **Done (PR #109)** | It did not before; on a phone a drag could not leave the first screen |
 | Drag onto a list in the sidebar | Done on wide screens | On a phone the sidebar is a drawer: use Move |
@@ -139,8 +140,8 @@ Ordered by the benefit to the owner's actual use, not by how long the work takes
    comparison, and the touch behaviour in PRs #109 and #117 has so far been tested only with widget tests, not on a phone.
    The import also decides how urgent #114 (lazy rows) and #115 (Sheet compaction) are: if it brings years of completed
    tasks, both become prerequisites.
-2. **Finish batch edit (#110).** Add "Pick a date..." (a calendar for the whole selection) and "Add tag". With 46 of 87
-   tasks undated, bulk dating is the most common job. The selection bar already has the structure: a new `BulkAction`.
+2. ~~**Finish batch edit (#110).**~~ Done: the More menu has "Pick a date…" (a calendar for the whole selection) and
+   "Add tag…". With 46 of 87 tasks undated, bulk dating was the most common job.
 3. **Show more of a task in its row (#112).** Today a row shows the date and tags only. TickTick also shows checklist
    progress (2/5), the subtask count, and small icons for a reminder, a repeat and a note; in smart lists it shows the
    list name. This is what makes a long list scannable on a phone. It pairs with #72.

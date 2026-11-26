@@ -43,17 +43,45 @@ List<String> withoutTag(List<String> tags, String name) {
 ///
 /// A tag the `tags` tab already has, in any case, is stored with that tab's spelling. A new one gets a row in the tab,
 /// at the end, so it syncs to the other devices.
-Future<String?> ensureTag(LocalWriter writer, String raw) async {
+Future<String?> ensureTag(LocalWriter writer, String raw) async => (await _ensureTagRow(writer, raw))?.name;
+
+/// [ensureTag], and the id of the `tags` row it made (null when the tag was already there), for a caller that wants to
+/// undo the new tag along with what used it.
+Future<({String name, String? createdId})?> _ensureTagRow(LocalWriter writer, String raw) async {
   final cleaned = cleanTagName(raw);
   if (cleaned == null) return null;
   final defs = (await writer.store.rowsById('tags')).values.map((r) => r.fields).where((f) => f['deleted'] != true);
   final known = defs.where((f) => (f['name'] as String? ?? '').toLowerCase() == cleaned.toLowerCase()).firstOrNull;
   final name = (known?['name'] as String?) ?? cleaned;
+  String? createdId;
   if (known == null) {
     final orders = defs.map((f) => (f['sort_order'] as num?)?.toDouble() ?? 0);
-    await writer.insert('tags', {'name': name, 'sort_order': orders.fold<double>(0, (m, v) => v > m ? v : m) + 1});
+    createdId = await writer.insert('tags', {'name': name, 'sort_order': orders.fold<double>(0, (m, v) => v > m ? v : m) + 1});
   }
-  return name;
+  return (name: name, createdId: createdId);
+}
+
+/// Adds the tag [raw] to each task of [taskIds] that lacks it (see [ensureTag] for how the name is chosen), in the
+/// caller's transaction. Returns the name stored, how many tasks changed and the id of the `tags` row made, or null when
+/// [raw] is blank.
+Future<({String name, int changed, String? createdId})?> addTagToTasks(
+  LocalWriter writer,
+  Iterable<String> taskIds,
+  String raw,
+) async {
+  final tag = await _ensureTagRow(writer, raw);
+  if (tag == null) return null;
+  var changed = 0;
+  for (final id in taskIds) {
+    final row = await writer.store.getRow('tasks', id);
+    if (row == null) continue;
+    final cell = row.fields['tags'] as String?;
+    final tags = parseTags(cell);
+    if (indexOfTag(tags, tag.name) >= 0) continue;
+    await writer.update('tasks', id, {'tags': formatTags(withTag(tags, tag.name))});
+    changed++;
+  }
+  return (name: tag.name, changed: changed, createdId: tag.createdId);
 }
 
 /// Adds the tag [raw] to the task [taskId] and returns the name stored, or null when [raw] is blank (see [ensureTag] for
