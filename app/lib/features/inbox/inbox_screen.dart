@@ -25,6 +25,7 @@ import '../desktop/desktop_menu.dart';
 import '../desktop/desktop_providers.dart';
 import '../lists/lists_providers.dart';
 import 'background_sync_status.dart';
+import 'quick_add_chips.dart';
 import '../lists/lists_sidebar.dart';
 import '../lists/sort_group_dialog.dart';
 import '../search/search_screen.dart';
@@ -866,11 +867,15 @@ class _AddBarState extends ConsumerState<_AddBar> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
 
+  /// A chip's menu is open, which takes the keyboard focus off the field; the chips must stay until it closes.
+  bool _chipMenuOpen = false;
+
   @override
   void initState() {
     super.initState();
-    // The preview under the field follows what is typed.
+    // The preview under the field follows what is typed, and the chips come and go with the focus.
     _controller.addListener(() => setState(() {}));
+    _focus.addListener(() => setState(() {}));
     // A hotkey request that brought this bar on screen is answered once it is there.
     WidgetsBinding.instance.addPostFrameCallback((_) => _answerFocusRequest());
   }
@@ -889,6 +894,12 @@ class _AddBarState extends ConsumerState<_AddBar> {
 
   QuickAddResult _parse(String text, String? zone) =>
       parseQuickAdd(text, now: TaskDates(zone: zone).wallOf(DateTime.now()), zone: zone);
+
+  /// A chip changed the text: put it in the field with the cursor at the end, and keep the keyboard.
+  void _setText(String text) {
+    _controller.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    _focus.requestFocus();
+  }
 
   Future<void> _add() async {
     final text = _controller.text.trim();
@@ -965,6 +976,9 @@ class _AddBarState extends ConsumerState<_AddBar> {
                 ),
               ),
             Row(
+              // Keyed because the preview above and the chips below can both appear in one frame: without it the row,
+              // and the field with its keyboard, would be built anew.
+              key: const Key('addTaskRow'),
               children: [
                 Expanded(
                   child: TextField(
@@ -987,6 +1001,17 @@ class _AddBarState extends ConsumerState<_AddBar> {
                 ),
               ],
             ),
+            // Only while the field is in use, so the bar is no taller the rest of the time.
+            if (zone != null && (_focus.hasFocus || _controller.text.isNotEmpty || _chipMenuOpen))
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: QuickAddChips(
+                  text: _controller.text,
+                  zone: zone,
+                  onEdit: _setText,
+                  onMenu: (open) => setState(() => _chipMenuOpen = open),
+                ),
+              ),
           ],
         ),
       ),

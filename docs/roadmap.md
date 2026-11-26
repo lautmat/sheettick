@@ -65,7 +65,7 @@ Issues exist for the items with a number. The rest are broken into issues when t
 - Low priority: tag sidebar, colour, rename and nesting (#77) · duration and time zone for timed tasks (#78).
 - In the Sheet: `Stats` tab built from formulas (#79), instead of in-app statistics.
 - Research: targeted REA pass on Android settings and recurrence code (#80).
-- Gap-analysis follow-ups: quick-add chips (#111), task-row details (#112), notification actions (#113), lazy rows
+- Gap-analysis follow-ups: quick-add chips (#111, done), task-row details (#112), notification actions (#113), lazy rows
   (#114), Sheet compaction pulled forward (#115), screen-reader reordering (#116), sync log and crash reporter (#122),
   French interface (#123), gesture integration test (#124), drag onto Today/Tomorrow (#125).
 

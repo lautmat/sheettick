@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -259,5 +261,173 @@ void main() {
     await type(tester, 'Plan the offsite');
     expect(find.byKey(const Key('quickAddPreview')), findsNothing);
     await unmount(tester);
+  });
+
+  group('the chips under the field', () {
+    String fieldText(WidgetTester tester) =>
+        tester.widget<TextField>(find.byKey(const Key('addTaskField'))).controller!.text;
+
+    bool lit(WidgetTester tester, String key) => tester.widget<FilterChip>(find.byKey(Key(key))).selected;
+
+    Future<void> tapChip(WidgetTester tester, String key) async {
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pump();
+    }
+
+    /// Opens the menu of the chip [key] and taps [item] in it.
+    Future<void> choose(WidgetTester tester, String key, Finder item) async {
+      // The row scrolls sideways, so a chip at its end may be out of sight.
+      await tester.ensureVisible(find.byKey(Key(key)));
+      await tester.pump();
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(item);
+      await settle(tester);
+    }
+
+    Future<void> start(WidgetTester tester) async {
+      await tester.pumpWidget(app());
+      await settle(tester);
+    }
+
+    testWidgets('they show only while the field is in use', (tester) async {
+      await seedInbox(tester);
+      await start(tester);
+      expect(find.byKey(const Key('chipToday')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('addTaskField')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('chipToday')), findsOneWidget);
+      expect(find.byKey(const Key('chipTomorrow')), findsOneWidget);
+      expect(find.byKey(const Key('chipPriority')), findsOneWidget);
+      expect(find.byKey(const Key('chipList')), findsOneWidget);
+      expect(find.byKey(const Key('chipTag')), findsNothing, reason: 'there are no tags to offer yet');
+      await unmount(tester);
+    });
+
+    testWidgets('on Windows a mouse click on a chip lands, on an empty field too', (tester) async {
+      await seedInbox(tester);
+      await start(tester);
+      await tester.tap(find.byKey(const Key('addTaskField')), kind: PointerDeviceKind.mouse);
+      await tester.pump();
+
+      // A real click has frames between the button going down and up; `tap` has none, and would not show a chip that
+      // goes away under the pointer.
+      final click = await tester.startGesture(tester.getCenter(find.byKey(const Key('chipTomorrow'))), kind: PointerDeviceKind.mouse);
+      await tester.pump(const Duration(milliseconds: 100));
+      await click.up();
+      await tester.pump();
+
+      expect(fieldText(tester), 'tomorrow ');
+      expect(find.byKey(const Key('chipTomorrow')), findsOneWidget);
+      await unmount(tester);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+
+    testWidgets('Today and Tomorrow write the day into the text, swap it and take it out again', (tester) async {
+      await seedInbox(tester);
+      await start(tester);
+      await type(tester, 'Send the report');
+
+      await tapChip(tester, 'chipTomorrow');
+      expect(fieldText(tester), 'Send the report tomorrow');
+      expect(lit(tester, 'chipTomorrow'), isTrue);
+      expect(lit(tester, 'chipToday'), isFalse);
+      expect(find.byKey(const Key('quickAddPreview')), findsOneWidget);
+
+      await tapChip(tester, 'chipToday');
+      expect(fieldText(tester), 'Send the report today');
+      expect(lit(tester, 'chipToday'), isTrue);
+      expect(lit(tester, 'chipTomorrow'), isFalse);
+
+      await tapChip(tester, 'chipToday');
+      expect(fieldText(tester), 'Send the report');
+      expect(lit(tester, 'chipToday'), isFalse);
+      expect(find.byKey(const Key('quickAddPreview')), findsNothing);
+
+      await tapChip(tester, 'chipTomorrow');
+      await enter(tester);
+      final t = (await tasks(tester)).single;
+      expect(t.title, 'Send the report');
+      expect(t.dueAt, day(1));
+      await unmount(tester);
+    });
+
+    testWidgets('a chip tapped before the title lights up, and can be tapped off again', (tester) async {
+      await seedInbox(tester);
+      await start(tester);
+      await tester.tap(find.byKey(const Key('addTaskField')));
+      await tester.pump();
+
+      await tapChip(tester, 'chipTomorrow');
+      expect(fieldText(tester), 'tomorrow ');
+      expect(lit(tester, 'chipTomorrow'), isTrue);
+
+      await tapChip(tester, 'chipTomorrow');
+      expect(fieldText(tester), isEmpty);
+      expect(lit(tester, 'chipTomorrow'), isFalse);
+      await unmount(tester);
+    });
+
+    testWidgets('a menu choice lands even when the field is empty, and the chips stay', (tester) async {
+      await seedInbox(tester);
+      await start(tester);
+      await tester.tap(find.byKey(const Key('addTaskField')));
+      await tester.pump();
+
+      await choose(tester, 'chipPriority', find.widgetWithText(PopupMenuItem<int>, 'High'));
+
+      expect(fieldText(tester), '!high ');
+      expect(find.byKey(const Key('chipPriority')), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('Priority and Tag write their token, replace it, and the ticked choice takes it out', (tester) async {
+      await seedInbox(tester);
+      await tester.runAsync(() => writer().insert('tags', {'name': 'errands', 'sort_order': 1.0}));
+      await start(tester);
+      await type(tester, 'Buy milk');
+
+      Finder priority(String label) => find.widgetWithText(PopupMenuItem<int>, label);
+      await choose(tester, 'chipPriority', priority('High'));
+      expect(fieldText(tester), 'Buy milk !high');
+      await choose(tester, 'chipPriority', priority('Low'));
+      expect(fieldText(tester), 'Buy milk !low');
+      await choose(tester, 'chipPriority', priority('Low'));
+      expect(fieldText(tester), 'Buy milk');
+
+      final errands = find.widgetWithText(PopupMenuItem<String>, '#errands');
+      await choose(tester, 'chipTag', errands);
+      expect(fieldText(tester), 'Buy milk #errands');
+      await choose(tester, 'chipTag', errands);
+      expect(fieldText(tester), 'Buy milk');
+
+      await choose(tester, 'chipTag', errands);
+      await choose(tester, 'chipPriority', priority('Medium'));
+      await enter(tester);
+      final t = (await tasks(tester)).single;
+      expect(t.title, 'Buy milk');
+      expect(t.tags, 'errands');
+      expect(t.priority, 3);
+      await unmount(tester);
+    });
+
+    testWidgets('List writes ^list, quoted when it has spaces, and the task goes there', (tester) async {
+      await seedInbox(tester);
+      late String projects;
+      await tester.runAsync(() async => projects = await writer().insert('lists', {'name': 'Home projects', 'is_inbox': false}));
+      await start(tester);
+      await type(tester, 'Fix the tap');
+
+      await choose(tester, 'chipList', find.widgetWithText(PopupMenuItem<String>, 'Home projects'));
+      expect(fieldText(tester), 'Fix the tap ^"Home projects"');
+
+      await enter(tester);
+      final t = (await tasks(tester)).single;
+      expect(t.title, 'Fix the tap');
+      expect(t.listId, projects);
+      await unmount(tester);
+    });
   });
 }

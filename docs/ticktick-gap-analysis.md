@@ -22,7 +22,7 @@ countdowns, focus sessions or connected calendars.
 | Subtasks, indent and outdent | Done | Parent progress and fold: #72 |
 | Priority (4 levels), tags | Done | Tag colour, rename, nesting: #77 |
 | Quick-add with natural-language parsing | Done | English and French; shows a preview |
-| Quick-add with buttons (date, priority, list, tag) | Planned | #111. Phone typing is slow; see recommendation 4 |
+| Quick-add with buttons (date, priority, list, tag) | **Done (#111)** | Chips under the field: Today, Tomorrow, Priority, List, Tag. They edit the text the parser reads |
 | Duplicate a task | Planned | #71 |
 | Pin to the top | Planned | #74 |
 | Task defaults (list, date, reminder) | Planned | #70; new tasks already default to today |
@@ -145,8 +145,8 @@ Ordered by the benefit to the owner's actual use, not by how long the work takes
 3. **Show more of a task in its row (#112).** Today a row shows the date and tags only. TickTick also shows checklist
    progress (2/5), the subtask count, and small icons for a reminder, a repeat and a note; in smart lists it shows the
    list name. This is what makes a long list scannable on a phone. It pairs with #72.
-4. **Make adding a task possible without typing the date (#111).** A row of chips under the field (Today, Tomorrow,
-   Priority, List) that edit the same text the parser reads. The parser stays the single source of truth.
+4. ~~**Make adding a task possible without typing the date (#111).**~~ Done: chips under the field (Today, Tomorrow,
+   Priority, List, Tag) edit the same text the parser reads. The parser stays the single source of truth.
 5. ~~**Swipe actions (#69).**~~ Done (PR #117): right completes, left offers dates, Move and Trash, through the same helpers as
    the bar.
 6. **Pin (#74), Duplicate (#71), Daily alert (#67).** Small, already specified, and each removes a daily friction.
